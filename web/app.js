@@ -1,0 +1,4904 @@
+const $ = (sel) => document.querySelector(sel);
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function norm(s) {
+  return String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function fmtTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fmtDuration(sec) {
+  if (sec == null) return '-';
+  if (sec < 60) return `${sec}秒`;
+  return `${Math.floor(sec / 60)}分${sec % 60 ? (sec % 60) + '秒' : ''}`;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function sameSet(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  return [...a].sort().join(',') === [...b].sort().join(',');
+}
+
+const ICON = {
+  book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h5.5a3 3 0 0 1 3 3v11.5a3 3 0 0 0-3-2.5H4z"/><path d="M20 4.5h-3.5a3 3 0 0 0-3 3v11.5a3 3 0 0 1 3-2.5H20z"/></svg>`,
+  doc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>`,
+  target: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5"/></svg>`,
+  flame: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1.4 3.3-2.4 4.6-2.4 7.7a2.4 2.4 0 0 0 4.8 0c0-1.2-.5-2.2-1.2-3 2.6 1.4 4.3 3.6 4.3 6.4a5.5 5.5 0 0 1-11 0C6.5 10.2 9.1 7.1 12 3z"/></svg>`,
+  flask: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v5.2L5.4 17a2.2 2.2 0 0 0 1.9 3.3h9.4a2.2 2.2 0 0 0 1.9-3.3L14 8.2V3"/><path d="M7.6 14.5h8.8"/></svg>`,
+  chart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M8.5 16v-4.5M13 16V7.5M17.5 16v-6.5"/></svg>`,
+  archive: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h16V20l-8-4.5L4 20z"/><path d="M8 9h8"/></svg>`,
+  pen: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1-4L15.5 5.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M13.5 6.5l4 4"/></svg>`,
+  download: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M4.5 20h15"/></svg>`,
+  upload: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4.5 15v3.5a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1V15"/></svg>`,
+  bulb: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.4 10.9c.6.5 1 1.2 1 2h4.8c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,
+  spark: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.1 5.9 5.9 2.1-5.9 2.1L12 18.5l-2.1-5.9-5.9-2.1 5.9-2.1z"/><path d="M19 15l.9 2.6 2.6.9-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9z"/></svg>`,
+  play: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>`,
+  card: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>`,
+  arrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h15M13.5 6l6 6-6 6"/></svg>`,
+  trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4.5v2A3.5 3.5 0 0 0 8 10.5M16 5h3.5v2a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 13v4M8.5 21h7M10 17h4l.5 4h-5z"/></svg>`
+};
+
+const SET_ACCENTS = [
+  { bg: 'var(--lime)', fg: 'var(--ink)' },
+  { bg: 'var(--coral)', fg: 'var(--ink)' },
+  { bg: 'var(--lime-soft)', fg: 'var(--ink)' },
+  { bg: 'var(--coral-soft)', fg: 'var(--ink)' },
+  { bg: 'var(--paper-2)', fg: 'var(--ink)' },
+  { bg: 'var(--ink)', fg: 'var(--lime)' }
+];
+
+function setAccent(set) {
+  if (set && Number.isInteger(set.accent)) return SET_ACCENTS[set.accent % SET_ACCENTS.length];
+  const key = String((set && set.id) || 'set');
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 997;
+  return SET_ACCENTS[h % SET_ACCENTS.length];
+}
+
+function difficultyDots(n) {
+  const level = Math.min(3, Math.max(1, parseInt(n, 10) || 1));
+  return `<span class="difficulty" aria-label="难度 ${level}">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>`;
+}
+
+function todayAnswered() {
+  const key = todayStr();
+  return history
+    .filter((a) => todayStrOf(a.finishedAt) === key)
+    .reduce((n, a) => n + (a.total || 0), 0);
+}
+
+function todayStr() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+const STORAGE = {
+  sets: 'sq_sets_v1',
+  history: 'sq_history_v1',
+  wrong: 'sq_wrong_v1',
+  settings: 'sq_settings_v1',
+  subjects: 'sq_subjects_v1'
+};
+const SESSION_KEYS = { exam: 'sq_exam_v1', learning: 'sq_learning_v1' };
+
+// 内置学科固定存在，自建学科存在 sq_subjects_v1；未归档的题库进入「未分类」
+const BUILTIN_SUBJECTS = [
+  { id: 'sub-history', name: '历史', icon: '史', builtin: true },
+  { id: 'sub-bio', name: '生物', icon: '生', builtin: true },
+  { id: 'sub-code', name: '编程', icon: '码', builtin: true }
+];
+const INBOX_SUBJECT = { id: 'sub-inbox', name: '未分类', icon: '杂', builtin: true, inbox: true };
+const STORAGE_LIMIT_BYTES = 5 * 1024 * 1024;
+const bootNotes = [];
+let lastStorageWarn = 0;
+
+function arrOf(x) { return Array.isArray(x) ? x : []; }
+function objOf(x) { return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
+function strOf(x, max = 4000) { return String(x ?? '').slice(0, max); }
+function intOf(x, def, min, max) {
+  const n = parseInt(x, 10);
+  if (!Number.isFinite(n)) return def;
+  return Math.min(max, Math.max(min, n));
+}
+function idOf(value, prefix) {
+  const s = String(value ?? '');
+  return /^[A-Za-z0-9_-]{1,64}$/.test(s) ? s : prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// 读取本地数据：解析失败时保留原始副本，避免用户数据被静默覆盖
+function readStored(key) {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(key);
+  } catch {
+    return { ok: false, value: null };
+  }
+  if (raw == null) return { ok: true, value: null, missing: true };
+  try {
+    return { ok: true, value: JSON.parse(raw) };
+  } catch {
+    let kept = false;
+    try {
+      localStorage.setItem(`${key}_corrupt_${Date.now().toString(36)}`, raw.slice(0, 200000));
+      kept = true;
+    } catch { /* 副本也存不下时就保留原键 */ }
+    bootNotes.push(kept
+      ? '检测到本地数据损坏，已保留一份原始副本并重新初始化'
+      : '检测到本地数据损坏，但副本未能写入，请尽快导出检查');
+    if (kept) { try { localStorage.removeItem(key); } catch {} }
+    return { ok: true, value: null, corrupt: true };
+  }
+}
+
+function saveJSON(key, val) {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+    return true;
+  } catch {
+    const now = Date.now();
+    if (now - lastStorageWarn > 8000) {
+      lastStorageWarn = now;
+      toast('本地存储写入失败，可能是空间已满。请到「设置」导出备份后清理数据', 'error', 6000);
+    }
+    return false;
+  }
+}
+
+function saveJSONQuiet(key, val) {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeQuality(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    parsed: Number(raw.parsed) || 0,
+    kept: Number(raw.kept) || 0,
+    duplicates: Number(raw.duplicates) || 0,
+    removed: Number(raw.removed) || 0,
+    repaired: Number(raw.repaired) || 0,
+    issues: arrOf(raw.issues).slice(0, 30).map((issue) => ({
+      index: Number(issue && issue.index) || 0,
+      kind: strOf(issue && issue.kind, 40),
+      message: strOf(issue && issue.message, 300),
+      question: strOf(issue && issue.question, 60)
+    }))
+  };
+}
+
+function sanitizeStoredQuestion(raw, takenIds) {
+  if (!raw || typeof raw !== 'object') return null;
+  const type = ['single', 'multi', 'tf', 'fill', 'code'].includes(raw.type) ? raw.type : 'single';
+  const content = strOf(raw.content, 6000).trim();
+  if (!content) return null;
+  const q = {
+    id: '',
+    type,
+    difficulty: intOf(raw.difficulty, 2, 1, 3),
+    content,
+    explanation: strOf(raw.explanation, 6000)
+  };
+  if (type === 'single' || type === 'multi') {
+    const options = arrOf(raw.options).slice(0, 8).map((o) => strOf(o, 800).trim()).filter(Boolean);
+    if (options.length < 2) return null;
+    if (type === 'single') {
+      const answer = parseInt(raw.answer, 10);
+      if (!Number.isInteger(answer) || answer < 0 || answer >= options.length) return null;
+      q.options = options;
+      q.answer = answer;
+    } else {
+      const picked = (Array.isArray(raw.answer) ? raw.answer : [raw.answer])
+        .map((x) => parseInt(x, 10))
+        .filter((x) => Number.isInteger(x) && x >= 0 && x < options.length);
+      const uniq = [...new Set(picked)].sort((a, b) => a - b);
+      if (!uniq.length) return null;
+      q.options = options;
+      q.answer = uniq;
+    }
+  } else if (type === 'tf') {
+    q.answer = raw.answer === true || raw.answer === 'true' || raw.answer === '正确' || raw.answer === 1 || raw.answer === '1';
+  } else if (type === 'fill') {
+    const answers = (Array.isArray(raw.answer) ? raw.answer : [raw.answer])
+      .map((s) => strOf(s, 300).trim()).filter(Boolean).slice(0, 8);
+    if (!answers.length) return null;
+    q.answer = answers;
+  } else {
+    q.language = ['javascript', 'python', 'cpp', 'java'].includes(raw.language) ? raw.language : 'javascript';
+    q.template = strOf(raw.template, 12000);
+    q.answer = strOf(raw.answer, 12000);
+    q.testCases = arrOf(raw.testCases).slice(0, 8).map((t) => ({
+      input: strOf(t && t.input, 2000),
+      expectedOutput: strOf(t && t.expectedOutput, 2000)
+    })).filter((t) => t.input || t.expectedOutput);
+  }
+  q.id = idOf(raw.id && !takenIds.has(String(raw.id)) ? raw.id : '', 'q');
+  takenIds.add(q.id);
+  return q;
+}
+
+function sanitizeStoredSet(raw, takenSetIds) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = strOf(raw.name, 80).trim();
+  if (!name) return null;
+  const kpTaken = new Set();
+  const knowledgePoints = arrOf(raw.knowledgePoints).slice(0, 30).map((kp, i) => {
+    let id = /^[A-Za-z0-9_-]{1,40}$/.test(String(kp && kp.id)) ? String(kp.id) : 'kp' + (i + 1);
+    if (kpTaken.has(id)) id = 'kp' + (i + 1) + Math.random().toString(36).slice(2, 4);
+    kpTaken.add(id);
+    return {
+      id,
+      title: (strOf(kp && kp.title, 80).trim() || `知识点 ${i + 1}`).slice(0, 60),
+      content: strOf(kp && kp.content, 3000)
+    };
+  });
+  const qTaken = new Set();
+  const questions = [];
+  let dropped = 0;
+  arrOf(raw.questions).slice(0, 500).forEach((rq) => {
+    const q = sanitizeStoredQuestion(rq, qTaken);
+    if (!q) { dropped++; return; }
+    q.knowledgePointId = knowledgePoints.some((k) => k.id === (rq && rq.knowledgePointId))
+      ? rq.knowledgePointId
+      : (knowledgePoints[0] ? knowledgePoints[0].id : null);
+    questions.push(q);
+  });
+  if (!questions.length) return null;
+  const id = idOf(raw.id && !takenSetIds.has(String(raw.id)) ? raw.id : '', 'custom-');
+  takenSetIds.add(id);
+  const quality = sanitizeQuality(raw.quality);
+  return {
+    id,
+    name: name.slice(0, 40),
+    description: strOf(raw.description, 300).trim(),
+    icon: strOf(raw.icon, 8) || '题',
+    tags: arrOf(raw.tags).slice(0, 6).map((t) => strOf(t, 20).trim()).filter(Boolean),
+    knowledgePoints,
+    questions,
+    ...(/^sub-[A-Za-z0-9_-]{1,32}$/.test(String(raw.subjectId)) ? { subjectId: raw.subjectId } : {}),
+    ...(Number.isInteger(raw.accent) ? { accent: ((raw.accent % 6) + 6) % 6 } : {}),
+    ...(quality ? { quality } : {}),
+    ...(dropped ? { droppedQuestions: dropped } : {})
+  };
+}
+
+function sanitizeStoredSets(raw, existingIds = new Set()) {
+  const taken = new Set(existingIds);
+  const sets = [];
+  let droppedSets = 0;
+  let droppedQuestions = 0;
+  arrOf(raw).forEach((r) => {
+    const s = sanitizeStoredSet(r, taken);
+    if (!s) { droppedSets++; return; }
+    if (s.droppedQuestions) { droppedQuestions += s.droppedQuestions; delete s.droppedQuestions; }
+    sets.push(s);
+  });
+  return { sets, droppedSets, droppedQuestions };
+}
+
+// 自建学科：名称是唯一标识，内置学科不允许重复
+function sanitizeSubjects(raw) {
+  const builtinNames = new Set(BUILTIN_SUBJECTS.map((s) => s.name));
+  const seen = new Set(BUILTIN_SUBJECTS.map((s) => s.id));
+  const out = [];
+  arrOf(raw).forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    const name = strOf(item.name, 20).trim();
+    if (!name || builtinNames.has(name)) return;
+    const key = name.toLowerCase();
+    if (out.some((s) => s.name.toLowerCase() === key)) return;
+    let id = /^sub-[A-Za-z0-9_-]{1,32}$/.test(String(item.id)) ? String(item.id) : '';
+    if (!id || seen.has(id)) id = 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    seen.add(id);
+    out.push({
+      id,
+      name: name.slice(0, 20),
+      icon: (strOf(item.icon, 2) || name.slice(0, 1)).slice(0, 2),
+      createdAt: Number(item.createdAt) || Date.now()
+    });
+  });
+  return out;
+}
+
+// 资料记录只保留可重建的字段，原始文件另存在 IndexedDB 的 files 表
+function sanitizeMaterialMeta(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = strOf(raw.name, 160).trim();
+  const text = strOf(raw.text, 200000).trim();
+  if (!name || !text) return null;
+  return {
+    id: idOf(raw.id, 'mat-'),
+    subjectId: strOf(raw.subjectId, 40) || 'sub-inbox',
+    name,
+    size: Math.max(0, Number(raw.size) || 0),
+    ext: strOf(raw.ext, 12).toLowerCase(),
+    kind: raw.kind === 'exam' ? 'exam' : 'note',
+    pages: Math.max(0, Number(raw.pages) || 0),
+    chars: Math.max(0, Number(raw.chars) || aiVisibleChars(text)),
+    addedAt: Number(raw.addedAt) || Date.now(),
+    hasBlob: raw.hasBlob === true,
+    text
+  };
+}
+
+function repairHistory(raw) {
+  const out = [];
+  const seen = new Set();
+  arrOf(raw).forEach((a, i) => {
+    if (!a || typeof a !== 'object') return;
+    const setId = strOf(a.setId, 80).trim();
+    const finishedAt = Number(a.finishedAt);
+    if (!setId || !Number.isFinite(finishedAt) || finishedAt <= 0) return;
+    const answers = arrOf(a.answers).filter((x) => x && typeof x === 'object' && x.qid).map((x) => ({
+      qid: strOf(x.qid, 64),
+      type: strOf(x.type, 20),
+      userAnswer: x.userAnswer,
+      correct: x.correct === true ? true : x.correct === false ? false : null
+    }));
+    if (!answers.length) return;
+    let id = idOf(a.id, 'a');
+    if (seen.has(id)) id = 'a' + finishedAt.toString(36) + i;
+    seen.add(id);
+    const gradedDefault = answers.filter((x) => x.correct !== null).length;
+    const graded = intOf(a.graded, gradedDefault, 0, 1000);
+    const correct = intOf(a.correct, answers.filter((x) => x.correct === true).length, 0, graded || 1000);
+    out.push({
+      id,
+      setId,
+      setName: strOf(a.setName, 80) || '（未知题库）',
+      mode: a.mode === 'exam' ? 'exam' : 'learning',
+      startedAt: Number(a.startedAt) || finishedAt,
+      finishedAt,
+      durationSec: intOf(a.durationSec, 0, 0, 86400),
+      total: intOf(a.total, answers.length, 1, 1000),
+      graded,
+      correct,
+      ungraded: intOf(a.ungraded, 0, 0, 1000),
+      score: intOf(a.score, graded ? Math.round((correct / graded) * 100) : 0, 0, 100),
+      answers
+    });
+  });
+  return out.sort((x, y) => y.finishedAt - x.finishedAt).slice(0, 200);
+}
+
+function repairWrong(raw) {
+  const out = {};
+  Object.keys(objOf(raw)).slice(0, 200).forEach((setId) => {
+    const map = objOf(raw[setId]);
+    const clean = {};
+    Object.keys(map).slice(0, 500).forEach((qid) => {
+      const n = parseInt(map[qid], 10);
+      if (Number.isFinite(n) && n > 0) clean[strOf(qid, 64)] = Math.min(n, 999);
+    });
+    if (Object.keys(clean).length) out[strOf(setId, 64)] = clean;
+  });
+  return out;
+}
+
+const bootSets = readStored(STORAGE.sets);
+const bootHistory = readStored(STORAGE.history);
+const bootWrong = readStored(STORAGE.wrong);
+const bootSubjects = readStored(STORAGE.subjects);
+const settings = objOf(readStored(STORAGE.settings).value);
+
+const baseSetIds = new Set(
+  (typeof SAMPLE_SETS !== 'undefined' ? arrOf(SAMPLE_SETS) : []).map((s) => s.id)
+);
+if (!bootSets.ok) bootNotes.push('浏览器当前禁止了本地存储，本次的题库和记录在刷新后可能丢失');
+const repairedSets = sanitizeStoredSets(bootSets.value, baseSetIds);
+let customSets = repairedSets.sets;
+let history = repairHistory(bootHistory.value);
+let wrongBank = repairWrong(bootWrong.value);
+let userSubjects = sanitizeSubjects(bootSubjects.value);
+let materials = [];
+let materialsReady = false;
+let materialsUnavailable = false;
+
+if (repairedSets.droppedSets) bootNotes.push(`已跳过 ${repairedSets.droppedSets} 个损坏的题库`);
+if (repairedSets.droppedQuestions) bootNotes.push(`已修复 ${repairedSets.droppedQuestions} 道异常题目`);
+if (!bootSets.missing && bootSets.ok && !bootSets.corrupt) {
+  const rawCount = arrOf(bootSets.value).length;
+  if (repairedSets.sets.length !== rawCount || repairedSets.droppedQuestions) {
+    saveJSONQuiet(STORAGE.sets, customSets);
+  }
+}
+if (!bootHistory.missing && bootHistory.ok && !bootHistory.corrupt) {
+  if (history.length !== arrOf(bootHistory.value).length) saveJSONQuiet(STORAGE.history, history);
+}
+if (!bootWrong.missing && bootWrong.ok && !bootWrong.corrupt) saveJSONQuiet(STORAGE.wrong, wrongBank);
+if (!bootSubjects.missing && bootSubjects.ok && !bootSubjects.corrupt) {
+  if (userSubjects.length !== arrOf(bootSubjects.value).length) saveJSONQuiet(STORAGE.subjects, userSubjects);
+}
+if (bootSubjects.corrupt) bootNotes.push('学科文件夹数据损坏，已保留备份并重置为内置学科');
+
+let resume = { exam: null, learning: null };
+let learningPersistTimer = null;
+let examPersistTimer = null;
+let lastSessionWarn = 0;
+
+function warnSessionSaveFailed() {
+  if (Date.now() - lastSessionWarn < 15000) return;
+  lastSessionWarn = Date.now();
+  toast('进度自动保存失败，刷新页面可能丢失本次作答，建议先导出备份', 'error', 5000);
+}
+
+function persistExam() {
+  const ex = state.exam;
+  if (!ex) return false;
+  const ok = saveJSONQuiet(SESSION_KEYS.exam, {
+    v: 1,
+    setId: ex.setId,
+    name: ex.name || '',
+    questions: ex.questions,
+    answers: ex.answers,
+    current: ex.current,
+    startedAt: ex.startedAt,
+    deadline: ex.deadline,
+    minutes: ex.minutes
+  });
+  if (!ok) warnSessionSaveFailed();
+  return ok;
+}
+
+// 填空题/代码题逐字触发，合并写入
+function persistExamSoon() {
+  clearTimeout(examPersistTimer);
+  examPersistTimer = setTimeout(persistExam, 350);
+}
+
+function persistLearning() {
+  const l = state.learning;
+  if (!l || l.finished) return false;
+  const ok = saveJSONQuiet(SESSION_KEYS.learning, {
+    v: 1,
+    setId: l.setId,
+    qids: l.qids,
+    index: l.index,
+    answers: l.answers,
+    results: l.results,
+    cache: l.cache,
+    seenKP: l.seenKP || {},
+    startedAt: l.startedAt,
+    onlyWrong: !!l.onlyWrong
+  });
+  if (!ok) warnSessionSaveFailed();
+  return ok;
+}
+
+// 输入框逐字保存会太频繁，稍微延后一点
+function persistLearningSoon() {
+  clearTimeout(learningPersistTimer);
+  learningPersistTimer = setTimeout(persistLearning, 400);
+}
+
+function clearSession(kind) {
+  try { localStorage.removeItem(SESSION_KEYS[kind]); } catch {}
+  if (resume && resume[kind]) resume[kind] = null;
+  if (kind === 'learning') {
+    clearTimeout(learningPersistTimer);
+    learningPersistTimer = null;
+  }
+  if (kind === 'exam') {
+    clearTimeout(examPersistTimer);
+    examPersistTimer = null;
+  }
+}
+
+function discardSession(kind, silent) {
+  clearSession(kind);
+  if (!silent) toast(kind === 'exam' ? '已放弃未完成的考试' : '已放弃未完成的学习', 'info');
+  render();
+}
+
+function validateExamSession(p) {
+  if (!p || typeof p !== 'object') return null;
+  const questions = arrOf(p.questions);
+  const answers = arrOf(p.answers);
+  if (!questions.length || questions.length > 500 || answers.length !== questions.length) return null;
+  const deadline = Number(p.deadline);
+  if (!Number.isFinite(deadline) || deadline <= Date.now()) return null;
+  const lite = questions.map((q) => ({
+    id: strOf(q && q.id, 64),
+    type: ['single', 'multi', 'tf', 'fill', 'code'].includes(q && q.type) ? q.type : 'single',
+    difficulty: intOf(q && q.difficulty, 2, 1, 3),
+    content: strOf(q && q.content, 6000),
+    options: arrOf(q && q.options).slice(0, 8).map((o) => strOf(o, 800)),
+    answer: q && q.answer,
+    explanation: strOf(q && q.explanation, 6000),
+    language: q && q.language,
+    template: strOf(q && q.template, 12000),
+    testCases: arrOf(q && q.testCases).slice(0, 8).map((t) => ({
+      input: strOf(t && t.input, 2000),
+      expectedOutput: strOf(t && t.expectedOutput, 2000)
+    }))
+  }));
+  for (const q of lite) {
+    if (!q.content) return null;
+    if ((q.type === 'single' || q.type === 'multi') && q.options.length < 2) return null;
+  }
+  const cleanAnswers = answers.slice(0, lite.length).map((a, i) => {
+    const q = lite[i];
+    if (q.type === 'multi') {
+      return arrOf(a).map((x) => parseInt(x, 10)).filter((n) => Number.isInteger(n) && n >= 0 && n < q.options.length);
+    }
+    if (q.type === 'tf') return typeof a === 'boolean' ? a : null;
+    if (q.type === 'single') {
+      const n = parseInt(a, 10);
+      return Number.isInteger(n) && n >= 0 && n < q.options.length ? n : null;
+    }
+    return a == null ? null : strOf(a, 12000);
+  });
+  return {
+    setId: strOf(p.setId, 80),
+    name: strOf(p.name, 80) || '未命名考试',
+    questions: lite,
+    answers: cleanAnswers,
+    current: intOf(p.current, 0, 0, lite.length - 1),
+    startedAt: Number(p.startedAt) || Date.now(),
+    deadline,
+    minutes: intOf(p.minutes, 30, 1, 600)
+  };
+}
+
+function validateLearningSession(p) {
+  if (!p || typeof p !== 'object') return null;
+  const set = getSet(strOf(p.setId, 80));
+  if (!set) return null;
+  const qids = arrOf(p.qids).map((q) => strOf(q, 64))
+    .filter((qid) => set.questions.some((q) => q.id === qid));
+  if (!qids.length) return null;
+  const rawAnswers = objOf(p.answers);
+  const rawResults = objOf(p.results);
+  const rawCache = objOf(p.cache);
+  const answers = {};
+  qids.forEach((qid) => {
+    const q = set.questions.find((x) => x.id === qid);
+    if (!q || rawAnswers[qid] === undefined) return;
+    const v = rawAnswers[qid];
+    if (q.type === 'multi') answers[qid] = arrOf(v).map((x) => parseInt(x, 10)).filter((n) => Number.isInteger(n) && n >= 0 && n < (q.options || []).length);
+    else if (q.type === 'tf') answers[qid] = typeof v === 'boolean' ? v : null;
+    else if (q.type === 'single') answers[qid] = Number.isInteger(parseInt(v, 10)) && v !== null ? parseInt(v, 10) : null;
+    else answers[qid] = v == null ? null : strOf(v, 12000);
+  });
+  const results = {};
+  Object.keys(rawResults).slice(0, 500).forEach((qid) => {
+    if (!qids.includes(qid)) return;
+    const r = objOf(rawResults[qid]);
+    results[qid] = { correct: r.correct === true, answer: r.answer, output: strOf(r.output, 4000), revealed: !!r.revealed };
+  });
+  const cache = {};
+  Object.keys(rawCache).slice(0, 500).forEach((qid) => {
+    if (qids.includes(qid)) cache[qid] = strOf(rawCache[qid], 12000);
+  });
+  return {
+    setId: set.id,
+    qids,
+    index: intOf(p.index, 0, 0, qids.length - 1),
+    answers,
+    results,
+    cache,
+    seenKP: objOf(p.seenKP),
+    startedAt: Number(p.startedAt) || Date.now(),
+    finished: false,
+    onlyWrong: !!p.onlyWrong
+  };
+}
+
+function loadResumeSessions() {
+  resume = { exam: null, learning: null };
+  const exam = readStored(SESSION_KEYS.exam);
+  if (exam.ok && exam.value) {
+    const valid = validateExamSession(exam.value);
+    if (valid) resume.exam = valid;
+    else try { localStorage.removeItem(SESSION_KEYS.exam); } catch {}
+  }
+  const learn = readStored(SESSION_KEYS.learning);
+  if (learn.ok && learn.value) {
+    const valid = validateLearningSession(learn.value);
+    if (valid) resume.learning = valid;
+    else try { localStorage.removeItem(SESSION_KEYS.learning); } catch {}
+  }
+}
+
+function renderResumeBar() {
+  const rows = [];
+  if (resume.exam) {
+    const ex = resume.exam;
+    const answered = ex.questions.filter((q, i) => isAnswered(q, ex.answers[i])).length;
+    const left = Math.max(0, Math.floor((ex.deadline - Date.now()) / 1000));
+    rows.push(`
+      <div class="resume-bar">
+        <span class="resume-tag">考试</span>
+        <span class="resume-copy"><b>${esc(ex.name)}</b> · 已答 ${answered}/${ex.questions.length} · 剩余 ${fmtTime(left)}</span>
+        <span class="resume-actions">
+          <button type="button" class="btn btn-primary btn-sm" onclick="resumeExam()">继续考试</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="discardSession('exam')">放弃</button>
+        </span>
+      </div>`);
+  }
+  if (resume.learning) {
+    const l = resume.learning;
+    const total = l.qids.length;
+    const answered = l.qids.filter((qid) => l.results[qid]).length;
+    rows.push(`
+      <div class="resume-bar">
+        <span class="resume-tag">学习</span>
+        <span class="resume-copy"><b>${esc((getSet(l.setId) || {}).name || '学习进度')}</b> · 第 ${l.index + 1}/${total} 题 · 已答 ${answered}</span>
+        <span class="resume-actions">
+          <button type="button" class="btn btn-primary btn-sm" onclick="resumeLearning()">继续学习</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="discardSession('learning')">放弃</button>
+        </span>
+      </div>`);
+  }
+  return rows.join('');
+}
+
+function resumeExam() {
+  const p = resume.exam;
+  if (!p) return;
+  if (p.deadline <= Date.now()) {
+    discardSession('exam', true);
+    toast('这场考试已经超时，不能再继续了', 'info');
+    return;
+  }
+  state.exam = { ...p, grading: false, timerId: null };
+  resume.exam = null;
+  state.view = 'exam';
+  state.setId = p.setId;
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function resumeLearning() {
+  const p = resume.learning;
+  if (!p) return;
+  if (!getSet(p.setId)) {
+    discardSession('learning', true);
+    toast('题库已被删除，无法继续学习', 'info');
+    return;
+  }
+  state.learning = { ...p };
+  resume.learning = null;
+  state.view = 'learning';
+  state.setId = p.setId;
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+const state = {
+  view: 'dashboard',
+  setId: null,
+  subjectId: null,
+  learning: null,
+  exam: null,
+  examResult: null,
+  genPreview: null,
+  timer: null,
+  qnavOpen: false
+};
+
+const LANG_LABEL = { javascript: 'JavaScript', python: 'Python 3', cpp: 'C++', java: 'Java' };
+const TYPE_LABEL = { single: '单选', multi: '多选', tf: '判断', fill: '填空', code: '编程' };
+const TYPE_CLASS = { single: 'type-single', multi: 'type-multi', tf: 'type-tf', fill: 'type-fill', code: 'type-code' };
+
+function allSets() {
+  const samples = typeof SAMPLE_SETS !== 'undefined' ? arrOf(SAMPLE_SETS) : [];
+  return [
+    ...samples.map((s) => ({ ...s, builtin: true })),
+    ...customSets.map((s) => ({ ...s, builtin: false }))
+  ];
+}
+
+function getSet(id) {
+  return allSets().find((s) => s.id === id) || null;
+}
+
+function getQuestion(set, qid) {
+  return set && set.questions.find((q) => q.id === qid) || null;
+}
+
+function allSubjects() {
+  return [...BUILTIN_SUBJECTS, ...userSubjects];
+}
+
+function subjectById(id) {
+  if (id === INBOX_SUBJECT.id) return INBOX_SUBJECT;
+  return allSubjects().find((s) => s.id === id) || null;
+}
+
+function subjectOfSet(set) {
+  return subjectById(set && set.subjectId) || INBOX_SUBJECT;
+}
+
+function subjectSets(subjectId) {
+  return allSets().filter((s) => subjectOfSet(s).id === subjectId);
+}
+
+function subjectMaterials(subjectId) {
+  return materials.filter((m) => m.subjectId === subjectId);
+}
+
+function hasInboxContent() {
+  return allSets().some((s) => subjectOfSet(s).id === INBOX_SUBJECT.id)
+    || materials.some((m) => m.subjectId === INBOX_SUBJECT.id);
+}
+
+// 文件夹列表：内置学科 + 自建学科，有未归档内容时补一个「未分类」
+function visibleSubjects() {
+  return hasInboxContent() ? [...allSubjects(), INBOX_SUBJECT] : [...allSubjects()];
+}
+
+function subjectNameTaken(name, exceptId) {
+  const key = norm(name);
+  return visibleSubjects().some((s) => s.id !== exceptId && norm(s.name) === key);
+}
+
+function createSubject(name) {
+  const clean = String(name || '').trim().slice(0, 20);
+  if (!clean) {
+    toast('学科名称不能为空', 'info');
+    return null;
+  }
+  if (subjectNameTaken(clean)) {
+    toast('已经有同名学科了', 'info');
+    return null;
+  }
+  const subject = {
+    id: 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    name: clean,
+    icon: clean.slice(0, 1),
+    createdAt: Date.now()
+  };
+  const next = [...userSubjects, subject];
+  if (!saveJSON(STORAGE.subjects, next)) {
+    toast('学科没有保存成功，请检查本地存储空间', 'error');
+    return null;
+  }
+  userSubjects = next;
+  return subject;
+}
+
+function renameSubject(id, name) {
+  const clean = String(name || '').trim().slice(0, 20);
+  const subject = userSubjects.find((s) => s.id === id);
+  if (!subject) return false;
+  if (!clean) { toast('学科名称不能为空', 'info'); return false; }
+  if (subjectNameTaken(clean, id)) { toast('已经有同名学科了', 'info'); return false; }
+  const next = userSubjects.map((s) => (s.id === id ? { ...s, name: clean, icon: clean.slice(0, 1) } : s));
+  if (!saveJSON(STORAGE.subjects, next)) { toast('重命名没有保存成功', 'error'); return false; }
+  userSubjects = next;
+  return true;
+}
+
+const MATERIAL_DB = 'starquiz-materials';
+const MATERIAL_STORE = 'materials';
+const MATERIAL_FILE_STORE = 'files';
+let materialDbPromise = null;
+
+function openMaterialDb() {
+  if (typeof indexedDB === 'undefined') return Promise.reject(new Error('当前浏览器不支持本地资料库'));
+  if (!materialDbPromise) {
+    materialDbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(MATERIAL_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(MATERIAL_STORE)) db.createObjectStore(MATERIAL_STORE, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(MATERIAL_FILE_STORE)) db.createObjectStore(MATERIAL_FILE_STORE, { keyPath: 'id' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error('资料库打开失败'));
+    });
+  }
+  return materialDbPromise;
+}
+
+function dbRequest(req) {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('资料库读写失败'));
+  });
+}
+
+async function loadMaterials() {
+  try {
+    const db = await Promise.race([
+      openMaterialDb(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('资料库打开超时')), 3500))
+    ]);
+    const list = await dbRequest(db.transaction(MATERIAL_STORE, 'readonly').objectStore(MATERIAL_STORE).getAll());
+    materials = arrOf(list).map(sanitizeMaterialMeta).filter(Boolean);
+    materials.sort((a, b) => b.addedAt - a.addedAt);
+  } catch (e) {
+    console.warn('[StarQuiz] 资料库不可用', e);
+    materialsUnavailable = true;
+  } finally {
+    materialsReady = true;
+  }
+}
+
+// 原始文件最多留 20MB 一份；超出或写入失败时只保留提取的文字
+async function saveMaterialRecord(meta, blob) {
+  if (materialsUnavailable) throw new Error('当前浏览器无法保存资料，请改用支持的浏览器');
+  const db = await openMaterialDb();
+  const record = { ...meta, hasBlob: !!blob };
+  const tx = db.transaction([MATERIAL_STORE, MATERIAL_FILE_STORE], 'readwrite');
+  tx.objectStore(MATERIAL_STORE).put(record);
+  if (blob) tx.objectStore(MATERIAL_FILE_STORE).put({ id: meta.id, blob });
+  await new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('资料没有写入成功'));
+    tx.onabort = () => reject(tx.error || new Error('资料没有写入成功'));
+  });
+  return record;
+}
+
+async function deleteMaterialRecord(id) {
+  const db = await openMaterialDb();
+  const tx = db.transaction([MATERIAL_STORE, MATERIAL_FILE_STORE], 'readwrite');
+  tx.objectStore(MATERIAL_STORE).delete(id);
+  tx.objectStore(MATERIAL_FILE_STORE).delete(id);
+  await new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('删除失败'));
+    tx.onabort = () => reject(tx.error || new Error('删除失败'));
+  });
+}
+
+async function readMaterialBlob(id) {
+  try {
+    const db = await openMaterialDb();
+    const row = await dbRequest(db.transaction(MATERIAL_FILE_STORE, 'readonly').objectStore(MATERIAL_FILE_STORE).get(id));
+    return row && row.blob ? row.blob : null;
+  } catch {
+    return null;
+  }
+}
+
+function setStats(setId) {
+  const attempts = history.filter((a) => a.setId === setId);
+  const graded = attempts.reduce((n, a) => n + (a.graded || 0), 0);
+  const correct = attempts.reduce((n, a) => n + (a.correct || 0), 0);
+  const best = attempts.length ? Math.max(...attempts.map((a) => a.score || 0)) : null;
+  return {
+    attempts: attempts.length,
+    accuracy: graded ? Math.round((correct / graded) * 100) : null,
+    best
+  };
+}
+
+function overallStats() {
+  const count = history.length;
+  const graded = history.reduce((n, a) => n + (a.graded || 0), 0);
+  const correct = history.reduce((n, a) => n + (a.correct || 0), 0);
+  const answered = history.reduce((n, a) => n + (a.total || 0), 0);
+  const avg = count ? Math.round(history.reduce((n, a) => n + (a.score || 0), 0) / count) : null;
+  const totalQ = allSets().reduce((n, s) => n + s.questions.length, 0);
+  return { count, graded, correct, answered, avg, accuracy: graded ? Math.round((correct / graded) * 100) : null, totalQ };
+}
+
+function streakDays() {
+  const days = new Set(history.map((a) => todayStrOf(a.finishedAt)));
+  let streak = 0;
+  const d = new Date();
+  for (;;) {
+    const key = todayStrOf(d.getTime());
+    if (days.has(key)) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else if (streak === 0 && key === todayStr()) {
+      // 今天还没练习，从昨天开始算
+      d.setDate(d.getDate() - 1);
+      continue;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function todayStrOf(ts) {
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function toast(msg, type = 'info', ms = 3000) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const glyphs = { success: '✓', error: '!', info: 'i' };
+  el.innerHTML = `<span class="toast-glyph">${glyphs[type] || 'i'}</span><span>${esc(msg)}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .3s';
+    setTimeout(() => el.remove(), 300);
+  }, ms);
+}
+
+function openModal(html, extraClass = '') {
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal ${extraClass}">${html}</div>
+    </div>`;
+}
+
+function closeModal() {
+  document.getElementById('modalContainer').innerHTML = '';
+}
+
+function confirmModal(title, message, okText, onOk, danger = false) {
+  window._confirmCb = onOk;
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">${esc(title)}</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body"><p class="text-sm" style="line-height:1.7">${esc(message)}</p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" onclick="runConfirm()">${esc(okText)}</button>
+    </div>`);
+}
+
+function runConfirm() {
+  const cb = window._confirmCb;
+  window._confirmCb = null;
+  closeModal();
+  if (typeof cb === 'function') cb();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+const PAGE_TITLES = {
+  dashboard: '首页',
+  sets: '学科',
+  subject: '学科',
+  setDetail: '题库详情',
+  learning: '学习模式',
+  exam: '考试模式',
+  examResult: '考试结果',
+  records: '学习进度',
+  settings: '设置'
+};
+
+function navigateTo(view) {
+  if (state.exam && state.exam.grading) {
+    toast('正在评分，请稍候完成', 'info');
+    return;
+  }
+  if (state.exam && !state.exam.grading) {
+    confirmModal('退出考试', '考试正在进行中，退出后本次作答将丢失，确定退出吗？', '退出考试', () => {
+      clearExamTimer();
+      clearSession('exam');
+      state.exam = null;
+      doNavigate(view);
+    }, true);
+    return;
+  }
+  if (state.view === 'learning' && state.learning && view !== 'learning') {
+    finishLearning(true);
+  }
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  doNavigate(view);
+}
+
+function doNavigate(view) {
+  state.view = view;
+  if (view !== 'setDetail') state.setId = null;
+  if (view !== 'subject' && view !== 'setDetail') state.subjectId = null;
+  closeSidebar();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function openSubject(id) {
+  if (state.view === 'learning' && state.learning) finishLearning(true);
+  state.subjectId = id;
+  state.view = 'subject';
+  closeSidebar();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function openSet(id) {
+  if (state.view === 'learning' && state.learning) finishLearning(true);
+  state.setId = id;
+  state.view = 'setDetail';
+  closeSidebar();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+// 任何一处视图渲染出错都不应该让整页白屏：兜底页保留导出与重置入口
+function render() {
+  try {
+    renderCore();
+  } catch (err) {
+    console.error('[StarQuiz] 渲染失败', err);
+    renderCrash(err);
+  }
+}
+
+function renderCrash(err) {
+  const main = document.getElementById('mainContent');
+  if (!main) return;
+  document.body.classList.remove('focus-mode', 'qnav-open');
+  const msg = (err && (err.message || String(err))) || '未知错误';
+  main.innerHTML = `
+    <div class="empty-state" role="alert">
+      <div class="empty-state-title">页面出了点问题</div>
+      <div class="empty-state-desc">你的数据没有被清除。建议先导出备份，再重新加载；如果反复出现，再考虑重置本地数据。</div>
+      <div class="text-sm text-muted" style="margin:14px 0 20px;word-break:break-word">${esc(msg)}</div>
+      <div class="btn-group" style="justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="exportData()">导出数据备份</button>
+        <button class="btn btn-secondary" onclick="location.reload()">重新加载</button>
+        <button class="btn btn-danger" onclick="resetAll()">重置本地数据</button>
+      </div>
+    </div>`;
+}
+
+function renderCore() {
+  if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  if (state.exam && state.exam.timerId) {
+    clearInterval(state.exam.timerId);
+    state.exam.timerId = null;
+  }
+
+  document.querySelectorAll('.nav-item, .bn-item').forEach((el) => {
+    const target = state.view === 'subject' ? 'sets' : state.view;
+    el.classList.toggle('active', el.dataset.view === target);
+  });
+  document.body.classList.toggle('focus-mode', state.view === 'learning' || state.view === 'exam');
+  const pageTitle = state.view === 'subject'
+    ? ((subjectById(state.subjectId) || {}).name || '学科')
+    : PAGE_TITLES[state.view];
+  document.getElementById('pageTitle').textContent = pageTitle || '';
+  document.getElementById('headerActions').innerHTML = renderHeaderActions();
+
+  const main = document.getElementById('mainContent');
+  switch (state.view) {
+    case 'dashboard': main.innerHTML = renderDashboard(); break;
+    case 'sets': main.innerHTML = renderSets(); break;
+    case 'subject': main.innerHTML = renderSubject(); break;
+    case 'setDetail': main.innerHTML = renderSetDetail(); break;
+    case 'learning': main.innerHTML = renderLearning(); break;
+    case 'exam': main.innerHTML = state.exam && state.exam.grading ? renderGrading() : renderExam(); break;
+    case 'examResult': main.innerHTML = renderExamResult(); break;
+    case 'records': main.innerHTML = renderRecords(); break;
+    case 'settings': main.innerHTML = renderSettings(); break;
+    default: main.innerHTML = renderDashboard();
+  }
+
+  const slot = document.getElementById('resumeSlot');
+  if (slot) slot.innerHTML = renderResumeBar();
+
+  if (state.view === 'exam' && state.exam && !state.exam.grading) startExamTimer();
+  syncQnav();
+}
+
+function renderHeaderActions() {
+  if (state.view === 'dashboard' || state.view === 'sets') {
+    return `
+      <button class="btn btn-primary btn-sm" onclick="openAIModal()">${ICON.spark} AI 生成</button>`;
+  }
+  if (state.view === 'subject') {
+    return `
+      <button class="btn btn-secondary btn-sm" onclick="pickSubjectFiles()">${ICON.upload} 上传资料</button>
+      <button class="btn btn-primary btn-sm" onclick="openAIModal('${state.subjectId}')">${ICON.spark} AI 出题</button>`;
+  }
+  return '';
+}
+
+function heroArt() {
+  return `<svg viewBox="0 0 240 210" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M40 190c20 12 48 13 74 2" stroke="#D6F65B" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9"/>
+    <g transform="rotate(-6 118 72)">
+      <rect x="50" y="48" width="148" height="42" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
+      <rect x="60" y="57" width="24" height="24" rx="7" fill="#1A1812" stroke="#1A1812" stroke-width="2.5"/>
+      <text x="72" y="75" text-anchor="middle" fill="#F7F0DC" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">C</text>
+      <rect x="94" y="62" width="82" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+      <rect x="94" y="75" width="50" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+    </g>
+    <g transform="rotate(5 118 110)">
+      <rect x="38" y="88" width="152" height="42" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
+      <rect x="48" y="97" width="24" height="24" rx="7" fill="#FF6B45" stroke="#1A1812" stroke-width="2.5"/>
+      <text x="60" y="115" text-anchor="middle" fill="#1A1812" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">B</text>
+      <rect x="82" y="102" width="90" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+      <rect x="82" y="115" width="56" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+    </g>
+    <g transform="rotate(-2 118 150)">
+      <rect x="44" y="128" width="156" height="44" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
+      <rect x="54" y="138" width="24" height="24" rx="7" fill="#D6F65B" stroke="#1A1812" stroke-width="2.5"/>
+      <text x="66" y="156" text-anchor="middle" fill="#1A1812" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">A</text>
+      <rect x="88" y="143" width="76" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+      <rect x="88" y="156" width="46" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+    </g>
+    <circle cx="199" cy="48" r="30" fill="#D6F65B" stroke="#1A1812" stroke-width="3"/>
+    <path d="M186 48l9 9 17-18" stroke="#1A1812" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M26 60l4.5 10 10 4.5-10 4.5-4.5 10-4.5-10-10-4.5 10-4.5z" fill="#FF6B45" stroke="#1A1812" stroke-width="2.5" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function renderDashboard() {
+  const sets = allSets();
+  const st = overallStats();
+  const streak = streakDays();
+  const lastAttempt = history[0];
+  const lastSet = lastAttempt ? getSet(lastAttempt.setId) : null;
+  const today = todayAnswered();
+  const goal = 20;
+  const goalPct = Math.min(100, Math.round((today / goal) * 100));
+
+  const cards = visibleSubjects().slice(0, 4).map((s) => renderSubjectRow(s)).join('');
+
+  return `
+    <div class="dash-hero">
+      <div class="dash-hero-copy">
+        <span class="hero-pill">${ICON.spark} 今日练习</span>
+        <h2>今天，也来练两手。</h2>
+        <p>${streak > 0 ? `已连续 <b>${streak}</b> 天保持手感，别断了。` : '新的连续记录，从今天的第一题开始。'}</p>
+        <div class="hero-goal">
+          <div class="hero-goal-head"><span>今日目标</span><span>${today} / ${goal} 题</span></div>
+          <div class="hero-goal-track"><div style="width:${goalPct}%"></div></div>
+        </div>
+        <div class="hero-actions">
+          ${lastSet
+            ? `<button class="btn btn-lime" onclick="openSet('${lastSet.id}')">${ICON.play} 继续上次练习</button>`
+            : `<button class="btn btn-lime" onclick="navigateTo('sets')">挑一个学科 ${ICON.arrow}</button>`}
+          <button class="btn btn-ghost-light" onclick="navigateTo('records')">看看进度</button>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">${heroArt()}</div>
+    </div>
+
+    <div class="stat-rail">
+      <div class="stat"><div class="stat-value">${sets.length}</div><div class="stat-label">题库</div></div>
+      <div class="stat"><div class="stat-value">${st.totalQ}</div><div class="stat-label">题目</div></div>
+      <div class="stat"><div class="stat-value">${st.accuracy == null ? '--' : st.accuracy + '%'}</div><div class="stat-label">正确率</div></div>
+      <div class="stat"><div class="stat-value">${st.count}</div><div class="stat-label">练习次数</div></div>
+    </div>
+
+    <div class="section-title">
+      <span>学科文件夹</span>
+      <button class="btn btn-ghost btn-sm" onclick="navigateTo('sets')">全部学科 ${ICON.arrow}</button>
+    </div>
+    <div class="set-list">
+      ${cards || renderEmptySets()}
+    </div>
+    <div class="ai-cta" onclick="openAIModal()">
+      <div class="ai-cta-icon">${ICON.spark}</div>
+      <div class="ai-cta-copy">
+        <div class="ai-cta-title">上传资料，AI 出题</div>
+        <div class="ai-cta-desc">笔记自动出题，真题原样整理，全部保留</div>
+      </div>
+      <span class="ai-cta-go">开始出题 ${ICON.arrow}</span>
+    </div>
+  `;
+}
+
+function renderEmptySets() {
+  return `
+    <div class="card" style="text-align:center;padding:40px 20px">
+      <div class="empty-state-icon">${ICON.book}</div>
+      <div class="card-title">还没有题库</div>
+      <div class="card-desc mb-4">上传 PDF、Word、PPT 或粘贴文字，AI 自动整理成题库</div>
+      <div class="btn-group" style="justify-content:center">
+        <button class="btn btn-primary" onclick="openAIModal()">AI 生成</button>
+      </div>
+    </div>`;
+}
+
+function renderSetRow(s) {
+  const st = setStats(s.id);
+  const kpCount = (s.knowledgePoints || []).length;
+  const accent = setAccent(s);
+  const acc = st.accuracy == null ? '' : ` · 正确率 ${st.accuracy}%`;
+  return `
+    <button type="button" class="set-row" onclick="openSet('${s.id}')">
+      <span class="set-row-icon" style="background:${accent.bg};color:${accent.fg}">${esc(s.icon || '题')}</span>
+      <span class="set-row-main">
+        <span class="set-row-title">${esc(s.name)}</span>
+        <span class="set-row-desc">${esc(s.description || '')}</span>
+      </span>
+      <span class="set-row-meta">${s.questions.length} 题 · ${kpCount} 知识点${acc}</span>
+      <span class="set-row-arrow" aria-hidden="true">→</span>
+    </button>`;
+}
+
+function renderSubjectRow(subject) {
+  const sets = subjectSets(subject.id);
+  const mats = subjectMaterials(subject.id);
+  const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
+  const accent = setAccent({ id: subject.id });
+  const desc = mats.length
+    ? `最近资料：${mats[0].name}`
+    : (sets[0] ? (sets[0].description || `${sets[0].name} · ${qCount} 题`) : '还没有资料，点进去上传');
+  return `
+    <button type="button" class="set-row subject-row" onclick="openSubject('${subject.id}')">
+      <span class="set-row-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
+      <span class="set-row-main">
+        <span class="set-row-title">${esc(subject.name)}</span>
+        <span class="set-row-desc">${esc(desc)}</span>
+      </span>
+      <span class="set-row-meta">${mats.length} 份资料 · ${sets.length} 套题库</span>
+      <span class="set-row-arrow" aria-hidden="true">→</span>
+    </button>`;
+}
+
+function renderSets() {
+  const subjects = visibleSubjects();
+  return `
+    <div class="section-title">
+      <span>全部学科</span>
+      <span class="text-sm text-muted">共 ${subjects.length} 个</span>
+    </div>
+    <p class="page-lead">按学科归档：上传的原始资料、提取的文字和生成的题库都在同一个文件夹里。</p>
+    <div class="set-list">
+      ${subjects.map((s) => renderSubjectRow(s)).join('')}
+      <button type="button" class="set-row set-row-add" onclick="newSubjectModal()">
+        <span class="set-row-icon" aria-hidden="true">＋</span>
+        <span class="set-row-main">
+          <span class="set-row-title">新建学科</span>
+          <span class="set-row-desc">例如：高等数学、英语写作、数据结构</span>
+        </span>
+        <span class="set-row-arrow" aria-hidden="true">→</span>
+      </button>
+    </div>`;
+}
+
+function materialExtLabel(ext) {
+  const e = String(ext || '').toLowerCase();
+  if (!e) return 'TXT';
+  if (e === 'markdown') return 'MD';
+  return e.toUpperCase().slice(0, 4);
+}
+
+function fmtSize(bytes) {
+  const n = Number(bytes) || 0;
+  if (n >= 1024 * 1024) return `${(n / 1048576).toFixed(1)} MB`;
+  if (n >= 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
+  return `${n} B`;
+}
+
+function fmtDay(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function materialKindLabel(kind) {
+  return kind === 'exam' ? '真题' : '笔记';
+}
+
+function renderMaterialRow(m) {
+  return `
+    <div class="material-row" data-material="${esc(m.id)}">
+      <span class="material-ext">${esc(materialExtLabel(m.ext))}</span>
+      <div class="material-main">
+        <div class="material-name" title="${esc(m.name)}">${esc(m.name)}</div>
+        <div class="material-meta">${materialKindLabel(m.kind)} · ${fmtSize(m.size)} · ${m.chars.toLocaleString('zh-CN')} 字 · ${fmtDay(m.addedAt)}${m.hasBlob ? '' : ' · 仅文字'}</div>
+      </div>
+      <div class="material-actions">
+        <button type="button" class="link-btn" onclick="previewMaterial('${m.id}')">预览</button>
+        <button type="button" class="link-btn" onclick="useMaterialInAI('${m.id}')">出题</button>
+        <button type="button" class="link-btn" onclick="downloadMaterial('${m.id}')">${m.hasBlob ? '下载' : '导出文字'}</button>
+        <button type="button" class="link-btn link-danger" onclick="deleteMaterial('${m.id}')">删除</button>
+      </div>
+    </div>`;
+}
+
+function renderSubject() {
+  const subject = subjectById(state.subjectId);
+  if (!subject) {
+    return `<div class="empty-state"><div class="empty-state-title">学科不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  }
+  const sets = subjectSets(subject.id);
+  const mats = subjectMaterials(subject.id);
+  const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
+  const accent = setAccent({ id: subject.id });
+  const own = !subject.builtin;
+  const matIds = mats.map((m) => `'${m.id}'`).join(',');
+  const busy = !materialsReady;
+
+  return `
+    <button class="back-link" onclick="navigateTo('sets')">← 全部学科</button>
+
+    <div class="subject-head">
+      <div class="subject-head-main">
+        <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
+        <div class="subject-head-copy">
+          <div class="hero-eyebrow">SUBJECT · 学科</div>
+          <h2>${esc(subject.name)}</h2>
+          <p>${subject.inbox ? '还没有归入学科的题库和资料会先放在这里。' : '这个文件夹里的资料和题库只属于本学科。'}</p>
+        </div>
+      </div>
+      <div class="subject-head-actions">
+        <button class="btn btn-primary btn-sm" onclick="pickSubjectFiles()">${ICON.upload} 上传资料</button>
+        <button class="btn btn-secondary btn-sm" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">${ICON.spark} AI 出题</button>
+        ${own ? `<button class="btn btn-ghost btn-sm" onclick="renameSubjectModal('${subject.id}')">重命名</button>
+        <button class="btn btn-ghost btn-sm link-danger" onclick="deleteSubject('${subject.id}')">删除学科</button>` : ''}
+      </div>
+    </div>
+
+    <div class="subject-counts">
+      <span><b>${mats.length}</b> 份资料</span>
+      <span><b>${sets.length}</b> 套题库</span>
+      <span><b>${qCount}</b> 道题目</span>
+      <span><b>${subjectMaterials(subject.id).reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')}</b> 字资料</span>
+    </div>
+
+    <input type="file" id="subjectFileInput" multiple hidden
+      accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
+      onchange="handleSubjectFileInput(this)">
+
+    <div class="section-title">
+      <span>资料</span>
+      ${mats.length ? `<button class="btn btn-ghost btn-sm" onclick="openAIModal('${subject.id}', [${matIds}])">用这些资料出题 ${ICON.arrow}</button>` : `<span class="text-sm text-muted">原始文件 + 提取文字</span>`}
+    </div>
+    <div class="material-list" id="materialList">
+      ${mats.length
+        ? mats.map((m) => renderMaterialRow(m)).join('')
+        : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个学科文件夹里。'}</div>`}
+    </div>
+    ${materialsUnavailable
+      ? `<div class="feedback feedback-incorrect" style="margin-top:12px">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
+      : `<button type="button" class="set-row set-row-add" onclick="pickSubjectFiles()">
+          <span class="set-row-icon" aria-hidden="true">＋</span>
+          <span class="set-row-main">
+            <span class="set-row-title">上传资料到「${esc(subject.name)}」</span>
+            <span class="set-row-desc">支持多选 · PDF / Word / PPT / TXT · 单文件 ≤ 30MB</span>
+          </span>
+          <span class="set-row-arrow" aria-hidden="true">→</span>
+        </button>
+        <div class="upload-status" id="subjectUploadStatus" hidden></div>`}
+
+    <div class="section-title">
+      <span>题库</span>
+      <span class="text-sm text-muted">${sets.length} 套 · ${qCount} 题</span>
+    </div>
+    <div class="set-list">
+      ${sets.length ? sets.map((s) => renderSetRow(s)).join('') : '<div class="material-empty">还没有题库。用上面的资料让 AI 出一套，或从其他学科移动过来。</div>'}
+      <button type="button" class="set-row set-row-add" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">
+        <span class="set-row-icon" aria-hidden="true">＋</span>
+        <span class="set-row-main">
+          <span class="set-row-title">在本学科新建题库</span>
+          <span class="set-row-desc">${mats.length ? `可直接使用这 ${mats.length} 份资料出题` : '上传资料，或直接粘贴文字'}</span>
+        </span>
+        <span class="set-row-arrow" aria-hidden="true">→</span>
+      </button>
+    </div>`;
+}
+
+function newSubjectModal() {
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">新建学科</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">学科名称</label>
+        <input class="form-input" id="newSubjectName" maxlength="20" placeholder="例如：高等数学" onkeydown="if(event.key==='Enter')submitNewSubject()">
+        <p class="text-sm text-muted" style="margin:8px 0 0">之后上传的资料和生成的题库都会放进这个文件夹。</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitNewSubject()">创建学科</button>
+    </div>`);
+  setTimeout(() => document.getElementById('newSubjectName')?.focus(), 40);
+}
+
+function submitNewSubject() {
+  const input = document.getElementById('newSubjectName');
+  const subject = createSubject(input ? input.value : '');
+  if (!subject) { if (input) input.focus(); return; }
+  closeModal();
+  toast(`学科「${subject.name}」已创建`, 'success');
+  openSubject(subject.id);
+}
+
+function renameSubjectModal(id) {
+  const subject = userSubjects.find((s) => s.id === id);
+  if (!subject) return;
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">重命名学科</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">学科名称</label>
+        <input class="form-input" id="renameSubjectName" maxlength="20" value="${esc(subject.name)}" onkeydown="if(event.key==='Enter')submitRenameSubject('${id}')">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitRenameSubject('${id}')">保存</button>
+    </div>`);
+  setTimeout(() => {
+    const input = document.getElementById('renameSubjectName');
+    if (input) { input.focus(); input.select(); }
+  }, 40);
+}
+
+function submitRenameSubject(id) {
+  const input = document.getElementById('renameSubjectName');
+  if (!renameSubject(id, input ? input.value : '')) return;
+  closeModal();
+  toast('学科已重命名', 'success');
+  render();
+}
+
+function deleteSubject(id) {
+  const subject = userSubjects.find((s) => s.id === id);
+  if (!subject) return;
+  const mats = subjectMaterials(id);
+  const movable = subjectSets(id).filter((s) => !s.builtin);
+  const detail = mats.length
+    ? `会删除 ${mats.length} 份资料${movable.length ? `，${movable.length} 套题库移到「未分类」` : ''}。`
+    : (movable.length ? `${movable.length} 套题库会移到「未分类」。` : '文件夹里没有内容。');
+  confirmModal('删除学科', `确定删除「${subject.name}」吗？${detail}`, '删除学科', async () => {
+    let failed = 0;
+    for (const m of mats) {
+      try { await deleteMaterialRecord(m.id); } catch { failed++; }
+    }
+    const nextSets = customSets.map((s) => (s.subjectId === id ? { ...s, subjectId: 'sub-inbox' } : s));
+    const nextSubjects = userSubjects.filter((s) => s.id !== id);
+    if (!saveJSON(STORAGE.sets, nextSets) || !saveJSON(STORAGE.subjects, nextSubjects)) {
+      toast('删除失败：本地存储写入出错，请稍后重试', 'error', 5000);
+      return;
+    }
+    customSets = nextSets;
+    userSubjects = nextSubjects;
+    materials = materials.filter((m) => m.subjectId !== id);
+    if (failed) toast(`${failed} 份资料未能从资料库删除，刷新后可能仍会显示`, 'info', 5000);
+    toast('学科已删除', 'success');
+    if (state.subjectId === id) navigateTo('sets');
+    else render();
+  }, true);
+}
+
+const MATERIAL_MAX_BYTES = 30 * 1024 * 1024;
+const MATERIAL_BLOB_LIMIT = 20 * 1024 * 1024;
+
+function cleanMaterialText(text) {
+  return String(text || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function pickSubjectFiles() {
+  const input = document.getElementById('subjectFileInput');
+  if (!input) return;
+  if (materialsUnavailable) {
+    toast('当前浏览器无法保存资料，请更换浏览器或关闭无痕模式', 'error', 5000);
+    return;
+  }
+  input.click();
+}
+
+async function handleSubjectFileInput(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+  await uploadSubjectFiles(state.subjectId, files);
+}
+
+async function uploadSubjectFiles(subjectId, files) {
+  const subject = subjectById(subjectId);
+  if (!subject) return;
+  const status = document.getElementById('subjectUploadStatus');
+  const body = $('.main-body');
+  const scroll = body ? body.scrollTop : 0;
+  const existing = new Set(subjectMaterials(subjectId).map((m) => `${m.name}|${m.size}`));
+  let added = 0;
+  let skipped = 0;
+  const failed = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const label = file.name || `文件 ${i + 1}`;
+    if (file.size > MATERIAL_MAX_BYTES) {
+      failed.push(`${label}：超过 30MB`);
+      continue;
+    }
+    const key = `${file.name}|${file.size}`;
+    if (existing.has(key)) {
+      skipped++;
+      continue;
+    }
+    if (status) {
+      status.hidden = false;
+      status.textContent = `正在解析 ${i + 1}/${files.length}：${label}`;
+    }
+    try {
+      const { text, meta } = await extractMaterial(file);
+      const clean = cleanMaterialText(text);
+      const chars = aiVisibleChars(clean);
+      if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版文件');
+      const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
+      const pageMatch = String(meta || '').match(/(\d+)/);
+      const record = {
+        id: 'mat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        subjectId,
+        name: String(file.name || '未命名资料').slice(0, 160),
+        size: file.size,
+        ext,
+        kind: aiGuessFileKind(clean, file.name),
+        pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
+        chars,
+        addedAt: Date.now(),
+        text: clean
+      };
+      let saved = null;
+      try {
+        saved = await saveMaterialRecord(record, file.size <= MATERIAL_BLOB_LIMIT ? file : null);
+      } catch (e) {
+        // 原始文件写不下时退一步：只保留提取的文字
+        saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
+      }
+      materials.unshift(saved);
+      existing.add(key);
+      added++;
+    } catch (e) {
+      failed.push(`${label}：${(e && e.message) || '解析失败'}`);
+    }
+  }
+
+  materials.sort((a, b) => b.addedAt - a.addedAt);
+  render();
+  const restored = $('.main-body');
+  if (restored) restored.scrollTop = scroll;
+
+  const bits = [];
+  if (added) bits.push(`已存入 ${added} 份资料`);
+  if (skipped) bits.push(`跳过 ${skipped} 份重复文件`);
+  if (failed.length) bits.push(`${failed.length} 份失败`);
+  toast(bits.length ? bits.join('，') : '没有新增资料', added ? 'success' : 'info', 4500);
+  if (failed.length) {
+    setTimeout(() => failed.slice(0, 3).forEach((msg) => toast(msg, 'error', 5000)), 350);
+  }
+}
+
+function previewMaterial(id) {
+  const m = materials.find((x) => x.id === id);
+  if (!m) return;
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">${esc(m.name)}</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="material-preview-meta">${materialKindLabel(m.kind)} · ${fmtSize(m.size)} · ${m.chars.toLocaleString('zh-CN')} 字 · ${fmtDate(m.addedAt)}${m.hasBlob ? '' : ' · 原始文件未保存'}</div>
+      <pre class="material-preview">${esc(m.text)}</pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+      <button class="btn btn-primary" onclick="downloadMaterial('${m.id}')">${m.hasBlob ? '下载原文件' : '导出文字'}</button>
+    </div>`, 'modal-wide');
+}
+
+async function downloadMaterial(id) {
+  const m = materials.find((x) => x.id === id);
+  if (!m) return;
+  let blob = null;
+  if (m.hasBlob) {
+    try {
+      blob = await readMaterialBlob(id);
+    } catch (e) {
+      console.warn('[StarQuiz] 原始文件读取失败，改为导出文字', e);
+    }
+  }
+  let name = m.name;
+  if (!blob) {
+    blob = new Blob([m.text], { type: 'text/plain;charset=utf-8' });
+    name = m.name.replace(/\.[^.]+$/, '') + '.txt';
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function deleteMaterial(id) {
+  const m = materials.find((x) => x.id === id);
+  if (!m) return;
+  confirmModal('删除资料', `确定删除「${m.name}」吗？提取的文字和原始文件都会删除。`, '删除', async () => {
+    try {
+      await deleteMaterialRecord(id);
+    } catch (e) {
+      toast('删除失败：资料库读取异常，请刷新后重试', 'error', 5000);
+      return;
+    }
+    materials = materials.filter((x) => x.id !== id);
+    toast('资料已删除', 'success');
+    render();
+  }, true);
+}
+
+function useMaterialInAI(id) {
+  const m = materials.find((x) => x.id === id);
+  if (!m) return;
+  openAIModal(m.subjectId, [id]);
+}
+
+function moveSetModal(id) {
+  const set = customSets.find((s) => s.id === id);
+  if (!set) return;
+  const current = subjectOfSet(set).id;
+  const options = [...allSubjects(), INBOX_SUBJECT]
+    .map((s) => `<option value="${s.id}" ${s.id === current ? 'selected' : ''}>${esc(s.name)}</option>`)
+    .join('');
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">更改题库学科</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-sm text-muted" style="margin:0 0 12px">「${esc(set.name)}」当前在「${esc(subjectOfSet(set).name)}」。</p>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">目标学科</label>
+        <select class="form-select" id="moveSetSubject">${options}</select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="moveSetConfirm('${id}')">移动</button>
+    </div>`);
+}
+
+function moveSetConfirm(id) {
+  const set = customSets.find((s) => s.id === id);
+  const select = document.getElementById('moveSetSubject');
+  if (!set || !select) return;
+  const target = subjectById(select.value) ? select.value : 'sub-inbox';
+  const prev = set.subjectId;
+  if (target === 'sub-inbox') delete set.subjectId;
+  else set.subjectId = target;
+  if (!saveJSON(STORAGE.sets, customSets)) {
+    if (prev) set.subjectId = prev;
+    else delete set.subjectId;
+    toast('移动失败：本地存储写入出错', 'error', 5000);
+    return;
+  }
+  closeModal();
+  toast(`已移动到「${(subjectById(target) || INBOX_SUBJECT).name}」`, 'success');
+  render();
+}
+
+function renderSetDetail() {
+  const set = getSet(state.setId);
+  if (!set) return `<div class="empty-state"><div class="empty-state-title">题库不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+
+  const st = setStats(set.id);
+  const kps = set.knowledgePoints || [];
+  const types = {};
+  set.questions.forEach((q) => { types[q.type] = (types[q.type] || 0) + 1; });
+  const accent = setAccent(set);
+  const subject = subjectOfSet(set);
+
+  return `
+    <button class="back-link" onclick="openSubject('${subject.id}')">← 返回${esc(subject.name)}</button>
+
+    <div class="set-detail-hero" style="--set-accent:${accent.bg}">
+      <div class="detail-head">
+        <div class="detail-icon" style="background:${accent.bg};color:${accent.fg}">${esc(set.icon || '题')}</div>
+        <div>
+          <div class="hero-eyebrow">${esc(subject.name)} · DECK</div>
+          <h2>${esc(set.name)}</h2>
+        </div>
+      </div>
+      <p>${esc(set.description || '')}</p>
+      <div class="set-detail-stats">
+        <div class="set-detail-stat"><div class="set-detail-stat-value">${set.questions.length}</div><div class="set-detail-stat-label">题目</div></div>
+        <div class="set-detail-stat"><div class="set-detail-stat-value">${kps.length}</div><div class="set-detail-stat-label">知识点</div></div>
+        <div class="set-detail-stat"><div class="set-detail-stat-value">${st.attempts}</div><div class="set-detail-stat-label">练习次数</div></div>
+        <div class="set-detail-stat"><div class="set-detail-stat-value">${st.best == null ? '--' : st.best + '%'}</div><div class="set-detail-stat-label">最佳成绩</div></div>
+      </div>
+      <div class="set-detail-actions">
+        <button class="btn btn-primary" onclick="startLearning('${set.id}')">${ICON.play} 进入学习模式</button>
+        <button class="btn" onclick="startExamModal('${set.id}')">${ICON.clock} 模拟考试</button>
+        ${set.builtin ? '' : `<button class="btn btn-secondary" onclick="moveSetModal('${set.id}')">更改学科</button>
+        <button class="btn btn-danger" onclick="deleteSet('${set.id}')">删除题库</button>`}
+      </div>
+      ${renderQuality(set)}
+    </div>
+
+    <div class="section-title">题型分布</div>
+    <div class="tags mb-6">
+      ${Object.entries(types).map(([t, n]) => `<span class="badge ${TYPE_CLASS[t] || 'badge-muted'}">${TYPE_LABEL[t] || t} × ${n}</span>`).join('')}
+      ${(set.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}
+    </div>
+
+    ${kps.length ? `
+      <div class="section-title">知识点</div>
+      <div class="knowledge-list">
+        ${kps.map((kp) => `
+          <div class="knowledge-item">
+            <div class="knowledge-item-icon">${ICON.bulb}</div>
+            <div>
+              <div class="knowledge-item-title">${esc(kp.title)}</div>
+              <div class="knowledge-item-desc">${esc(kp.content)}</div>
+            </div>
+          </div>`).join('')}
+      </div>` : ''}
+
+  `;
+}
+
+function deleteSet(id) {
+  const set = getSet(id);
+  if (!set || set.builtin) return;
+  confirmModal('删除题库', `确定删除「${set.name}」吗？该操作不可恢复，历史练习记录会保留。`, '删除', () => {
+    const next = customSets.filter((s) => s.id !== id);
+    if (!saveJSON(STORAGE.sets, next)) {
+      toast('删除失败：本地存储写入出错，题库仍然保留', 'error', 5000);
+      return;
+    }
+    customSets = next;
+    delete wrongBank[id];
+    if (!saveJSON(STORAGE.wrong, wrongBank)) toast('错题本清理未能写入，下次打开可能恢复', 'info', 4000);
+    if (resume.exam && resume.exam.setId === id) clearSession('exam');
+    if (resume.learning && resume.learning.setId === id) clearSession('learning');
+    toast('题库已删除', 'success');
+    navigateTo('sets');
+  }, true);
+}
+
+function buildQuestionNav(cfg) {
+  const learning = cfg.mode === 'learning';
+  const legend = learning
+    ? `<span><i class="qnav-dot current"></i>当前</span><span><i class="qnav-dot correct"></i>答对</span><span><i class="qnav-dot incorrect"></i>答错</span><span><i class="qnav-dot answered"></i>待提交</span><span><i class="qnav-dot"></i>未作答</span>`
+    : `<span><i class="qnav-dot current"></i>当前</span><span><i class="qnav-dot answered"></i>已答</span><span><i class="qnav-dot"></i>未作答</span>`;
+
+  return `
+    <button type="button" class="qnav-toggle" id="qnavToggle" onclick="toggleQnav()" aria-controls="qnavPanel" aria-expanded="false">
+      <span class="qnav-toggle-icon">${ICON.card}</span>
+      <span>答题卡</span>
+      <span class="qnav-toggle-count">${cfg.current + 1}/${cfg.total}</span>
+    </button>
+    <div class="qnav-scrim" id="qnavScrim" onclick="toggleQnav(false)"></div>
+    <aside class="qnav-panel" id="qnavPanel" aria-label="答题卡" aria-hidden="true">
+      <div class="qnav-head">
+        <div>
+          <div class="qnav-title">答题卡</div>
+          <div class="qnav-sub">${learning ? '学习模式' : '考试模式'} · 已答 ${cfg.answeredCount} / ${cfg.total}</div>
+        </div>
+        <button type="button" class="qnav-close" onclick="toggleQnav(false)" aria-label="收起答题卡">×</button>
+      </div>
+      <div class="qnav-body">
+        <div class="qnav-legend">${legend}</div>
+        <div class="qnav-grid">${cfg.items}</div>
+        <div class="qnav-actions">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="${cfg.prevAction}" ${cfg.current === 0 ? 'disabled' : ''}>← 上一题</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="${cfg.nextAction}" ${cfg.current === cfg.total - 1 ? 'disabled' : ''}>下一题 →</button>
+        </div>
+        <button type="button" class="btn ${cfg.finishClass} qnav-finish" onclick="${cfg.finishAction}">${cfg.finishLabel}</button>
+      </div>
+    </aside>`;
+}
+
+function syncQnav() {
+  const panel = document.getElementById('qnavPanel');
+  if (!panel) {
+    state.qnavOpen = false;
+    document.body.classList.remove('qnav-open');
+    return;
+  }
+  const open = !!state.qnavOpen;
+  panel.classList.toggle('open', open);
+  panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+  const scrim = document.getElementById('qnavScrim');
+  if (scrim) scrim.classList.toggle('open', open);
+  const toggle = document.getElementById('qnavToggle');
+  if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.body.classList.toggle('qnav-open', open);
+}
+
+function toggleQnav(force) {
+  if (!document.getElementById('qnavPanel')) return;
+  state.qnavOpen = typeof force === 'boolean' ? force : !state.qnavOpen;
+  syncQnav();
+}
+
+function closeQnavAfterJump() {
+  state.qnavOpen = false;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const modal = document.getElementById('modalContainer');
+  if (modal && modal.innerHTML.trim()) { closeModal(); return; }
+  if (state.qnavOpen) toggleQnav(false);
+});
+
+function startLearning(setId, onlyWrong = false) {
+  const set = getSet(setId);
+  if (!set) return;
+  let list = set.questions;
+  if (onlyWrong) {
+    const wb = wrongBank[setId] || {};
+    const ids = new Set(Object.keys(wb));
+    const filtered = list.filter((q) => ids.has(q.id));
+    if (filtered.length) list = filtered;
+    else { toast('该题库暂无错题，已切换为全部题目', 'info'); }
+  }
+  state.learning = {
+    setId,
+    qids: list.map((q) => q.id),
+    index: 0,
+    answers: {},
+    results: {},
+    cache: {},
+    seenKP: {},
+    startedAt: Date.now(),
+    finished: false,
+    onlyWrong
+  };
+  resume.learning = null;
+  state.view = 'learning';
+  state.setId = setId;
+  closeSidebar();
+  persistLearning();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function currentLearningQuestion() {
+  const l = state.learning;
+  if (!l) return null;
+  const set = getSet(l.setId);
+  const qid = l.qids[l.index];
+  return getQuestion(set, qid);
+}
+
+function renderLearning() {
+  const l = state.learning;
+  if (!l) return `<div class="empty-state"><div class="empty-state-title">未开始学习</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  const set = getSet(l.setId);
+  if (!set) return `<div class="empty-state"><div class="empty-state-title">题库不存在</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+
+  const q = currentLearningQuestion();
+  if (!q) return `<div class="empty-state"><div class="empty-state-title">没有题目</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+
+  const total = l.qids.length;
+  const res = l.results[q.id];
+  const answered = !!res;
+  const kp = (set.knowledgePoints || []).find((k) => k.id === q.knowledgePointId);
+  const kpOpen = !!(kp && l.seenKP && l.seenKP['kp_' + l.index]);
+  const isLast = l.index === total - 1;
+
+  const navItems = l.qids.map((qid, i) => {
+    const qq = getQuestion(set, qid);
+    if (!qq) return '';
+    const r = l.results[qid];
+    const pending = !r && isAnswered(qq, l.answers[qid]);
+    let cls = '';
+    let stateText = '未作答';
+    if (i === l.index) { cls = 'current'; stateText = '当前'; }
+    else if (r) { cls = r.correct ? 'correct' : 'incorrect'; stateText = r.correct ? '答对' : '答错'; }
+    else if (pending) { cls = 'answered'; stateText = '待提交'; }
+    return `<button type="button" class="q-nav-item ${cls}" onclick="learningGo(${i})" title="第 ${i + 1} 题 · ${TYPE_LABEL[qq.type] || qq.type} · ${stateText}" aria-label="第 ${i + 1} 题，${stateText}">${i + 1}</button>`;
+  }).join('');
+  const answeredCount = l.qids.filter((qid) => {
+    if (l.results[qid]) return true;
+    const qq = getQuestion(set, qid);
+    return !!qq && isAnswered(qq, l.answers[qid]);
+  }).length;
+
+  let bodyHtml = '';
+  if (answered) {
+    bodyHtml = renderAnsweredQuestion(q, res, 'learning');
+  } else {
+    bodyHtml = renderAnswerableQuestion(q, l, 'learning');
+  }
+
+  return `
+    <div class="question-container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <button class="back-link" style="margin:0" onclick="backToSet('${set.id}')">← ${esc(set.name)}</button>
+        <button class="btn btn-secondary btn-sm" onclick="finishLearning(false)">完成学习</button>
+      </div>
+
+      <div class="learning-progress-bar">
+        <div class="progress-bar"><div class="progress-fill" style="width:${((l.index + 1) / total) * 100}%"></div></div>
+        <span class="learning-progress-text">${l.index + 1} / ${total}</span>
+      </div>
+
+      ${kp ? `
+        <div class="knowledge-card">
+          <div class="knowledge-card-title">${ICON.bulb} 知识点 · ${esc(kp.title)}</div>
+          <div class="knowledge-card-content">${esc(kp.content)}</div>
+        </div>` : ''}
+
+      <div class="question-header">
+        <span class="question-number">第 ${l.index + 1} 题 · 共 ${total} 题</span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <span class="badge ${TYPE_CLASS[q.type] || 'badge-muted'}">${TYPE_LABEL[q.type] || q.type}</span>
+          ${difficultyDots(q.difficulty)}
+        </span>
+      </div>
+
+      <div class="question-text">${esc(q.content)}</div>
+
+      ${bodyHtml}
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" ${l.index === 0 ? 'disabled' : ''} onclick="learningPrev()">← 上一题</button>
+        ${isLast
+          ? `<button class="btn btn-success" onclick="finishLearning(false)">完成学习</button>`
+          : `<button class="btn btn-primary" onclick="learningNext()">下一题 →</button>`}
+      </div>
+
+      ${buildQuestionNav({
+        mode: 'learning',
+        current: l.index,
+        total,
+        answeredCount,
+        items: navItems,
+        prevAction: 'learningPrev()',
+        nextAction: 'learningNext()',
+        finishLabel: '完成学习',
+        finishAction: 'finishLearning(false)',
+        finishClass: 'btn-success'
+      })}
+    </div>`;
+}
+
+function renderAnswerableQuestion(q, l, mode) {
+  if (q.type === 'code') return renderCodeQuestion(q, l, mode);
+
+  let html = '';
+  if (q.type === 'single' || q.type === 'tf') {
+    const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
+    html += `<div class="options-list">${opts.map((o, idx) => `
+      <div class="option-item" onclick="learningChoose('${q.id}', ${idx})">
+        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
+        <span class="option-content">${esc(o)}</span>
+      </div>`).join('')}</div>`;
+  } else if (q.type === 'multi') {
+    const sel = l.answers[q.id] || [];
+    html += `<div class="options-list">${q.options.map((o, idx) => `
+      <div class="option-item ${sel.includes(idx) ? 'selected' : ''}" onclick="learningToggleMulti('${q.id}', ${idx})">
+        <span class="option-marker checkbox">${sel.includes(idx) ? '✓' : ''}</span>
+        <span class="option-content">${esc(o)}</span>
+      </div>`).join('')}</div>
+      <button class="btn btn-primary" onclick="learningSubmitMulti('${q.id}')" ${sel.length === 0 ? 'disabled' : ''}>提交答案</button>`;
+  } else if (q.type === 'fill') {
+    html += `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(l.answers[q.id] || '')}" oninput="learningInput('${q.id}', this.value)">
+      <div><button class="btn btn-primary" onclick="learningSubmitFill('${q.id}')">提交答案</button></div>`;
+  }
+  return html;
+}
+
+function renderAnsweredQuestion(q, res, mode) {
+  const correct = res.correct;
+  const feedbackClass = correct ? 'feedback-correct' : 'feedback-incorrect';
+
+  let optionsHtml = '';
+  if (q.type === 'single' || q.type === 'tf') {
+    const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
+    const correctIdx = q.type === 'tf' ? (q.answer ? 0 : 1) : q.answer;
+    const userIdx = q.type === 'tf' ? (res.answer ? 0 : 1) : res.answer;
+    optionsHtml = `<div class="options-list">${opts.map((o, idx) => {
+      let cls = '';
+      if (idx === correctIdx) cls = 'show-correct';
+      else if (idx === userIdx) cls = 'incorrect';
+      return `<div class="option-item ${cls}">
+        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
+        <span class="option-content">${esc(o)}</span>
+      </div>`;
+    }).join('')}</div>`;
+  } else if (q.type === 'multi') {
+    const correctArr = Array.isArray(q.answer) ? q.answer : [];
+    const userArr = Array.isArray(res.answer) ? res.answer : [];
+    optionsHtml = `<div class="options-list">${q.options.map((o, idx) => {
+      const isCorrect = correctArr.includes(idx);
+      const isUser = userArr.includes(idx);
+      let cls = '';
+      if (isCorrect) cls = 'show-correct';
+      else if (isUser) cls = 'incorrect';
+      return `<div class="option-item ${cls}">
+        <span class="option-marker checkbox">${isCorrect ? '✓' : (isUser ? '✗' : '')}</span>
+        <span class="option-content">${esc(o)}</span>
+      </div>`;
+    }).join('')}</div>`;
+  } else if (q.type === 'fill') {
+    optionsHtml = `
+      <div class="answer-compare">
+        <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}">${esc(res.answer || '（空）')}</b></div>
+        <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)">${esc(answerText(q))}</b></div>
+      </div>`;
+  } else if (q.type === 'code') {
+    optionsHtml = renderCodeResult(q, res);
+  }
+
+  return `${optionsHtml}
+    <div class="feedback ${feedbackClass}">
+      <div class="feedback-title">${correct ? '✓ 回答正确' : '✕ 回答错误'}</div>
+      ${q.explanation ? `<div class="feedback-explanation">${esc(q.explanation)}</div>` : ''}
+    </div>`;
+}
+
+function renderCodeResult(q, res) {
+  let html = '';
+  if (res.correct) {
+    html += `<div class="code-output success"><div class="output-label pass">✓ 所有测试用例通过</div></div>`;
+  }
+  if (res.output) {
+    html += `<div class="code-output ${res.correct ? 'success' : 'error'}"><div class="output-label ${res.correct ? 'pass' : 'fail'}">${res.correct ? '运行结果' : '测试结果'}</div>${esc(res.output)}</div>`;
+  }
+  if (res.revealed && q.answer) {
+    html += `<div class="code-output" style="margin-bottom:16px"><div class="output-label">参考答案</div>${esc(q.answer)}</div>`;
+  }
+  return html;
+}
+
+function answerText(q) {
+  if (q.type === 'tf') return q.answer ? '正确' : '错误';
+  if (q.type === 'fill') {
+    const arr = Array.isArray(q.answer) ? q.answer : [q.answer];
+    return arr.join(' / ');
+  }
+  if (q.type === 'single') return `${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer] ?? ''}`;
+  if (q.type === 'multi') {
+    const arr = Array.isArray(q.answer) ? q.answer : [];
+    return arr.map((i) => `${String.fromCharCode(65 + i)}`).join(', ');
+  }
+  if (q.type === 'code') return '见参考答案';
+  return '';
+}
+
+function userAnswerText(q, ans) {
+  if (ans == null || (Array.isArray(ans) && ans.length === 0) || ans === '') return '（未作答）';
+  if (q.type === 'tf') return ans ? '正确' : '错误';
+  if (q.type === 'single') return `${String.fromCharCode(65 + ans)}. ${q.options[ans] ?? ''}`;
+  if (q.type === 'multi' && Array.isArray(ans)) return ans.map((i) => String.fromCharCode(65 + i)).join(', ');
+  if (q.type === 'fill') return String(ans);
+  if (q.type === 'code') return '（代码见作答）';
+  return String(ans);
+}
+
+function learningChoose(qid, idx) {
+  const l = state.learning;
+  if (!l || l.results[qid]) return;
+  const q = currentLearningQuestion();
+  if (!q) return;
+  let answer = idx;
+  if (q.type === 'tf') answer = idx === 0;
+  l.answers[qid] = answer;
+  const correct = gradeObjective(q, answer);
+  l.results[qid] = { correct, answer };
+  updateWrongBank(l.setId, q.id, correct);
+  persistLearning();
+  render();
+}
+
+function learningToggleMulti(qid, idx) {
+  const l = state.learning;
+  if (!l || l.results[qid]) return;
+  let sel = l.answers[qid] || [];
+  if (sel.includes(idx)) sel = sel.filter((i) => i !== idx);
+  else sel = [...sel, idx].sort((a, b) => a - b);
+  l.answers[qid] = sel;
+  persistLearning();
+  render();
+}
+
+function learningSubmitMulti(qid) {
+  const l = state.learning;
+  if (!l || l.results[qid]) return;
+  const sel = l.answers[qid] || [];
+  if (!sel.length) return;
+  const q = currentLearningQuestion();
+  if (!q) return;
+  const correct = sameSet(sel, q.answer);
+  l.results[qid] = { correct, answer: sel };
+  updateWrongBank(l.setId, q.id, correct);
+  persistLearning();
+  render();
+}
+
+function learningInput(qid, val) {
+  if (!state.learning) return;
+  state.learning.answers[qid] = val;
+  persistLearningSoon();
+}
+
+function learningSubmitFill(qid) {
+  const l = state.learning;
+  if (!l || l.results[qid]) return;
+  const q = currentLearningQuestion();
+  if (!q) return;
+  const val = l.answers[qid] || '';
+  if (!val.trim()) { toast('请先输入答案', 'info'); return; }
+  const correct = gradeObjective(q, val);
+  l.results[qid] = { correct, answer: val };
+  updateWrongBank(l.setId, q.id, correct);
+  persistLearning();
+  render();
+}
+
+function backToSet(setId) {
+  if (state.view === 'learning' && state.learning) finishLearning(true);
+  state.view = 'setDetail';
+  state.setId = setId;
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function learningNext() {
+  const l = state.learning;
+  if (!l) return;
+  if (l.index < l.qids.length - 1) learningGo(l.index + 1);
+}
+
+function learningPrev() {
+  const l = state.learning;
+  if (!l) return;
+  if (l.index > 0) learningGo(l.index - 1);
+}
+
+function learningGo(i) {
+  const l = state.learning;
+  if (!l) return;
+  if (i < 0 || i >= l.qids.length) return;
+  l.index = i;
+  closeQnavAfterJump();
+  persistLearning();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function finishLearning(silent) {
+  const l = state.learning;
+  if (!l || l.finished) { if (!silent) navigateTo('sets'); return; }
+  l.finished = true;
+
+  const answeredIds = Object.keys(l.results);
+  if (answeredIds.length === 0) {
+    state.learning = null;
+    clearSession('learning');
+    if (!silent) {
+      state.setId = l.setId;
+      state.view = 'setDetail';
+      render();
+    }
+    return;
+  }
+
+  const set = getSet(l.setId);
+  const correct = answeredIds.filter((id) => l.results[id].correct).length;
+  const attempts = answeredIds.map((id) => ({
+    qid: id,
+    type: (getQuestion(set, id) || {}).type,
+    userAnswer: l.results[id].answer,
+    correct: l.results[id].correct
+  }));
+
+  const attempt = {
+    id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    setId: l.setId,
+    setName: set ? set.name : '（已删除题库）',
+    mode: 'learning',
+    startedAt: l.startedAt,
+    finishedAt: Date.now(),
+    durationSec: Math.round((Date.now() - l.startedAt) / 1000),
+    total: l.qids.length,
+    graded: answeredIds.length,
+    correct,
+    ungraded: l.qids.length - answeredIds.length,
+    score: answeredIds.length ? Math.round((correct / answeredIds.length) * 100) : 0,
+    answers: attempts
+  };
+
+  history.unshift(attempt);
+  if (history.length > 200) history = history.slice(0, 200);
+  saveJSON(STORAGE.history, history);
+  clearSession('learning');
+
+  state.learning = null;
+  if (!silent) {
+    toast(`学习完成：答对 ${correct}/${answeredIds.length}，正确率 ${attempt.score}%`, correct === answeredIds.length ? 'success' : 'info');
+    state.setId = l.setId;
+    state.view = 'setDetail';
+    render();
+  }
+}
+
+function renderCodeQuestion(q, l, mode) {
+  const value = mode === 'exam' ? (l.answers[q.id] || q.template || '') : (l.cache[q.id] ?? (l.answers[q.id] || q.template || ''));
+  const lang = q.language || 'javascript';
+  const tests = (q.testCases || []).slice(0, 4);
+
+  return `
+    <div class="code-editor-wrapper">
+      <div class="code-editor-toolbar">
+        <label>${LANG_LABEL[lang] || lang}</label>
+        ${mode === 'learning'
+          ? `<button class="btn btn-sm" onclick="learningRunCode('${q.id}')" id="runCodeBtn">运行测试</button>`
+          : ''}
+      </div>
+      <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="${mode === 'exam'
+        ? `examCodeInput('${q.id}', this.value)`
+        : `learningCodeInput('${q.id}', this.value)`}">${esc(value)}</textarea>
+      ${tests.length ? `
+        <div class="test-cases">
+          <div class="test-cases-title">测试用例</div>
+          ${tests.map((t, i) => `
+            <div class="test-case-item">
+              <div><div class="label">输入</div><code>${esc(t.input)}</code></div>
+              <div><div class="label">期望输出</div><code>${esc(t.expectedOutput)}</code></div>
+            </div>`).join('')}
+        </div>` : ''}
+    </div>
+    <div id="codeOutputArea"></div>
+    ${mode === 'learning' ? `<div style="display:flex;gap:8px;margin-bottom:20px">
+      <button class="btn btn-secondary btn-sm" onclick="learningRevealAnswer('${q.id}')">查看参考答案</button>
+    </div>` : ''}`;
+}
+
+function learningCodeInput(qid, val) {
+  if (!state.learning) return;
+  state.learning.cache[qid] = val;
+  state.learning.answers[qid] = val;
+  persistLearningSoon();
+}
+
+async function learningRunCode(qid) {
+  const l = state.learning;
+  if (!l) return;
+  const set = getSet(l.setId);
+  const q = getQuestion(set, qid);
+  if (!q) return;
+  const source = l.cache[qid] ?? l.answers[qid] ?? q.template ?? '';
+  const tests = (q.testCases || []).slice(0, 4);
+  if (!tests.length) {
+    toast('这道题没有测试用例，暂不能自动判题', 'info');
+    return;
+  }
+  const btn = document.getElementById('runCodeBtn');
+  const out = document.getElementById('codeOutputArea');
+  if (btn) { btn.disabled = true; btn.textContent = '运行中...'; }
+  if (out) out.innerHTML = `<div class="code-output running"><div class="output-label run">正在运行测试用例...</div></div>`;
+
+  try {
+    const lines = [];
+    let allPass = true;
+    for (let i = 0; i < tests.length; i++) {
+      const t = tests[i];
+      const result = await judgeRun(q.language || 'javascript', source + '\n' + t.input, '');
+      const stdout = (result.stdout || '').trim();
+      const expected = String(t.expectedOutput).trim();
+      const pass = stdout === expected;
+      if (!pass) allPass = false;
+      lines.push(`用例 ${i + 1}: ${pass ? '✓ 通过' : '✗ 未通过'}${pass ? '' : `\n  期望: ${expected}\n  实际: ${stdout || '（空）'}`}${result.stderr ? `\n  错误: ${result.stderr.split('\n')[0]}` : ''}`);
+      if (result.compileOutput) {
+        lines.push(`  编译输出: ${result.compileOutput.split('\n')[0]}`);
+      }
+    }
+    if (out) {
+      out.innerHTML = `<div class="code-output ${allPass ? 'success' : 'error'}">
+        <div class="output-label ${allPass ? 'pass' : 'fail'}">${allPass ? '✓ 全部通过' : '✗ 部分用例未通过'}</div>${esc(lines.join('\n\n'))}</div>`;
+    }
+    if (allPass && !l.results[qid]) {
+      l.results[qid] = { correct: true, answer: source, output: lines.join('\n'), revealed: false };
+      updateWrongBank(l.setId, q.id, true);
+      persistLearning();
+      toast('全部测试通过，回答正确！', 'success');
+      render();
+      const body = $('.main-body');
+      if (body) body.scrollTop = 0;
+    }
+  } catch (e) {
+    if (out) {
+      out.innerHTML = `<div class="code-output error"><div class="output-label fail">判题服务不可用</div>${esc(e.message || '请检查网络或稍后重试')}</div>`;
+    }
+  } finally {
+    const b = document.getElementById('runCodeBtn');
+    if (b) { b.disabled = false; b.textContent = '运行测试'; }
+  }
+}
+
+function learningRevealAnswer(qid) {
+  const l = state.learning;
+  if (!l) return;
+  const set = getSet(l.setId);
+  const q = getQuestion(set, qid);
+  if (!q) return;
+  if (!l.results[qid]) {
+    l.results[qid] = { correct: false, answer: l.cache[qid] || '', revealed: true };
+    updateWrongBank(l.setId, q.id, false);
+  } else {
+    l.results[qid].revealed = true;
+  }
+  persistLearning();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function startExamModal(setId) {
+  const set = getSet(setId);
+  if (!set) return;
+  const n = arrOf(set.questions).length;
+  if (!n) { toast('这个题库还没有题目，先添加题目再考试', 'info'); return; }
+  const countOptions = [`<option value="all">全部（${n} 题）</option>`];
+  if (n > 10) countOptions.push('<option value="10">随机 10 题</option>');
+  if (n > 20) countOptions.push('<option value="20">随机 20 题</option>');
+  const defMin = Math.min(60, Math.max(10, n * 2));
+
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">模拟考试 · ${esc(set.name)}</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">考试时长</label>
+        <select class="form-select" id="examMinutes">
+          ${[10, 20, 30, 45, 60].map((m) => `<option value="${m}" ${m === defMin ? 'selected' : ''}>${m} 分钟</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">题目范围</label>
+        <select class="form-select" id="examCount">${countOptions.join('')}</select>
+      </div>
+      <p class="text-sm text-muted">考试模式下答完交卷才会显示结果，编程题交卷时自动运行测试用例评分。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="beginExam('${set.id}')">开始考试</button>
+    </div>`);
+}
+
+function beginExam(setId) {
+  const set = getSet(setId);
+  if (!set) return;
+  if (!arrOf(set.questions).length) { closeModal(); toast('这个题库还没有题目', 'info'); return; }
+  const minutesEl = document.getElementById('examMinutes');
+  const countEl = document.getElementById('examCount');
+  const minutes = Math.min(600, Math.max(1, parseInt(minutesEl && minutesEl.value, 10) || 30));
+  const countVal = countEl && countEl.value;
+  let qs = shuffle(set.questions);
+  if (countVal !== 'all') {
+    const limit = parseInt(countVal, 10);
+    qs = Number.isFinite(limit) && limit > 0 ? qs.slice(0, limit) : qs;
+  }
+
+  closeModal();
+  resume.exam = null;
+  state.exam = {
+    setId,
+    name: set.name,
+    questions: qs,
+    answers: new Array(qs.length).fill(null),
+    current: 0,
+    startedAt: Date.now(),
+    deadline: Date.now() + minutes * 60000,
+    minutes,
+    grading: false,
+    timerId: null
+  };
+  state.view = 'exam';
+  state.setId = setId;
+  persistExam();
+  render();
+}
+
+function renderExam() {
+  const ex = state.exam;
+  if (!ex) return `<div class="empty-state"><div class="empty-state-title">没有进行中的考试</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  const set = getSet(ex.setId);
+  const examName = set ? set.name : (ex.name || '考试');
+
+  const q = ex.questions[ex.current];
+  if (!q) {
+    return `<div class="empty-state">
+      <div class="empty-state-title">这场考试没有可答的题目</div>
+      <div class="empty-state-desc">可能是题库被删除或数据异常，答题记录不受影响。</div>
+      <button class="btn btn-primary" onclick="abandonExam()">结束考试</button>
+    </div>`;
+  }
+  const total = ex.questions.length;
+  const answeredCount = ex.answers.filter((a, i) => isAnswered(ex.questions[i], a)).length;
+
+  const navItems = ex.questions.map((qq, i) => {
+    const done = isAnswered(qq, ex.answers[i]);
+    let cls = '';
+    let stateText = '未作答';
+    if (i === ex.current) { cls = 'current'; stateText = '当前'; }
+    else if (done) { cls = 'answered'; stateText = '已答'; }
+    return `<button type="button" class="q-nav-item ${cls}" onclick="examGo(${i})" title="第 ${i + 1} 题 · ${TYPE_LABEL[qq.type] || qq.type} · ${stateText}" aria-label="第 ${i + 1} 题，${stateText}">${i + 1}</button>`;
+  }).join('');
+
+  let bodyHtml = '';
+  if (q.type === 'code') {
+    bodyHtml = `
+      <div class="code-editor-wrapper">
+        <div class="code-editor-toolbar">
+          <label>${LANG_LABEL[q.language || 'javascript'] || q.language}</label>
+          <span style="font-size:11.5px">交卷后自动运行测试用例评分</span>
+        </div>
+        <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="examCodeInput(${ex.current}, this.value)">${esc(ex.answers[ex.current] || q.template || '')}</textarea>
+        ${(q.testCases || []).length ? `
+          <div class="test-cases">
+            <div class="test-cases-title">测试用例</div>
+            ${(q.testCases || []).slice(0, 4).map((t) => `
+              <div class="test-case-item">
+                <div><div class="label">输入</div><code>${esc(t.input)}</code></div>
+                <div><div class="label">期望输出</div><code>${esc(t.expectedOutput)}</code></div>
+              </div>`).join('')}
+          </div>` : ''}
+      </div>`;
+  } else if (q.type === 'single' || q.type === 'tf') {
+    const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
+    const cur = ex.answers[ex.current];
+    bodyHtml = `<div class="options-list">${opts.map((o, idx) => {
+      let selected = false;
+      if (q.type === 'tf') selected = cur === (idx === 0);
+      else selected = cur === idx;
+      return `<div class="option-item ${selected ? 'selected' : ''}" onclick="examChoose(${idx})">
+        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
+        <span class="option-content">${esc(o)}</span>
+      </div>`;
+    }).join('')}</div>`;
+  } else if (q.type === 'multi') {
+    const cur = Array.isArray(ex.answers[ex.current]) ? ex.answers[ex.current] : [];
+    bodyHtml = `<div class="options-list">${q.options.map((o, idx) => `
+      <div class="option-item ${cur.includes(idx) ? 'selected' : ''}" onclick="examToggleMulti(${idx})">
+        <span class="option-marker checkbox">${cur.includes(idx) ? '✓' : ''}</span>
+        <span class="option-content">${esc(o)}</span>
+      </div>`).join('')}</div>`;
+  } else if (q.type === 'fill') {
+    bodyHtml = `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(ex.answers[ex.current] || '')}" oninput="examFillInput(${ex.current}, this.value)">`;
+  }
+
+  return `
+    <div class="question-container">
+      <div class="exam-header">
+        <div>
+          <div style="font-size:14.5px;font-weight:700;margin-bottom:1px">${esc(examName)}</div>
+          <div class="text-sm text-muted">已答 ${answeredCount} / ${total} 题</div>
+        </div>
+        <div class="timer" id="examTimer">--:--</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="navigateTo('setDetail')">退出</button>
+          <button class="btn btn-primary btn-sm" onclick="submitExam(false)">交卷</button>
+        </div>
+      </div>
+
+      <div class="question-header">
+        <span class="question-number">第 ${ex.current + 1} 题 · 共 ${total} 题</span>
+        <span style="display:flex;gap:8px;align-items:center">
+          <span class="badge ${TYPE_CLASS[q.type] || 'badge-muted'}">${TYPE_LABEL[q.type] || q.type}</span>
+          ${difficultyDots(q.difficulty)}
+        </span>
+      </div>
+
+      <div class="question-text">${esc(q.content)}</div>
+      ${bodyHtml}
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" ${ex.current === 0 ? 'disabled' : ''} onclick="examPrev()">← 上一题</button>
+        ${ex.current === total - 1
+          ? `<button class="btn btn-primary" onclick="submitExam(false)">交卷</button>`
+          : `<button class="btn btn-primary" onclick="examNext()">下一题 →</button>`}
+      </div>
+
+      ${buildQuestionNav({
+        mode: 'exam',
+        current: ex.current,
+        total,
+        answeredCount,
+        items: navItems,
+        prevAction: 'examPrev()',
+        nextAction: 'examNext()',
+        finishLabel: '交卷',
+        finishAction: 'submitExam(false)',
+        finishClass: 'btn-primary'
+      })}
+    </div>`;
+}
+
+function isAnswered(q, ans) {
+  if (q.type === 'code') return !!(ans && String(ans).trim());
+  if (q.type === 'multi') return Array.isArray(ans) && ans.length > 0;
+  return ans !== null && ans !== undefined && ans !== '';
+}
+
+function examChoose(idx) {
+  const ex = state.exam;
+  if (!ex) return;
+  const q = ex.questions[ex.current];
+  if (!q || q.type === 'multi' || q.type === 'fill' || q.type === 'code') return;
+  ex.answers[ex.current] = q.type === 'tf' ? idx === 0 : idx;
+  persistExam();
+  render();
+}
+
+function examToggleMulti(idx) {
+  const ex = state.exam;
+  if (!ex) return;
+  let cur = Array.isArray(ex.answers[ex.current]) ? [...ex.answers[ex.current]] : [];
+  if (cur.includes(idx)) cur = cur.filter((i) => i !== idx);
+  else cur.push(idx);
+  ex.answers[ex.current] = cur;
+  persistExam();
+  render();
+}
+
+function examFillInput(i, val) {
+  if (!state.exam) return;
+  state.exam.answers[i] = val;
+  persistExamSoon();
+}
+
+function examCodeInput(i, val) {
+  if (!state.exam) return;
+  state.exam.answers[i] = val;
+  persistExamSoon();
+}
+
+function examGo(i) {
+  const ex = state.exam;
+  if (!ex) return;
+  if (i < 0 || i >= ex.questions.length) return;
+  ex.current = i;
+  closeQnavAfterJump();
+  persistExam();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function abandonExam() {
+  clearExamTimer();
+  clearSession('exam');
+  const setId = state.setId;
+  state.exam = null;
+  state.view = setId ? 'setDetail' : 'sets';
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+function examPrev() {
+  const ex = state.exam;
+  if (!ex) return;
+  if (ex.current > 0) examGo(ex.current - 1);
+}
+
+function examNext() {
+  const ex = state.exam;
+  if (!ex) return;
+  if (ex.current < ex.questions.length - 1) examGo(ex.current + 1);
+}
+
+function startExamTimer() {
+  const ex = state.exam;
+  if (!ex) return;
+  const tick = () => {
+    const el = document.getElementById('examTimer');
+    if (!el) return;
+    const left = Math.max(0, Math.floor((ex.deadline - Date.now()) / 1000));
+    el.textContent = fmtTime(left);
+    el.classList.toggle('warning', left <= 300 && left > 60);
+    el.classList.toggle('danger', left <= 60);
+    if (left <= 0) {
+      clearExamTimer();
+      submitExam(true);
+    }
+  };
+  tick();
+  ex.timerId = setInterval(tick, 1000);
+}
+
+function clearExamTimer() {
+  if (state.exam && state.exam.timerId) {
+    clearInterval(state.exam.timerId);
+    state.exam.timerId = null;
+  }
+}
+
+function submitExam(auto) {
+  const ex = state.exam;
+  if (!ex || ex.grading) return;
+  const unanswered = ex.questions.filter((q, i) => !isAnswered(q, ex.answers[i])).length;
+  if (auto) { confirmSubmitExam(); return; }
+  const msg = unanswered > 0
+    ? `还有 ${unanswered} 题未作答，交卷后将无法修改，确定交卷吗？`
+    : '所有题目已作答，确定交卷吗？';
+  confirmModal('确认交卷', msg, '交卷', () => confirmSubmitExam(), false);
+}
+
+async function confirmSubmitExam() {
+  closeModal();
+  const ex = state.exam;
+  if (!ex || ex.grading) return;
+  ex.grading = true;
+  clearExamTimer();
+  render();
+
+  const gradedAnswers = [];
+  let judgeFailed = false;
+
+  for (let i = 0; i < ex.questions.length; i++) {
+    const q = ex.questions[i];
+    const ans = ex.answers[i];
+    if (q.type === 'code') {
+      if (!isAnswered(q, ans)) {
+        gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: false });
+        continue;
+      }
+      try {
+        const tests = (q.testCases || []).slice(0, 3);
+        if (!tests.length) {
+          gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: null });
+          continue;
+        }
+        let allPass = true;
+        for (const t of tests) {
+          const result = await judgeRun(q.language || 'javascript', ans + '\n' + t.input, '');
+          const stdout = (result.stdout || '').trim();
+          if (stdout !== String(t.expectedOutput).trim()) { allPass = false; break; }
+        }
+        gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: allPass });
+      } catch (e) {
+        judgeFailed = true;
+        gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: null });
+      }
+    } else if (!isAnswered(q, ans)) {
+      gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: false });
+    } else {
+      gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: gradeObjective(q, ans) });
+    }
+  }
+
+  const graded = gradedAnswers.filter((a) => a.correct !== null).length;
+  const correct = gradedAnswers.filter((a) => a.correct === true).length;
+  const ungraded = gradedAnswers.filter((a) => a.correct === null).length;
+
+  const set = getSet(ex.setId);
+  const attempt = {
+    id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    setId: ex.setId,
+    setName: set ? set.name : '（已删除题库）',
+    mode: 'exam',
+    startedAt: ex.startedAt,
+    finishedAt: Date.now(),
+    durationSec: Math.round((Date.now() - ex.startedAt) / 1000),
+    total: ex.questions.length,
+    graded,
+    correct,
+    ungraded,
+    score: graded ? Math.round((correct / graded) * 100) : 0,
+    answers: gradedAnswers
+  };
+
+  gradedAnswers.forEach((a) => {
+    if (a.correct === true) removeWrong(ex.setId, a.qid);
+    else if (a.correct === false) addWrong(ex.setId, a.qid);
+  });
+
+  history.unshift(attempt);
+  if (history.length > 200) history = history.slice(0, 200);
+  const historySaved = saveJSON(STORAGE.history, history);
+  saveJSON(STORAGE.wrong, wrongBank);
+
+  clearSession('exam');
+  state.exam = null;
+  state.examResult = attempt;
+  state.view = 'examResult';
+  render();
+  if (judgeFailed) toast('部分编程题因判题服务不可用而未评分', 'info', 4000);
+  if (!historySaved) toast('这次成绩未能写入本地存储，建议先导出备份', 'error', 5000);
+}
+
+function renderGrading() {
+  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px">
+    <div class="spinner spinner-lg"></div>
+    <div style="font-size:15px;color:var(--text-secondary)">正在评分...</div>
+    <div class="text-sm text-muted">编程题正在运行测试用例，请稍候</div>
+  </div>`;
+}
+
+function renderExamResult() {
+  const a = state.examResult;
+  if (!a) return `<div class="empty-state"><div class="empty-state-title">没有结果</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  const set = getSet(a.setId);
+  const level = a.score >= 85 ? 'high' : a.score >= 60 ? 'medium' : 'low';
+  const label = a.score >= 85 ? '优秀' : a.score >= 60 ? '合格' : '需要加强';
+
+  return `
+    <div class="results-container">
+      <div class="results-card">
+        <div class="score-badge ${level}">
+          <span class="results-score ${level}">${a.score}</span>
+          <span class="score-unit">分</span>
+        </div>
+        <div class="results-label"><b>${label}</b> · ${a.mode === 'exam' ? '考试模式' : '学习模式'}</div>
+
+        <div class="results-stats">
+          <div class="result-stat"><div class="result-stat-value" style="color:var(--success)">${a.correct}</div><div class="result-stat-label">答对</div></div>
+          <div class="result-stat"><div class="result-stat-value" style="color:var(--danger)">${a.graded - a.correct}</div><div class="result-stat-label">答错</div></div>
+          <div class="result-stat"><div class="result-stat-value">${fmtDuration(a.durationSec)}</div><div class="result-stat-label">用时</div></div>
+        </div>
+        ${a.ungraded ? `<p class="text-sm text-muted" style="margin-top:12px">另有 ${a.ungraded} 题未作答或未评分，不计入得分</p>` : ''}
+      </div>
+
+      <div class="btn-group" style="justify-content:center;margin-bottom:28px;flex-wrap:wrap">
+        ${set ? `<button class="btn btn-primary" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
+        ${set ? `<button class="btn btn-secondary" onclick="openSet('${set.id}')">返回题库</button>` : ''}
+        <button class="btn btn-secondary" onclick="navigateTo('records')">查看记录</button>
+      </div>
+
+      ${set ? `
+        <div class="section-title" style="text-align:left">答题回顾</div>
+        ${a.answers.map((ans, i) => {
+          const q = getQuestion(set, ans.qid);
+          if (!q) return '';
+          const cls = ans.correct === true ? 'correct' : ans.correct === false ? 'incorrect' : '';
+          const statusCls = ans.correct === true ? 'badge-success' : ans.correct === false ? 'badge-danger' : 'badge-muted';
+          const status = ans.correct === true ? '✓ 正确' : ans.correct === false ? '✕ 错误' : '— 未评分';
+          return `<div class="review-item ${cls}">
+            <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:8px;align-items:center">
+              <span class="badge ${TYPE_CLASS[q.type] || 'badge-muted'}">${TYPE_LABEL[q.type] || q.type}</span>
+              <span class="badge ${statusCls}">${status}</span>
+            </div>
+            <div class="review-question">${i + 1}. ${esc(q.content)}</div>
+            <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}">${esc(userAnswerText(q, ans.userAnswer))}</span></div>
+            ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text">${esc(answerText(q))}</span></div>` : ''}
+            ${q.explanation ? `<div class="review-answer" style="margin-top:8px;color:var(--text-secondary)">${esc(q.explanation)}</div>` : ''}
+            ${q.type === 'code' && q.answer ? `<div class="code-output" style="margin-top:12px"><div class="output-label">参考答案</div>${esc(q.answer)}</div>` : ''}
+          </div>`;
+        }).join('')}` : ''}
+    </div>`;
+}
+
+function renderRecords() {
+  const st = overallStats();
+  const sets = allSets();
+  const wrongTotal = Object.values(wrongBank).reduce((n, m) => n + Object.keys(m).length, 0);
+
+  const perSet = sets.map((s) => {
+    const rs = setStats(s.id);
+    return { set: s, ...rs };
+  }).filter((x) => x.attempts > 0).sort((a, b) => b.attempts - a.attempts);
+
+  return `
+    <div class="stat-rail">
+      <div class="stat"><div class="stat-value">${st.count}</div><div class="stat-label">练习次数</div></div>
+      <div class="stat"><div class="stat-value">${st.accuracy == null ? '--' : st.accuracy + '%'}</div><div class="stat-label">平均正确率</div></div>
+      <div class="stat"><div class="stat-value">${st.avg == null ? '--' : st.avg}</div><div class="stat-label">平均得分</div></div>
+      <div class="stat"><div class="stat-value">${wrongTotal}</div><div class="stat-label">错题数</div></div>
+    </div>
+
+    ${perSet.length ? `
+      <div class="section-title">分题库表现</div>
+      <div class="card mb-6">
+        ${perSet.map((x) => {
+          const a = setAccent(x.set);
+          const acc = x.accuracy;
+          const fillCls = acc == null ? '' : acc >= 80 ? 'success' : acc < 60 ? 'warning' : '';
+          return `
+          <div class="perf-row">
+            <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(x.set.icon || '题')}</span>
+            <div style="flex:1;min-width:0">
+              <div class="perf-name">${esc(x.set.name)}</div>
+              <div class="perf-sub">${x.attempts} 次练习 · 最佳 ${x.best}%</div>
+            </div>
+            <div class="perf-bar">
+              <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${acc || 0}%"></div></div>
+              <div class="progress-text"><span>正确率</span><span>${acc == null ? '--' : acc + '%'}</span></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="openSet('${x.set.id}')">去练习</button>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+    <div class="section-title"><span>错题本 ${wrongTotal ? `<span class="badge badge-danger">${wrongTotal}</span>` : ''}</span></div>
+    ${wrongTotal === 0 ? `<div class="card mb-6"><div class="text-sm text-muted text-center" style="padding:20px">太棒了，暂无错题</div></div>` : ''}
+    ${Object.keys(wrongBank).map((setId) => {
+      const set = getSet(setId);
+      const wb = wrongBank[setId] || {};
+      const ids = Object.keys(wb).filter((qid) => getQuestion(set, qid));
+      if (!set || !ids.length) return '';
+      const a = setAccent(set);
+      return `
+        <div class="card mb-4">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:9px">
+              <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(set.icon || '题')}</span>
+              <b>${esc(set.name)}</b>
+              <span class="badge badge-danger">${ids.length} 题</span>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="startLearning('${set.id}', true)">刷错题</button>
+          </div>
+          <div style="margin-top:12px">
+            ${ids.map((qid) => {
+              const q = getQuestion(set, qid);
+              return `<div style="padding:10px 0;border-top:1.5px solid var(--border-light)">
+                <div style="font-size:14px;margin-bottom:4px">${esc((q.content || '').split('\n')[0])} <span class="text-sm text-muted">（错 ${wb[qid]} 次）</span></div>
+                <div class="text-sm" style="color:var(--text-secondary)">正确答案：<span style="color:var(--success);font-weight:700">${esc(answerText(q))}</span></div>
+                ${q.explanation ? `<div class="text-sm text-muted" style="margin-top:2px">${esc(q.explanation)}</div>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+    }).join('')}
+
+    <div class="section-title">历史记录</div>
+    ${history.length === 0 ? `<div class="card"><div class="text-sm text-muted text-center" style="padding:20px">还没有练习记录，从学习模式开始吧</div></div>` : `
+      <div class="card">
+        ${history.slice(0, 50).map((a, i) => `
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < Math.min(history.length, 50) - 1 ? 'border-bottom:1.5px solid var(--border-light)' : ''}">
+            <span class="badge ${a.mode === 'exam' ? 'badge-primary' : 'badge-success'}">${a.mode === 'exam' ? '考试' : '学习'}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.setName)}</div>
+              <div class="text-sm text-muted">${fmtDate(a.finishedAt)} · ${fmtDuration(a.durationSec)}</div>
+            </div>
+            <div class="history-score" style="color:${a.score >= 85 ? 'var(--success)' : a.score >= 60 ? 'var(--warning)' : 'var(--danger)'}">${a.score}%</div>
+          </div>`).join('')}
+      </div>`}`;
+}
+
+function storageUsage() {
+  let bytes = 0;
+  [...Object.values(STORAGE), ...Object.values(SESSION_KEYS)].forEach((key) => {
+    try {
+      const v = localStorage.getItem(key);
+      if (v) bytes += (v.length + key.length) * 2;
+    } catch {}
+  });
+  const pct = bytes ? Math.max(1, Math.min(100, Math.round((bytes / STORAGE_LIMIT_BYTES) * 100))) : 0;
+  const label = bytes < 1024 * 1024
+    ? `${bytes ? Math.max(1, Math.round(bytes / 1024)) : 0} KB`
+    : `${(bytes / 1048576).toFixed(1)} MB`;
+  return { bytes, pct, label };
+}
+
+function renderSettings() {
+  const usage = storageUsage();
+  return `
+    <div class="settings-wrap">
+    <div class="settings-section">
+      <h3>AI 出题</h3>
+      <p class="text-sm text-muted mb-4">已内置 Qoder AI，无需填写 API Key。上传 PDF、Word、PPT 等资料，系统自动提取文字并按篇幅推荐题量，生成单选、多选、判断、填空和编程题；没有文件时也可以直接粘贴文字。</p>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:14px">出题引擎</div>
+          <div class="text-sm text-muted">Qoder AI · 由站点后端安全调用，密钥不会进入浏览器</div>
+        </div>
+        <span class="badge badge-success">已内置</span>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-primary" onclick="openAIModal()">用 AI 新建题库</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>判题服务</h3>
+      <p class="text-sm text-muted">编程题通过后端调用 Judge0 公共实例判题，默认无需额外配置。如需使用私有 Judge0 或 RapidAPI 密钥，请在站点后端环境变量中配置 JUDGE0_URL / JUDGE0_KEY。</p>
+    </div>
+
+    <div class="settings-section">
+      <h3>数据管理</h3>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:14px">导出全部数据</div>
+          <div class="text-sm text-muted">题库、学科、资料文字、练习记录与错题本（不含原始文件）</div>
+        </div>
+        <button class="btn btn-secondary" onclick="exportData()">导出 JSON</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:14px">导入数据备份</div>
+          <div class="text-sm text-muted">从导出的 JSON 恢复，已存在的题库、资料与记录会自动跳过</div>
+        </div>
+        <button class="btn btn-secondary" onclick="importData()">选择文件</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:14px">本地存储</div>
+          <div class="text-sm text-muted">题库与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份，原始文件单独存放` : ''}</div>
+        </div>
+        <span class="badge ${usage.pct >= 80 ? 'badge-danger' : 'badge-muted'}">${usage.pct}%</span>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:14px">清空练习记录</div>
+          <div class="text-sm text-muted">清除所有历史成绩与错题本，保留题库</div>
+        </div>
+        <button class="btn btn-secondary" onclick="clearRecords()">清空</button>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:14px">恢复初始状态</div>
+          <div class="text-sm text-muted">删除所有自建题库、学科、资料、记录与设置</div>
+        </div>
+        <button class="btn btn-danger" onclick="resetAll()">重置</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>关于</h3>
+      <p class="text-sm text-muted">智题 StarQuiz · 为 Qoder 高效创造力大赛打造。<br>支持学习模式与考试模式，普通题目与编程题混合练习，数据保存在本地浏览器。</p>
+    </div>
+    </div>`;
+}
+
+function exportData() {
+  const materialBackup = materials.map((m) => ({
+    id: m.id,
+    subjectId: m.subjectId,
+    name: m.name,
+    size: m.size,
+    ext: m.ext,
+    kind: m.kind,
+    pages: m.pages,
+    chars: m.chars,
+    addedAt: m.addedAt,
+    text: m.text
+  }));
+  const data = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    sets: customSets,
+    history,
+    wrongBank,
+    subjects: userSubjects,
+    materials: materialBackup
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `starquiz-export-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('已导出数据文件（资料只含提取文字，不含原始文件）', 'success', 4500);
+}
+
+const MAX_IMPORT_BYTES = 12 * 1024 * 1024;
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.style.display = 'none';
+  input.onchange = () => {
+    const file = input.files && input.files[0];
+    input.remove();
+    if (file) importBackupFile(file);
+  };
+  document.body.appendChild(input);
+  input.click();
+}
+
+async function importBackupFile(file) {
+  try {
+    await importBackupFileCore(file);
+  } catch (e) {
+    console.error('[StarQuiz] 导入失败', e);
+    toast(`导入失败：${(e && e.message) || '数据格式异常'}`, 'error', 5000);
+  }
+}
+
+async function importBackupFileCore(file) {
+  if (file.size > MAX_IMPORT_BYTES) {
+    toast('备份文件超过 12 MB，请拆分后再导入', 'error', 5000);
+    return;
+  }
+  let data = null;
+  try {
+    data = JSON.parse(await file.text());
+  } catch {
+    toast('不是有效的 JSON 备份文件', 'error');
+    return;
+  }
+  if (Array.isArray(data)) data = { sets: data };
+  if (!data || typeof data !== 'object') {
+    toast('备份格式不正确', 'error');
+    return;
+  }
+  const rawSets = arrOf(data.sets || data.customSets);
+  const rawHistory = arrOf(data.history);
+  const rawWrong = objOf(data.wrongBank || data.wrong);
+  const rawSubjects = arrOf(data.subjects);
+  const rawMaterials = arrOf(data.materials);
+  if (!rawSets.length && !rawHistory.length && !Object.keys(rawWrong).length && !rawSubjects.length && !rawMaterials.length) {
+    toast('备份里没有可导入的数据', 'info');
+    return;
+  }
+
+  const knownIds = new Set(allSets().map((s) => s.id));
+  let skippedSets = 0;
+  const pendingSets = [];
+  rawSets.forEach((raw) => {
+    const id = raw && typeof raw.id === 'string' ? raw.id : '';
+    if (id && knownIds.has(id)) { skippedSets++; return; }
+    pendingSets.push(raw);
+  });
+  const sanitized = sanitizeStoredSets(pendingSets, knownIds);
+
+  const snapshotSets = customSets.length;
+  const snapshotHistory = history.length;
+  const snapshotWrong = JSON.stringify(wrongBank);
+
+  let addedSets = 0;
+  let addedQuestions = 0;
+  sanitized.sets.forEach((s) => {
+    customSets.push(s);
+    addedSets++;
+    addedQuestions += s.questions.length;
+  });
+
+  let addedHistory = 0;
+  let addedWrong = 0;
+  const seenHistory = new Set(history.map((a) => a.id));
+  repairHistory(rawHistory).forEach((a) => {
+    if (seenHistory.has(a.id)) return;
+    seenHistory.add(a.id);
+    history.push(a);
+    addedHistory++;
+  });
+  history = history.sort((x, y) => y.finishedAt - x.finishedAt).slice(0, 200);
+
+  const wrongPatch = repairWrong(rawWrong);
+  Object.keys(wrongPatch).forEach((setId) => {
+    const target = objOf(wrongBank[setId]);
+    Object.keys(wrongPatch[setId]).forEach((qid) => {
+      const count = wrongPatch[setId][qid];
+      if (!target[qid] || target[qid] < count) { target[qid] = count; addedWrong++; }
+    });
+    if (Object.keys(target).length) wrongBank[setId] = target;
+  });
+
+  const okSets = saveJSONQuiet(STORAGE.sets, customSets);
+  const okHistory = saveJSONQuiet(STORAGE.history, history);
+  const okWrong = saveJSONQuiet(STORAGE.wrong, wrongBank);
+  if (!okSets || !okHistory || !okWrong) {
+    customSets.length = snapshotSets;
+    history.length = snapshotHistory;
+    wrongBank = JSON.parse(snapshotWrong);
+    toast('导入失败：本地存储空间不足。请先导出并清理不用的题库', 'error', 6000);
+    return;
+  }
+
+  // 学科与资料（资料只恢复提取的文字，原始文件不包含在 JSON 备份里）
+  let addedSubjects = 0;
+  if (rawSubjects.length) {
+    const before = new Set(userSubjects.map((s) => s.id));
+    const merged = sanitizeSubjects([...userSubjects, ...rawSubjects]);
+    const additions = merged.filter((s) => !before.has(s.id));
+    if (additions.length) {
+      if (saveJSONQuiet(STORAGE.subjects, merged)) {
+        userSubjects = merged;
+        addedSubjects = additions.length;
+      } else {
+        bootNotes.push('学科文件夹导入失败：本地存储空间不足');
+      }
+    }
+  }
+
+  let addedMaterials = 0;
+  let skippedMaterials = 0;
+  if (rawMaterials.length) {
+    if (materialsUnavailable) {
+      skippedMaterials = rawMaterials.length;
+    } else {
+      const existingKeys = new Set(materials.map((m) => `${m.subjectId}|${m.name}|${m.size}`));
+      for (const raw of rawMaterials.slice(0, 300)) {
+        const meta = sanitizeMaterialMeta(raw);
+        if (!meta) continue;
+        if (!subjectById(meta.subjectId)) meta.subjectId = 'sub-inbox';
+        const key = `${meta.subjectId}|${meta.name}|${meta.size}`;
+        if (existingKeys.has(key) || materials.some((m) => m.id === meta.id)) { skippedMaterials++; continue; }
+        try {
+          const saved = await saveMaterialRecord(meta, null);
+          materials.unshift(saved);
+          existingKeys.add(key);
+          addedMaterials++;
+        } catch {
+          skippedMaterials++;
+        }
+      }
+      materials.sort((a, b) => b.addedAt - a.addedAt);
+    }
+  }
+
+  const skippedQuestions = sanitized.droppedQuestions || 0;
+  const invalidSets = sanitized.droppedSets || 0;
+  const parts = [];
+  if (addedSets) parts.push(`${addedSets} 个题库（${addedQuestions} 题）`);
+  if (addedHistory) parts.push(`${addedHistory} 条记录`);
+  if (addedWrong) parts.push(`${addedWrong} 道错题`);
+  if (addedSubjects) parts.push(`${addedSubjects} 个学科`);
+  if (addedMaterials) parts.push(`${addedMaterials} 份资料`);
+  if (skippedSets) parts.push(`跳过 ${skippedSets} 个已存在的题库`);
+  if (skippedMaterials) parts.push(`跳过 ${skippedMaterials} 份已存在的资料`);
+  if (invalidSets) parts.push(`忽略 ${invalidSets} 个没有有效题目的题库`);
+  if (skippedQuestions) parts.push(`忽略 ${skippedQuestions} 道异常题目`);
+  toast(parts.length ? `导入完成：${parts.join('，')}` : '没有可新增的数据，备份内容已全部存在', parts.length ? 'success' : 'info', 5000);
+  render();
+}
+
+function clearRecords() {
+  confirmModal('清空记录', '将清除所有练习历史和错题本，题库不受影响。确定继续吗？', '清空', () => {
+    history = [];
+    wrongBank = {};
+    saveJSON(STORAGE.history, history);
+    saveJSON(STORAGE.wrong, wrongBank);
+    toast('记录已清空', 'success');
+    render();
+  }, true);
+}
+
+function resetAll() {
+  confirmModal('恢复初始状态', '将删除所有自建题库、学科文件夹、上传的资料、练习记录、错题本和本地设置。确定继续吗？', '重置全部', async () => {
+    Object.values(STORAGE).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+    Object.values(SESSION_KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
+    try {
+      const db = await openMaterialDb();
+      await new Promise((resolve) => {
+        const tx = db.transaction([MATERIAL_STORE, MATERIAL_FILE_STORE], 'readwrite');
+        tx.objectStore(MATERIAL_STORE).clear();
+        tx.objectStore(MATERIAL_FILE_STORE).clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+        tx.onabort = () => resolve();
+      });
+    } catch {}
+    clearExamTimer();
+    resume = { exam: null, learning: null };
+    customSets = [];
+    history = [];
+    wrongBank = {};
+    userSubjects = [];
+    materials = [];
+    state.exam = null;
+    state.learning = null;
+    state.subjectId = null;
+    toast('已恢复初始状态', 'success');
+    navigateTo('dashboard');
+  }, true);
+}
+
+function normalizeSet(raw) {
+  if (!raw || typeof raw !== 'object') throw new Error('题库数据不是对象');
+  const name = String(raw.name || '').trim();
+  if (!name) throw new Error('缺少题库名称 name');
+  const description = String(raw.description || '').trim();
+  const icon = String(raw.icon || '题').slice(0, 8);
+  const tags = Array.isArray(raw.tags) ? raw.tags.map((t) => String(t).slice(0, 20)).slice(0, 6) : [];
+  const rawKps = Array.isArray(raw.knowledgePoints) ? raw.knowledgePoints : [];
+  const knowledgePoints = rawKps.map((kp, i) => ({
+    id: 'kp' + (i + 1),
+    title: String(kp.title || `知识点 ${i + 1}`).slice(0, 60),
+    content: String(kp.content || '')
+  }));
+  const rawQs = Array.isArray(raw.questions) ? raw.questions : [];
+  if (!rawQs.length) throw new Error('题库中没有题目');
+
+  let quality = raw.quality && typeof raw.quality === 'object' ? {
+    parsed: Number(raw.quality.parsed) || 0,
+    kept: Number(raw.quality.kept) || 0,
+    duplicates: Number(raw.quality.duplicates) || 0,
+    removed: Number(raw.quality.removed) || 0,
+    repaired: Number(raw.quality.repaired) || 0,
+    issues: Array.isArray(raw.quality.issues) ? raw.quality.issues.slice(0, 30).map((issue) => ({
+      index: Number(issue && issue.index) || 0,
+      kind: String((issue && issue.kind) || ''),
+      message: String((issue && issue.message) || ''),
+      question: String((issue && issue.question) || '')
+    })) : []
+  } : null;
+  const localIssues = [];
+
+  const validTypes = ['single', 'multi', 'tf', 'fill', 'code'];
+  const questions = [];
+  rawQs.forEach((rq, i) => {
+    try {
+      const type = validTypes.includes(rq.type) ? rq.type : 'single';
+      const content = String(rq.content || '').trim();
+      if (!content) throw new Error(`第 ${i + 1} 题缺少题干`);
+      const q = {
+        id: 'q' + (questions.length + 1),
+        type,
+        difficulty: Math.min(3, Math.max(1, parseInt(rq.difficulty, 10) || 2)),
+        content,
+        explanation: String(rq.explanation || ''),
+        knowledgePointId: knowledgePoints.some((k) => k.id === rq.knowledgePointId) ? rq.knowledgePointId : (knowledgePoints[0] ? knowledgePoints[0].id : null)
+      };
+      if (type === 'single') {
+        const opts = Array.isArray(rq.options) ? rq.options.map(String) : [];
+        if (opts.length < 2) throw new Error(`第 ${i + 1} 题（单选）至少需要 2 个选项`);
+        const ans = parseInt(rq.answer, 10);
+        if (isNaN(ans) || ans < 0 || ans >= opts.length) throw new Error(`第 ${i + 1} 题（单选）answer 必须是有效选项索引`);
+        q.options = opts;
+        q.answer = ans;
+      } else if (type === 'multi') {
+        const opts = Array.isArray(rq.options) ? rq.options.map(String) : [];
+        if (opts.length < 2) throw new Error(`第 ${i + 1} 题（多选）至少需要 2 个选项`);
+        const arr = Array.isArray(rq.answer) ? rq.answer.map(Number) : [];
+        if (!arr.length || arr.some((x) => isNaN(x) || x < 0 || x >= opts.length)) throw new Error(`第 ${i + 1} 题（多选）answer 必须是有效索引数组`);
+        q.options = opts;
+        q.answer = [...new Set(arr)].sort((a, b) => a - b);
+      } else if (type === 'tf') {
+        q.answer = rq.answer === true || rq.answer === 'true' || rq.answer === '正确' || rq.answer === 1;
+      } else if (type === 'fill') {
+        const arr = Array.isArray(rq.answer) ? rq.answer.map(String) : [String(rq.answer ?? '')];
+        const cleaned = arr.map((s) => s.trim()).filter(Boolean);
+        if (!cleaned.length) throw new Error(`第 ${i + 1} 题（填空）缺少答案`);
+        q.answer = cleaned;
+      } else if (type === 'code') {
+        const lang = ['javascript', 'python', 'cpp', 'java'].includes(rq.language) ? rq.language : 'javascript';
+        const tests = Array.isArray(rq.testCases) ? rq.testCases.map((t) => ({
+          input: String(t.input || ''),
+          expectedOutput: String(t.expectedOutput ?? '')
+        })).filter((t) => t.input || t.expectedOutput) : [];
+        q.language = lang;
+        q.template = String(rq.template || '');
+        q.answer = String(rq.answer || '');
+        q.testCases = tests;
+      }
+      questions.push(q);
+    } catch (e) {
+      localIssues.push({
+        index: i + 1,
+        kind: 'client',
+        message: (e && e.message) || '题目数据异常，已跳过',
+        question: String(rq && rq.content || '').slice(0, 40)
+      });
+    }
+  });
+
+  if (!questions.length) throw new Error('题库中没有可用的题目');
+
+  if (localIssues.length) {
+    if (!quality) quality = { parsed: rawQs.length, kept: 0, duplicates: 0, removed: 0, repaired: 0, issues: [] };
+    quality.removed = (quality.removed || 0) + localIssues.length;
+    quality.issues = [...quality.issues, ...localIssues].slice(0, 30);
+  }
+  if (quality) quality.kept = questions.length;
+
+  return {
+    id: 'custom-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    name: name.slice(0, 40),
+    description: description.slice(0, 200),
+    icon,
+    tags,
+    knowledgePoints,
+    questions,
+    ...(quality ? { quality } : {})
+  };
+}
+
+// 跨段去重用的归一化与相似度（与后端同一套阈值）
+function aiDedupText(text) {
+  return String(text || '')
+    .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .replace(/[\u3000\u00a0\s]/g, '')
+    .toLowerCase()
+    .replace(/[，。！？、；：""''（）【】《》〈〉·—…\-_.,!?;:()\[\]{}"'`~@#$%^&*+=|\\/<>]/g, '');
+}
+
+function aiBigrams(text) {
+  const set = new Set();
+  for (let i = 0; i < text.length - 1; i++) set.add(text.slice(i, i + 2));
+  return set;
+}
+
+function aiSimilar(a, b) {
+  const na = aiDedupText(a);
+  const nb = aiDedupText(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  if (na.length < 18 || nb.length < 18) return false;
+  if (Math.abs(na.length - nb.length) > Math.max(na.length, nb.length) * 0.4) return false;
+  const ga = aiBigrams(na);
+  const gb = aiBigrams(nb);
+  let inter = 0;
+  for (const gram of ga) if (gb.has(gram)) inter++;
+  if (inter / (ga.size + gb.size - inter) >= 0.86) return true;
+  const [small, large] = na.length <= nb.length ? [na, nb] : [nb, na];
+  return small.length / large.length >= 0.85 && large.includes(small);
+}
+
+// 真题分段并行整理后，把各段题库按顺序拼成一份：知识点按标题去重，题目跨段去重
+function mergeGeneratedSets(rawSets, partsMeta = []) {
+  const list = rawSets.filter(Boolean);
+  if (!list.length) throw new Error('AI 没有返回题目');
+  if (list.length === 1) return list[0];
+
+  const knowledgePoints = [];
+  const byTitle = new Map();
+  const questions = [];
+  const seen = [];
+  const issues = [];
+  let duplicates = 0;
+  let removed = 0;
+  let repaired = 0;
+  let parsed = 0;
+
+  for (let index = 0; index < list.length; index++) {
+    const item = list[index];
+    const label = (partsMeta[index] && partsMeta[index].label) || '';
+    const tag = label ? `${label} · ` : '';
+    if (item.quality) {
+      parsed += Number(item.quality.parsed) || 0;
+      removed += Number(item.quality.removed) || 0;
+      repaired += Number(item.quality.repaired) || 0;
+      duplicates += Number(item.quality.duplicates) || 0;
+      for (const issue of item.quality.issues || []) {
+        if (issues.length < 30) issues.push(Object.assign({}, issue, { message: tag + String(issue.message || '') }));
+      }
+    }
+
+    const remap = new Map();
+    for (const kp of item.knowledgePoints || []) {
+      const key = String(kp.title || '').trim().toLowerCase();
+      let target = byTitle.get(key);
+      if (!target && knowledgePoints.length < 12) {
+        target = { id: 'kp' + (knowledgePoints.length + 1), title: kp.title, content: kp.content };
+        knowledgePoints.push(target);
+        byTitle.set(key, target);
+      }
+      if (target) remap.set(kp.id, target.id);
+    }
+    for (const question of item.questions || []) {
+      if (seen.some((text) => aiSimilar(question.content, text))) {
+        duplicates++;
+        if (issues.length < 30) {
+          issues.push({
+            index: 0,
+            kind: 'duplicate',
+            message: `${tag}跨段重复，已合并`,
+            question: String(question.content || '').slice(0, 40)
+          });
+        }
+        continue;
+      }
+      seen.push(question.content);
+      const copy = Object.assign({}, question);
+      copy.knowledgePointId = remap.get(question.knowledgePointId) || (knowledgePoints[0] && knowledgePoints[0].id) || null;
+      questions.push(copy);
+    }
+  }
+  if (!questions.length) throw new Error('AI 没有返回题目');
+
+  const first = list[0];
+  const tags = [];
+  for (const item of list) {
+    for (const tag of item.tags || []) {
+      const value = String(tag || '').trim();
+      if (value && !tags.includes(value) && tags.length < 6) tags.push(value);
+    }
+  }
+  return normalizeSet({
+    name: first.name,
+    description: first.description,
+    icon: first.icon,
+    tags,
+    knowledgePoints,
+    questions,
+    quality: {
+      parsed: parsed || questions.length + duplicates,
+      kept: questions.length,
+      duplicates,
+      removed,
+      repaired,
+      issues
+    }
+  });
+}
+
+// 真题段：用原文题号数对比整理出的题数，明显偏少时提示可能漏题
+function attachCoverage(set, parts) {
+  const examParts = (parts || []).filter((part) => part.group === 'exam' && part.set);
+  if (!examParts.length) return;
+  const expected = examParts.reduce((n, part) => n + (part.expected || 0), 0);
+  const actual = examParts.reduce((n, part) => n + part.set.questions.length, 0);
+  if (expected < 3 || actual >= expected) return;
+  if (!set.quality) {
+    set.quality = { parsed: actual, kept: set.questions.length, duplicates: 0, removed: 0, repaired: 0, issues: [] };
+  }
+  set.quality.coverage = { expected, actual };
+  set.quality.issues = [{
+    index: 0,
+    kind: 'coverage',
+    message: `原文识别到约 ${expected} 道题号，本次整理出 ${actual} 道，可能有漏题`,
+    question: ''
+  }, ...(set.quality.issues || [])].slice(0, 30);
+}
+
+function renderQuality(set) {
+  const quality = set && set.quality;
+  if (!quality) return '';
+  const bits = [];
+  if (quality.duplicates) bits.push(`去重 ${quality.duplicates} 题`);
+  if (quality.removed) bits.push(`剔除 ${quality.removed} 题异常数据`);
+  if (quality.repaired) bits.push(`修正 ${quality.repaired} 题题型`);
+  if (quality.coverage) bits.push('疑似漏题');
+  const all = Array.isArray(quality.issues) ? quality.issues : [];
+  const issues = all.slice(0, 8);
+  const clean = !bits.length && !all.length;
+  return `<div class="ai-quality">
+    <div class="ai-quality-line${quality.coverage ? ' warn' : ''}">
+      <span class="ai-quality-dot"></span>质检：${clean ? '未发现重复、答案缺失等问题' : esc(bits.join(' · '))}
+    </div>
+    ${issues.length ? `<details class="ai-quality-detail">
+      <summary>查看 ${all.length > issues.length ? `前 ${issues.length} 条（共 ${all.length} 条）` : `${issues.length} 条`}提示</summary>
+      <ul>${issues.map((issue) => `<li>${issue.index ? `第 ${issue.index} 题：` : ''}${esc(issue.message)}${issue.question ? `<span class="ai-quality-q">${esc(issue.question)}</span>` : ''}</li>`).join('')}</ul>
+    </details>` : ''}
+  </div>`;
+}
+
+let aiPieces = [];
+let aiSeq = 0;
+let aiParseBusy = false;
+let aiLastRecommended = 0;
+let aiMode = 'generate';
+let aiSubjectId = null;
+
+// 出题任务分两步（start / poll），单个请求都很短，避免撞上网关 45 秒超时
+const AI_POLL_INTERVAL_MS = 1500;
+const AI_POLL_DEADLINE_MS = 360000;
+const AI_EXAM_DEADLINE_MS = 600000;
+const OFFICIAL_SITE_URL = 'https://starquiz-zfc3er164xi.qoder.zone';
+
+function aiErrorText(status, data) {
+  const serverMsg = data && data.error && data.error.message;
+  if (serverMsg) return serverMsg;
+  if (status === 405) return `当前页面不支持后端服务（HTTP 405），AI 出题和判题需要在正式站点使用：${OFFICIAL_SITE_URL}`;
+  if (status === 404) return '站点刚更新完，服务还在重启，请等十几秒后刷新页面再试';
+  if (status === 408 || status === 504) return '出题服务响应超时，请稍后重试或拆分资料';
+  if (status === 413) return '资料内容过大，请拆分后重试';
+  if (status === 429) return 'AI 调用太频繁了，等几秒再试';
+  if (status === 401 || status === 403) return '登录已失效，请刷新页面后重试';
+  if (status === 502 || status === 503) {
+    return `出题服务暂时没有响应（HTTP ${status}），可能刚更新完或网络不稳定，请再点一次生成`;
+  }
+  if (status >= 500) return `出题服务出错了（HTTP ${status}），请稍后重试`;
+  return `网络或服务异常（HTTP ${status || '未知'}），没拿到出题结果，请重试`;
+}
+
+// 启动出题会话：发布站点时后端会短暂重启（约半分钟），这里用退避重试撑过去
+const AI_START_RETRY_DELAYS = [600, 1200, 2500, 5000, 8000, 12000, 12000];
+async function startAISession(payload, signal, onRetry) {
+  let lastMessage = '';
+  for (let attempt = 0; attempt <= AI_START_RETRY_DELAYS.length; attempt++) {
+    if (attempt) await new Promise((resolve) => setTimeout(resolve, AI_START_RETRY_DELAYS[attempt - 1]));
+    let res = null;
+    try {
+      res = await fetch('/functions/v1/app/ai/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      lastMessage = '网络连接中断，请检查网络后再试';
+      continue;
+    }
+    const data = await res.json().catch(() => null);
+    if (res.ok && data && data.ok) return data;
+    // 网关返回的 HTML/空响应、5xx、部署窗口的 404 都值得再试；带业务错误的 4xx 直接报给用户
+    const retryable = !data || res.status >= 500 || res.status === 404 || res.status === 408;
+    lastMessage = aiErrorText(res.status, data);
+    if (!retryable) throw new Error(lastMessage);
+    if (onRetry && attempt < AI_START_RETRY_DELAYS.length) onRetry(attempt + 1);
+  }
+  throw new Error(lastMessage || 'AI 服务暂时不可用，请稍后重试');
+}
+
+function updateAIGenerating(run, count, startedAt, doneParts = 0, totalParts = 1, mode = aiMode, parts = []) {
+  const sub = run && run.querySelector('.ai-generating-sub');
+  if (!sub) return;
+  const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+  if (mode === 'batch') {
+    const noteParts = parts.filter((part) => part.group === 'note');
+    const examParts = parts.filter((part) => part.group === 'exam');
+    const bits = [];
+    if (noteParts.length) bits.push(`笔记出题 ${noteParts.filter((part) => part.set).length}/${noteParts.length}`);
+    if (examParts.length) bits.push(`真题整理 ${examParts.filter((part) => part.set).length}/${examParts.length} 段`);
+    sub.textContent = `${bits.join(' · ')} · 已用时 ${seconds} 秒`;
+  } else if (mode === 'exam') {
+    sub.textContent = totalParts > 1
+      ? `分 ${totalParts} 段并行整理 · 已完成 ${doneParts}/${totalParts} 段 · 已用时 ${seconds} 秒`
+      : `整理全部真题 · 已用时 ${seconds} 秒`;
+  } else {
+    sub.textContent = `共 ${count} 题 · 已用时 ${seconds} 秒`;
+  }
+}
+
+function aiVisibleChars(text) {
+  return String(text || '').replace(/\s/g, '').length;
+}
+
+// 题量规则：与后端 functions/handler.ts 的 countRangeFor 保持一致
+function aiCountRange(chars) {
+  const min = 3;
+  const max = Math.max(min, Math.min(40, Math.floor(chars / 120)));
+  const rec = Math.max(min, Math.min(max, Math.round(chars / 300)));
+  return { min, max, rec };
+}
+
+// 粗略识别"1. / 1、/（1）"这类题号，用于真题模式的提示，不作为硬性约束
+function aiEstimateQuestions(text) {
+  const lines = String(text || '').split('\n');
+  let n = 0;
+  for (const line of lines) {
+    if (/^\s*[（(]\s*[0-9０-９]{1,3}\s*[）)]\s*\S/.test(line) || /^\s*(?:第\s*)?[0-9０-９]{1,3}\s*[.、．)）]\s*\S/.test(line)) n++;
+  }
+  return n;
+}
+
+function aiFileKind(piece) {
+  return piece && piece.kind === 'exam' ? 'exam' : 'note';
+}
+
+// 自动判断文件类型：题号 + 选项行，或文件名/开头出现试卷类关键词
+function aiGuessFileKind(text, name) {
+  const s = String(text || '');
+  const numbered = aiEstimateQuestions(s);
+  const optionLines = (s.match(/(?:^|\n)\s*[A-DＡ-Ｄ][.、．)）]\s*\S/g) || []).length;
+  const head = `${name || ''}\n${s.slice(0, 800)}`;
+  const titleHit = /(试卷|真题|试题|模拟卷|模拟题|习题集|考试|期末|期中|答题卡|参考答案)/.test(head);
+  if (numbered >= 3 && optionLines >= 3) return 'exam';
+  if (titleHit && (numbered >= 2 || optionLines >= 2)) return 'exam';
+  return 'note';
+}
+
+// 按文件类型分组收集资料：笔记用于出题，真题用于原样整理
+function collectAIGroups() {
+  const manual = (document.getElementById('aiMaterial')?.value || '').trim();
+  const files = aiPieces.filter((p) => p.status === 'ok' && p.text);
+  const hasFiles = files.length > 0;
+  const pasteSelect = document.getElementById('aiPasteKind');
+  const pasteKind = hasFiles
+    ? (pasteSelect && pasteSelect.value === 'exam' ? 'exam' : 'note')
+    : (aiMode === 'exam' ? 'exam' : 'note');
+
+  const docs = files.map((p) => ({ name: p.name, kind: aiFileKind(p), material: p.text }));
+  if (manual) docs.push({ name: '粘贴的文字', kind: pasteKind, material: manual });
+
+  const noteDocs = docs.filter((doc) => doc.kind === 'note');
+  const examDocs = docs.filter((doc) => doc.kind === 'exam');
+  const join = (list) => list
+    .map((doc) => (list.length > 1 ? `【${doc.name}】\n${doc.material}` : doc.material))
+    .join('\n\n');
+
+  const noteText = join(noteDocs);
+  const examText = join(examDocs);
+  return {
+    docs, noteDocs, examDocs, hasFiles, pasteKind,
+    noteText, examText,
+    hasNotes: noteDocs.length > 0,
+    hasExams: examDocs.length > 0,
+    mixed: noteDocs.length > 0 && examDocs.length > 0
+  };
+}
+
+function openAIModal(subjectId, materialIds) {
+  const target = subjectById(subjectId);
+  if (target) aiSubjectId = target.id;
+  else if (!subjectById(aiSubjectId)) aiSubjectId = 'sub-inbox';
+  // 解析进行中重新打开时保留文件，避免丢失刚上传的资料
+  if (!aiParseBusy) {
+    aiPieces = [];
+    aiLastRecommended = 0;
+  }
+  if (Array.isArray(materialIds) && materialIds.length) addMaterialsToAI(materialIds);
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">AI 出题 · 真题整理</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="aiFormWrap">
+        <div class="ai-note">
+          <span class="ai-note-dot"></span>
+          <span>已内置 Qoder AI，无需 API Key。上传的资料会自动存进所选学科；点「保存题库」后题目也会归入该学科。</span>
+        </div>
+        <div id="aiErrorBox" class="feedback feedback-incorrect" hidden style="margin-bottom:14px"></div>
+
+        <div class="ai-subject-bar">
+          <label class="ai-subject-label" for="aiSubjectSelect">保存到学科</label>
+          <select class="form-select ai-subject-select" id="aiSubjectSelect" onchange="onAISubjectChange(this.value)">${renderAISubjectOptions()}</select>
+          <button type="button" class="link-btn" onclick="toggleNewSubjectInline()">＋ 新建</button>
+          <span class="ai-new-subject" id="aiNewSubjectWrap" hidden>
+            <input class="form-input" id="aiNewSubjectName" maxlength="20" placeholder="学科名称" onkeydown="if(event.key==='Enter')createSubjectInline()">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="createSubjectInline()">建立</button>
+          </span>
+        </div>
+
+        <div class="ai-library" id="aiLibrary" hidden></div>
+
+        <section class="ai-step">
+          <div class="ai-step-head">
+            <span class="ai-step-num">1</span>
+            <span>上传学习资料</span>
+            <span class="ai-step-hint">PDF · WORD · PPT · TXT</span>
+          </div>
+          <label class="ai-dropzone" id="aiDropzone" for="aiFileInput">
+            <input type="file" id="aiFileInput" multiple hidden
+              accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
+              onchange="handleAIFileInput(this)">
+            <span class="ai-dropzone-icon">${ICON.upload}</span>
+            <span class="ai-dropzone-title">拖入文件，或点击选择</span>
+            <span class="ai-dropzone-hint">支持多选 · 笔记和真题可以一起传 · 单文件 ≤ 30MB · 扫描版 PDF 需先 OCR</span>
+          </label>
+          <div class="ai-file-list" id="aiFileList"></div>
+          <div class="ai-file-summary" id="aiFileSummary"></div>
+          <button type="button" class="ai-paste-toggle" id="aiPasteToggle" onclick="toggleAIPaste()">没有文件？直接粘贴文字</button>
+          <div id="aiPasteWrap" hidden>
+            <div class="ai-paste-kind" id="aiPasteKindWrap" hidden>
+              <span>这段文字属于</span>
+              <select id="aiPasteKind" onchange="refreshAIState()">
+                <option value="note">笔记 · 生成新题</option>
+                <option value="exam">真题 · 原样整理</option>
+              </select>
+            </div>
+            <textarea class="form-textarea" id="aiMaterial" style="margin-top:10px;min-height:120px" placeholder="粘贴课堂笔记、教材段落、真题试卷……" oninput="refreshAIState()"></textarea>
+            <p class="text-sm text-muted" style="margin:5px 0 0">粘贴的文字会和上传的资料一起使用。</p>
+          </div>
+        </section>
+
+        <section class="ai-step">
+          <div class="ai-step-head">
+            <span class="ai-step-num">2</span>
+            <span>处理方式</span>
+          </div>
+          <div class="ai-mode" id="aiModeGroup" role="group" aria-label="处理方式">
+            <button type="button" class="ai-mode-btn active" data-mode="generate" onclick="setAIMode('generate')">
+              <span class="ai-mode-title">根据资料出题</span>
+              <span class="ai-mode-desc">笔记、教材 → 生成新题</span>
+            </button>
+            <button type="button" class="ai-mode-btn" data-mode="exam" onclick="setAIMode('exam')">
+              <span class="ai-mode-title">原样整理真题</span>
+              <span class="ai-mode-desc">试卷、题库 → 全部保留</span>
+            </button>
+          </div>
+          <div class="ai-group-summary" id="aiGroupSummary" hidden></div>
+          <button type="button" class="ai-mode-hint" id="aiModeHint" hidden onclick="setAIMode('exam')">检测到试卷格式，点这里改为原样整理，题目全部保留 →</button>
+          <div class="ai-count-card" id="aiCountCard">
+            <div class="ai-count-head">
+              <span class="ai-count-label">题目数量</span>
+              <span class="ai-count-value" id="aiCountValue">—</span>
+            </div>
+            <input type="range" class="ai-range" id="aiCount" min="3" max="40" value="8" step="1" disabled oninput="onAICountInput()">
+            <div class="ai-count-hint" id="aiCountHint">上传资料后，会按资料篇幅自动推荐题量</div>
+          </div>
+          <div id="aiTypesWrap">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">题型偏好</label>
+              <select class="form-select" id="aiTypes" onchange="onAITypesChange()">
+                <option value="mixed" selected>混合题型</option>
+                <option value="choice">仅选择题</option>
+                <option value="with-code">含编程题</option>
+              </select>
+            </div>
+            <div class="form-group" id="aiCodeLangGroup" style="display:none;margin:12px 0 0">
+              <label class="form-label">编程题语言</label>
+              <select class="form-select" id="aiCodeLang">
+                <option value="python" selected>Python</option>
+                <option value="javascript">JavaScript</option>
+              </select>
+            </div>
+            <p class="text-sm text-muted" style="margin:8px 0 0">混合题型包含单选、多选、判断、填空；只有编程类资料才需要选择「含编程题」。</p>
+          </div>
+          <div class="ai-exam-note" id="aiExamNote" hidden>
+            <b id="aiExamEstimate">将全部整理</b>
+            <span id="aiExamNoteText">题干、选项和答案按原文保留，不改写、不删减；原文没有答案时会给出参考答案。</span>
+          </div>
+          <details class="ai-preview" id="aiPreview" hidden>
+            <summary>查看提取的文字<span id="aiPreviewCount"></span></summary>
+            <pre id="aiPreviewText"></pre>
+          </details>
+        </section>
+      </div>
+      <div id="aiRunWrap" hidden></div>
+    </div>
+    <div class="modal-footer" id="aiModalFooter">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">生成题目</button>
+    </div>`, 'modal-wide');
+  bindAIDropzone();
+  setAIMode(aiMode);
+  renderAIFileList();
+  renderAILibrary();
+  refreshAIState();
+}
+
+function renderAISubjectOptions() {
+  const list = [...allSubjects(), INBOX_SUBJECT];
+  return list.map((s) => `<option value="${s.id}" ${s.id === aiSubjectId ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+}
+
+function addMaterialsToAI(ids) {
+  const wanted = new Set(ids);
+  materials.filter((m) => wanted.has(m.id)).forEach((m) => {
+    if (aiPieces.some((p) => p.materialId === m.id || (p.name === m.name && p.size === m.size))) return;
+    aiPieces.push({
+      id: 'm' + m.id,
+      materialId: m.id,
+      fromMaterial: true,
+      name: m.name,
+      size: m.size,
+      ext: m.ext,
+      kind: m.kind,
+      status: 'ok',
+      chars: m.chars,
+      pages: m.pages,
+      text: m.text,
+      savedTo: m.subjectId,
+      file: null
+    });
+  });
+}
+
+function renderAILibrary() {
+  const wrap = document.getElementById('aiLibrary');
+  if (!wrap) return;
+  const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const list = subjectMaterials(subject.id);
+  if (!list.length) {
+    wrap.hidden = true;
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+  wrap.innerHTML = `
+    <div class="ai-library-head">
+      <span>「${esc(subject.name)}」已有资料</span>
+      <span class="text-sm text-muted">勾选后直接参与出题</span>
+    </div>
+    <div class="ai-library-list">
+      ${list.map((m) => {
+        const checked = aiPieces.some((p) => p.materialId === m.id);
+        return `<label class="ai-library-item${checked ? ' checked' : ''}">
+          <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleLibraryMaterial('${m.id}', this.checked)">
+          <span class="ai-library-main">
+            <span class="ai-library-name">${esc(m.name)}</span>
+            <span class="ai-library-meta">${materialKindLabel(m.kind)} · ${m.chars.toLocaleString('zh-CN')} 字</span>
+          </span>
+        </label>`;
+      }).join('')}
+    </div>`;
+}
+
+function toggleLibraryMaterial(id, checked) {
+  if (checked) addMaterialsToAI([id]);
+  else aiPieces = aiPieces.filter((p) => p.materialId !== id);
+  renderAILibrary();
+  renderAIFileList();
+  refreshAIState();
+}
+
+function onAISubjectChange(value) {
+  const subject = subjectById(value);
+  if (!subject) return;
+  aiSubjectId = subject.id;
+  // 换学科时只移除来自旧学科资料库的条目，本次上传的文件保留
+  aiPieces = aiPieces.filter((p) => !p.fromMaterial);
+  renderAILibrary();
+  renderAIFileList();
+  refreshAIState();
+}
+
+function toggleNewSubjectInline() {
+  const wrap = document.getElementById('aiNewSubjectWrap');
+  if (!wrap) return;
+  wrap.hidden = !wrap.hidden;
+  if (!wrap.hidden) document.getElementById('aiNewSubjectName')?.focus();
+}
+
+function createSubjectInline() {
+  const input = document.getElementById('aiNewSubjectName');
+  const subject = createSubject(input ? input.value : '');
+  if (!subject) { if (input) input.focus(); return; }
+  aiSubjectId = subject.id;
+  const select = document.getElementById('aiSubjectSelect');
+  if (select) select.innerHTML = renderAISubjectOptions();
+  const wrap = document.getElementById('aiNewSubjectWrap');
+  if (wrap) wrap.hidden = true;
+  if (input) input.value = '';
+  renderAILibrary();
+  toast(`已切换到「${subject.name}」`, 'success');
+}
+
+// 上传解析成功后自动归档到当前学科：同名同大小视为已有
+async function autoStoreAIPiece(piece) {
+  if (!piece || piece.fromMaterial || !piece.text || materialsUnavailable) return;
+  const subjectId = aiSubjectId || 'sub-inbox';
+  const dup = materials.find((m) => m.subjectId === subjectId && m.name === piece.name && m.size === piece.size);
+  if (dup) {
+    piece.materialId = dup.id;
+    piece.savedTo = subjectId;
+    return;
+  }
+  const record = {
+    id: 'mat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    subjectId,
+    name: String(piece.name || '未命名资料').slice(0, 160),
+    size: piece.size || 0,
+    ext: piece.ext || '',
+    kind: aiFileKind(piece),
+    pages: piece.pages || 0,
+    chars: piece.chars || aiVisibleChars(piece.text),
+    addedAt: Date.now(),
+    text: piece.text
+  };
+  try {
+    const blob = piece.file && piece.file.size <= MATERIAL_BLOB_LIMIT ? piece.file : null;
+    const saved = await saveMaterialRecord(record, blob);
+    materials.unshift(saved);
+    piece.materialId = saved.id;
+    piece.savedTo = subjectId;
+  } catch (e) {
+    // 资料库写入失败不阻断出题，只是这次文件不会留档
+    piece.saveFailed = true;
+    console.warn('[StarQuiz] 资料归档失败', e);
+  }
+}
+
+function bindAIDropzone() {
+  const dz = document.getElementById('aiDropzone');
+  if (!dz) return;
+  let depth = 0;
+  dz.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    depth++;
+    dz.classList.add('dragover');
+  });
+  dz.addEventListener('dragover', (e) => e.preventDefault());
+  dz.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    depth = Math.max(0, depth - 1);
+    if (!depth) dz.classList.remove('dragover');
+  });
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    depth = 0;
+    dz.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (files.length) handleAIFiles(files);
+  });
+}
+
+function toggleAIPaste() {
+  const wrap = document.getElementById('aiPasteWrap');
+  const btn = document.getElementById('aiPasteToggle');
+  if (!wrap || !btn) return;
+  const show = wrap.hidden;
+  wrap.hidden = !show;
+  btn.textContent = show ? '收起粘贴框' : '没有文件？直接粘贴文字';
+  if (show) document.getElementById('aiMaterial')?.focus();
+}
+
+function onAICountInput() {
+  const range = document.getElementById('aiCount');
+  if (!range) return;
+  range.dataset.touched = '1';
+  const valueEl = document.getElementById('aiCountValue');
+  if (valueEl) valueEl.innerHTML = `${range.value}<small>题</small>`;
+}
+
+function setAIMode(mode) {
+  aiMode = mode === 'exam' ? 'exam' : 'generate';
+  document.querySelectorAll('.ai-mode-btn').forEach((b) => {
+    const on = b.dataset.mode === aiMode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  refreshAIState();
+}
+
+function refreshAIState() {
+  const range = document.getElementById('aiCount');
+  const valueEl = document.getElementById('aiCountValue');
+  const hintEl = document.getElementById('aiCountHint');
+  if (!range || !valueEl || !hintEl) return;
+
+  const groups = collectAIGroups();
+  const { hasFiles, hasNotes, hasExams, mixed } = groups;
+  const noteChars = aiVisibleChars(groups.noteText);
+  const examChars = aiVisibleChars(groups.examText);
+  const noteOversize = groups.noteText.length > 24000;
+  const examOversize = groups.examText.length > 48000;
+  const ready = (hasNotes || hasExams)
+    && (!hasNotes || noteChars >= 50)
+    && (!hasExams || examChars >= 50);
+
+  const modeGroup = document.getElementById('aiModeGroup');
+  if (modeGroup) modeGroup.hidden = hasFiles;
+  const pasteKindWrap = document.getElementById('aiPasteKindWrap');
+  if (pasteKindWrap) pasteKindWrap.hidden = !hasFiles;
+
+  const countCard = document.getElementById('aiCountCard');
+  const typesWrap = document.getElementById('aiTypesWrap');
+  const examNote = document.getElementById('aiExamNote');
+  if (countCard) countCard.hidden = !hasNotes;
+  if (typesWrap) typesWrap.hidden = !hasNotes;
+  if (examNote) examNote.hidden = !hasExams;
+
+  if (hasNotes) {
+    const { min, max, rec } = aiCountRange(noteChars);
+    range.min = String(min);
+    range.max = String(max);
+    range.disabled = !ready || noteOversize;
+    if (noteChars >= 50) {
+      const current = Number(range.value) || 0;
+      if (!range.dataset.touched || current < min || current > max || current === aiLastRecommended) {
+        range.value = String(rec);
+      }
+      aiLastRecommended = rec;
+    } else {
+      range.value = String(rec);
+      aiLastRecommended = 0;
+    }
+
+    valueEl.innerHTML = noteChars >= 50 ? `${range.value}<small>题</small>` : '—';
+    if (aiParseBusy && !noteChars) {
+      hintEl.textContent = '正在解析资料…';
+    } else if (noteOversize) {
+      hintEl.textContent = `笔记资料 ${groups.noteText.length.toLocaleString()} 字，超过 24,000 字，请拆分后再上传`;
+    } else if (noteChars < 50) {
+      hintEl.textContent = '上传资料后，会按资料篇幅自动推荐题量';
+    } else {
+      const examTail = hasExams ? '；真题部分全部保留，不计入此数量' : '';
+      hintEl.textContent = `${noteChars.toLocaleString()} 字笔记 · 建议 ${rec} 题，可调 ${min}–${max}${examTail}`;
+    }
+  } else {
+    range.disabled = true;
+    valueEl.innerHTML = '—';
+  }
+
+  if (hasExams) {
+    const est = examChars >= 50 ? aiEstimateQuestions(groups.examText) : 0;
+    const estEl = document.getElementById('aiExamEstimate');
+    if (estEl) {
+      estEl.textContent = aiParseBusy && !examChars ? '正在解析资料…' : (!examChars ? '等待资料' : (est > 0 ? `识别到约 ${est} 道题` : '将全部整理'));
+    }
+    const noteText = document.getElementById('aiExamNoteText');
+    if (noteText) {
+      noteText.textContent = examOversize
+        ? '真题资料超过 48,000 字，请拆分后再整理，避免漏题。'
+        : mixed
+          ? '真题部分按原文逐题保留；笔记部分另出新题。较长试卷会自动分段并行整理。'
+          : '题干、选项和答案按原文保留，不改写、不删减；较长试卷会自动分段并行整理，速度更快。';
+    }
+    if (examNote) examNote.classList.toggle('is-warn', examOversize);
+  }
+
+  const summary = document.getElementById('aiGroupSummary');
+  if (summary) {
+    if (!hasFiles || !(hasNotes || hasExams)) {
+      summary.hidden = true;
+      summary.innerHTML = '';
+    } else {
+      summary.hidden = false;
+      const bits = [];
+      if (hasNotes) bits.push(`<span class="ai-group-pill note">笔记 ${groups.noteDocs.length} 份 · 生成新题</span>`);
+      if (hasExams) bits.push(`<span class="ai-group-pill exam">真题 ${groups.examDocs.length} 份 · 原样保留</span>`);
+      summary.innerHTML = `<div class="ai-group-pills">${bits.join('')}</div>
+        <div class="ai-group-actions">
+          <button type="button" onclick="setAllAIFileKinds('note')">全部按笔记</button>
+          <button type="button" onclick="setAllAIFileKinds('exam')">全部按真题</button>
+          <span>点文件名右侧的标签可单独切换</span>
+        </div>`;
+    }
+  }
+
+  const modeHint = document.getElementById('aiModeHint');
+  if (modeHint) {
+    const pasteText = `${groups.noteText}\n${groups.examText}`;
+    const optionLines = (pasteText.match(/(?:^|\n)\s*[A-DＡ-Ｄ][.、．)）]\s*/g) || []).length;
+    modeHint.hidden = hasFiles || aiMode === 'exam' || !ready
+      || aiEstimateQuestions(pasteText) < 5 || optionLines < 3;
+  }
+
+  const preview = document.getElementById('aiPreview');
+  const previewText = document.getElementById('aiPreviewText');
+  const previewCount = document.getElementById('aiPreviewCount');
+  if (preview && previewText) {
+    const previewBody = mixed
+      ? `【笔记】\n${groups.noteText}\n\n【真题】\n${groups.examText}`
+      : (groups.examText || groups.noteText);
+    preview.hidden = !ready;
+    if (ready) {
+      previewText.textContent = previewBody.slice(0, 48000);
+      if (previewCount) previewCount.textContent = `（${(noteChars + examChars).toLocaleString()} 字）`;
+    }
+  }
+
+  const oversize = noteOversize || examOversize;
+  const btn = document.getElementById('aiGenerateBtn');
+  if (btn) {
+    btn.disabled = !ready || aiParseBusy || oversize;
+    btn.textContent = mixed
+      ? (oversize ? '资料超长，请拆分' : '开始整理')
+      : hasExams
+        ? (examOversize ? '请先拆分资料' : '整理全部真题')
+        : '生成题目';
+  }
+}
+
+function renderAIFileList() {
+  const list = document.getElementById('aiFileList');
+  if (list) {
+    list.innerHTML = aiPieces.map((p) => {
+      const kind = p.ext === 'md' || p.ext === 'markdown' ? 'txt' : (['pdf', 'docx', 'doc', 'pptx', 'txt'].includes(p.ext) ? p.ext : 'txt');
+      const label = p.ext === 'markdown' ? 'MD' : String(p.ext || 'FILE').toUpperCase().slice(0, 4);
+      let meta;
+      if (p.status === 'parsing') {
+        meta = `<span class="spinner" style="width:11px;height:11px;border-width:2px;display:inline-block;vertical-align:-1px"></span> 正在解析…`;
+      } else if (p.status === 'error') {
+        meta = `<span class="file-err">✕ ${esc(p.error || '解析失败')}</span>`;
+      } else {
+        const bits = [];
+        if (p.pages) bits.push(`${p.pages} 页`);
+        bits.push(`${p.chars.toLocaleString()} 字`);
+        if (p.materialId) bits.push(`已存入${esc((subjectById(p.savedTo) || INBOX_SUBJECT).name)}`);
+        else if (p.saveFailed) bits.push('未留档');
+        meta = `${bits.join(' · ')} · <span class="file-ok">✓ 已提取</span>`;
+      }
+      const kindTag = p.status === 'ok'
+        ? `<button type="button" class="ai-file-kind ${aiFileKind(p)}" title="点击切换：笔记生成新题 / 真题原样保留" onclick="toggleAIFileKind('${p.id}')">${aiFileKind(p) === 'exam' ? '真题 · 保留' : '笔记 · 出题'}</button>`
+        : '';
+      return `<div class="ai-file">
+        <span class="ai-file-type ${kind}">${esc(label)}</span>
+        <div class="ai-file-main">
+          <div class="ai-file-name" title="${esc(p.name)}">${esc(p.name)}</div>
+          <div class="ai-file-meta">${meta}</div>
+        </div>
+        ${kindTag}
+        <button type="button" class="ai-file-remove" aria-label="移除 ${esc(p.name)}" onclick="removeAIFile('${p.id}')">×</button>
+      </div>`;
+    }).join('');
+  }
+  renderAIFileSummary();
+}
+
+function renderAIFileSummary() {
+  const el = document.getElementById('aiFileSummary');
+  if (!el) return;
+  const ok = aiPieces.filter((p) => p.status === 'ok');
+  const failed = aiPieces.filter((p) => p.status === 'error');
+  const parsing = aiPieces.filter((p) => p.status === 'parsing');
+  const parts = [];
+  const aggregate = ok.length > 1 || parsing.length > 0 || failed.length > 0;
+  if (ok.length && aggregate) {
+    const pages = ok.reduce((n, p) => n + (p.pages || 0), 0);
+    const chars = ok.reduce((n, p) => n + p.chars, 0);
+    const notes = ok.filter((p) => aiFileKind(p) === 'note').length;
+    const exams = ok.length - notes;
+    const kindText = ok.length > 1
+      ? ` · ${notes ? `笔记 ${notes} 份` : ''}${notes && exams ? '、' : ''}${exams ? `真题 ${exams} 份` : ''}`
+      : '';
+    parts.push(`<span class="file-ok">✓ 已提取 ${ok.length} 个文件${pages ? ` · ${pages} 页` : ''} · ${chars.toLocaleString()} 字${kindText}</span>`);
+  }
+  if (parsing.length) parts.push(`正在解析 ${parsing.length} 个文件…`);
+  if (failed.length) parts.push(`<span class="file-err">${failed.length} 个文件解析失败</span>`);
+  el.innerHTML = parts.join(' · ');
+}
+
+function toggleAIFileKind(id) {
+  const piece = aiPieces.find((p) => p.id === id);
+  if (!piece || piece.status !== 'ok') return;
+  piece.kind = aiFileKind(piece) === 'exam' ? 'note' : 'exam';
+  piece.kindTouched = true;
+  renderAIFileList();
+  refreshAIState();
+}
+
+function setAllAIFileKinds(kind) {
+  const target = kind === 'exam' ? 'exam' : 'note';
+  aiPieces.forEach((piece) => {
+    if (piece.status !== 'ok') return;
+    piece.kind = target;
+    piece.kindTouched = true;
+  });
+  renderAIFileList();
+  refreshAIState();
+}
+
+function removeAIFile(id) {
+  aiPieces = aiPieces.filter((p) => p.id !== id);
+  renderAIFileList();
+  renderAILibrary();
+  refreshAIState();
+}
+
+function onAITypesChange() {
+  const types = document.getElementById('aiTypes');
+  const group = document.getElementById('aiCodeLangGroup');
+  if (types && group) group.style.display = types.value === 'with-code' ? '' : 'none';
+}
+
+const MATERIAL_LIMIT = 24000;
+const scriptCache = {};
+let pdfjsPromise = null;
+
+function loadScript(src) {
+  if (scriptCache[src]) return scriptCache[src];
+  scriptCache[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => { delete scriptCache[src]; reject(new Error('解析组件加载失败，请检查网络后重试')); };
+    document.head.appendChild(s);
+  });
+  return scriptCache[src];
+}
+
+function loadPdfJs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import('./vendor/pdf.min.mjs').then((lib) => {
+      lib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.mjs', document.baseURI).href;
+      return lib;
+    }).catch((e) => { pdfjsPromise = null; throw e; });
+  }
+  return pdfjsPromise;
+}
+
+const PDF_PAGE_CAP = 300;
+
+let pdfLayoutPromise = null;
+
+function loadPdfLayout() {
+  if (!pdfLayoutPromise) {
+    pdfLayoutPromise = import('./pdf-layout.js?v=52').catch((e) => {
+      pdfLayoutPromise = null;
+      throw e;
+    });
+  }
+  return pdfLayoutPromise;
+}
+
+async function parsePDF(file) {
+  const pdfjs = await loadPdfJs();
+  const doc = await pdfjs.getDocument({
+    data: new Uint8Array(await file.arrayBuffer()),
+    cMapUrl: new URL('vendor/cmaps/', document.baseURI).href,
+    cMapPacked: true,
+    isEvalSupported: false
+  }).promise;
+  const pageCount = doc.numPages;
+  const pages = Math.min(pageCount, PDF_PAGE_CAP);
+  const pageLines = [];
+  let emptyPages = 0;
+  let collected = 0;
+
+  const layout = await loadPdfLayout();
+
+  for (let i = 1; i <= pages; i++) {
+    let lines = [];
+    try {
+      const page = await doc.getPage(i);
+      const viewport = page.getViewport({ scale: 1 });
+      const content = await page.getTextContent();
+      // 版面还原：识别双栏 gutter，按栏的阅读顺序输出；行内保留表格的列结构
+      lines = layout.layoutPage(content.items, viewport.width, viewport.height);
+    } catch {
+      emptyPages++;
+      continue;
+    }
+
+    const pageText = lines.join('\n').trim();
+    if (pageText) {
+      pageLines.push(lines);
+      collected += pageText.length;
+    } else {
+      emptyPages++;
+    }
+    if (collected > MATERIAL_LIMIT * 4) break;
+  }
+
+  await doc.destroy().catch(() => {});
+
+  // 只统计正文行，空行是段落间隔，不算“被过滤”
+  const countBodyLines = (list) => list.reduce((n, lines) => n + lines.filter((line) => line.trim()).length, 0);
+  const beforeLines = countBodyLines(pageLines);
+  // 去掉每页重复出现的页眉页脚、纯页码行（扫描件没有文字层，不在这里处理）
+  const cleaned = layout.dropRunningLines(pageLines);
+  const afterLines = countBodyLines(cleaned);
+  const removed = Math.max(0, beforeLines - afterLines);
+
+  const text = cleaned.map((lines) => lines.join('\n')).filter((chunk) => chunk.trim()).join('\n\n');
+  if (text.replace(/\s/g, '').length < 30) {
+    throw new Error('这份 PDF 没有可提取的文字层，可能是扫描件或图片版；请上传可复制文字的 PDF，或直接上传 Word/TXT');
+  }
+  const filtered = removed > 0 ? ` · 过滤 ${removed} 行页眉页脚` : '';
+  const note = emptyPages > 0 ? `，${emptyPages} 页无文字层已跳过` : '';
+  return { text, meta: `${pageCount} 页${filtered}${note}` };
+}
+
+// Word 转 HTML 后按文档顺序取段落；表格按行拼接，保留"项目 | 数值"这类结构
+const DOCX_BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'PRE', 'DT', 'DD']);
+
+function docxHtmlToText(html) {
+  const dom = new DOMParser().parseFromString(html, 'text/html');
+  const blocks = [];
+  const push = (raw) => {
+    const t = String(raw || '').replace(/[ \t\u00a0]+/g, ' ').trim();
+    if (t) blocks.push(t);
+  };
+  const walk = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    const tag = node.tagName.toUpperCase();
+    if (tag === 'TABLE') {
+      const rows = [];
+      for (const tr of node.querySelectorAll('tr')) {
+        const cells = [];
+        for (const cell of tr.children) {
+          const t = String(cell.textContent || '').replace(/\s+/g, ' ').trim();
+          if (t) cells.push(t);
+        }
+        if (cells.length) rows.push(cells.join(' | '));
+      }
+      if (rows.length) push(rows.join('\n'));
+      return '';
+    }
+    if (DOCX_BLOCK_TAGS.has(tag)) {
+      push(node.textContent);
+      return '';
+    }
+    let out = '';
+    for (const child of node.childNodes) out += walk(child);
+    return out;
+  };
+  for (const child of dom.body.childNodes) {
+    const leftover = walk(child);
+    if (leftover.trim()) push(leftover);
+  }
+  return blocks.join('\n\n');
+}
+
+async function parseDOCX(file) {
+  await loadScript('vendor/mammoth.browser.min.js');
+  if (!window.mammoth) throw new Error('Word 解析组件加载失败');
+  const arrayBuffer = await file.arrayBuffer();
+  const head = new Uint8Array(arrayBuffer.slice(0, 2));
+  if (head[0] !== 0x50 || head[1] !== 0x4b) {
+    throw new Error('这个文件不是标准的 .docx 格式（可能只是改了扩展名），请用 Word/WPS 另存为 .docx 后上传');
+  }
+  let text = '';
+  try {
+    const result = await window.mammoth.convertToHtml({ arrayBuffer });
+    text = docxHtmlToText(result.value || '');
+  } catch {
+    text = '';
+  }
+  // 结构化解析失败或几乎没内容时，退回纯文本提取兜底
+  if (text.replace(/\s/g, '').length < 30) {
+    try {
+      const result = await window.mammoth.extractRawText({ arrayBuffer });
+      const raw = String(result.value || '').trim();
+      if (raw.length > text.length) text = raw;
+    } catch {
+      // 两种方式都失败时保留已有文本，交给上层提示
+    }
+  }
+  return { text, meta: '' };
+}
+
+let docTextPromise = null;
+function loadDocText() {
+  if (!docTextPromise) {
+    docTextPromise = import('./doc-text.js?v=53').catch((e) => {
+      docTextPromise = null;
+      throw e;
+    });
+  }
+  return docTextPromise;
+}
+
+function looksLikeOle(bytes) {
+  return !!bytes && bytes.length >= 8 &&
+    bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0 &&
+    bytes[4] === 0xa1 && bytes[5] === 0xb1 && bytes[6] === 0x1a && bytes[7] === 0xe1;
+}
+
+async function parseLegacyDOC(file) {
+  const mod = await loadDocText();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let text = '';
+  try {
+    text = mod.extractLegacyWordText(bytes);
+  } catch (e) {
+    const code = e && e.message;
+    if (code === 'encrypted_doc') {
+      throw new Error('这份 Word 文档设置了密码保护，暂时无法读取；请取消密码后另存为 .docx 再上传');
+    }
+    if (code === 'not_word97') {
+      throw new Error('这份文档是更早的 Word 95 格式，请用 Word/WPS 另存为 .docx 后上传');
+    }
+    throw new Error('旧版 Word 文档解析失败，请用 Word/WPS 另存为 .docx 后上传');
+  }
+  if (text.replace(/\s/g, '').length < 30) {
+    throw new Error('这份旧版 Word 文档里没有可提取的文字，可能是扫描件或纯图片；请上传可复制文字的文档，或直接粘贴文字');
+  }
+  return { text, meta: '旧版 Word · 已自动识别' };
+}
+
+function pptNumber(name) {
+  const m = /(\d+)\.xml$/.exec(name);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+function pptXmlLines(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const nodes = doc.getElementsByTagName('a:t');
+  const lines = [];
+  for (const node of nodes) {
+    const t = (node.textContent || '').trim();
+    if (t) lines.push(t);
+  }
+  return lines;
+}
+
+// 通过 slide 的 rels 找到对应备注页（编号不一定和幻灯页码一致）
+async function pptNotesLines(zip, index) {
+  try {
+    const relName = `ppt/slides/_rels/slide${index}.xml.rels`;
+    const relFile = zip.file(relName);
+    if (!relFile) return [];
+    const relXml = await relFile.async('string');
+    const m = /Target="([^"]*notesSlide\d+\.xml)"/.exec(relXml);
+    if (!m) return [];
+    let target = m[1];
+    if (target.startsWith('/')) target = target.slice(1);
+    else target = target.replace(/^\.\.\//, 'ppt/');
+    const notesFile = zip.file(target) || zip.file(`ppt/${target}`);
+    if (!notesFile) return [];
+    const lines = pptXmlLines(await notesFile.async('string')).filter((t) => !/^\d{1,3}$/.test(t));
+    return lines;
+  } catch {
+    return [];
+  }
+}
+
+async function parsePPTX(file) {
+  await loadScript('vendor/jszip.min.js');
+  if (!window.JSZip) throw new Error('PPT 解析组件加载失败');
+  const zip = await window.JSZip.loadAsync(await file.arrayBuffer());
+  const slides = Object.keys(zip.files)
+    .filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n))
+    .sort((a, b) => pptNumber(a) - pptNumber(b));
+  if (!slides.length) throw new Error('没有在 PPT 中找到幻灯片内容');
+  const chunks = [];
+  for (const name of slides) {
+    const index = pptNumber(name);
+    const lines = pptXmlLines(await zip.file(name).async('string'));
+    const notes = await pptNotesLines(zip, index);
+    if (notes.length) {
+      const clean = notes.join(' ').replace(/^备注[:：]\s*/, '').trim();
+      if (clean) lines.push(`备注：${clean}`);
+    }
+    if (lines.length) chunks.push(lines.join('\n'));
+  }
+  // SmartArt 的文字不在 slide XML 里，单独从 diagrams 数据中补全
+  const diagrams = Object.keys(zip.files)
+    .filter((n) => /^ppt\/diagrams\/data\d+\.xml$/.test(n))
+    .sort((a, b) => pptNumber(a) - pptNumber(b));
+  const diagramChunks = [];
+  for (const name of diagrams) {
+    const lines = pptXmlLines(await zip.file(name).async('string'));
+    if (lines.length) diagramChunks.push(lines.join('\n'));
+  }
+  if (diagramChunks.length) chunks.push(`图示内容：\n${diagramChunks.join('\n')}`);
+  return { text: chunks.join('\n\n'), meta: `${slides.length} 页` };
+}
+
+// 文本文件编码兜底：UTF-16 BOM → 严格 UTF-8 → GB18030（兼容 GBK）
+async function parseText(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (buf.length >= 2) {
+    if (buf[0] === 0xff && buf[1] === 0xfe) return new TextDecoder('utf-16le').decode(buf);
+    if (buf[0] === 0xfe && buf[1] === 0xff) return new TextDecoder('utf-16be').decode(buf);
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf).replace(/^\uFEFF/, '');
+  } catch {
+    // 不是合法 UTF-8
+  }
+  try {
+    return new TextDecoder('gb18030').decode(buf);
+  } catch {
+    return new TextDecoder('utf-8').decode(buf);
+  }
+}
+
+function detectMaterialExt(file) {
+  const nameExt = (String(file.name || '').split('.').pop() || '').toLowerCase();
+  if (['pdf', 'docx', 'doc', 'pptx', 'ppt', 'txt', 'md', 'markdown'].includes(nameExt)) return nameExt;
+  const mime = String(file.type || '').toLowerCase();
+  if (mime === 'application/pdf') return 'pdf';
+  if (mime.includes('wordprocessingml')) return 'docx';
+  if (mime === 'application/msword') return 'doc';
+  if (mime.includes('presentationml')) return 'pptx';
+  if (mime === 'application/vnd.ms-powerpoint') return 'ppt';
+  if (mime.startsWith('text/') || mime.includes('markdown')) return 'txt';
+  return nameExt;
+}
+
+async function extractMaterial(file) {
+  const ext = detectMaterialExt(file);
+  // 扩展名不可靠：WPS/老版 Office 常把 .doc 存成 .docx，先看文件头（OLE 复合文档）
+  if (['pdf', 'docx', 'doc', 'pptx', 'ppt'].includes(ext)) {
+    const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    if (looksLikeOle(head)) {
+      if (ext === 'ppt' || ext === 'pptx') {
+        throw new Error('这是旧版 PowerPoint（.ppt）文件，请用 PowerPoint/WPS 另存为 .pptx 后上传');
+      }
+      return parseLegacyDOC(file);
+    }
+  }
+  if (ext === 'pdf') return parsePDF(file);
+  if (ext === 'docx') return parseDOCX(file);
+  if (ext === 'pptx') return parsePPTX(file);
+  if (ext === 'doc') return parseLegacyDOC(file);
+  if (ext === 'ppt') throw new Error('旧版 .ppt 暂不支持，请另存为 .pptx 后上传');
+  if (['txt', 'md', 'markdown'].includes(ext)) return { text: await parseText(file), meta: '' };
+  throw new Error('暂不支持该文件格式，请上传 PDF、Word（.docx/.doc）、PPT、TXT 或 Markdown');
+}
+
+async function handleAIFileInput(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (files.length) await handleAIFiles(files);
+}
+
+async function handleAIFiles(files) {
+  const MAX_FILES = 8;
+  for (const file of files) {
+    if (aiPieces.length >= MAX_FILES) {
+      toast(`最多一次添加 ${MAX_FILES} 个文件`, 'info');
+      break;
+    }
+    if (file.size > 30 * 1024 * 1024) {
+      toast(`「${file.name}」超过 30MB，请拆分后再上传`, 'error');
+      continue;
+    }
+    if (aiPieces.some((p) => p.name === file.name && p.size === file.size)) {
+      toast(`「${file.name}」已在列表中`, 'info');
+      continue;
+    }
+    const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
+    aiPieces.push({
+      id: 'f' + (++aiSeq),
+      name: file.name,
+      size: file.size,
+      ext,
+      status: 'parsing',
+      chars: 0,
+      pages: 0,
+      text: '',
+      error: '',
+      file
+    });
+  }
+  renderAIFileList();
+  await parseAIQueue();
+}
+
+async function parseAIQueue() {
+  if (aiParseBusy) return;
+  aiParseBusy = true;
+  refreshAIState();
+  try {
+    for (;;) {
+      const piece = aiPieces.find((p) => p.status === 'parsing' && p.file);
+      if (!piece) break;
+      try {
+        const { text, meta } = await extractMaterial(piece.file);
+        const clean = cleanMaterialText(text);
+        const chars = aiVisibleChars(clean);
+        if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版文件，请先 OCR 或直接粘贴文字');
+        piece.text = clean;
+        piece.chars = chars;
+        piece.meta = meta || '';
+        const m = String(meta || '').match(/(\d+)/);
+        piece.pages = m ? parseInt(m[1], 10) : 0;
+        if (!piece.kindTouched) piece.kind = aiGuessFileKind(clean, piece.name);
+        piece.status = 'ok';
+        await autoStoreAIPiece(piece);
+      } catch (e) {
+        piece.status = 'error';
+        piece.error = e && e.message ? e.message : '文件解析失败';
+      }
+      piece.file = null;
+      renderAIFileList();
+      refreshAIState();
+    }
+  } finally {
+    aiParseBusy = false;
+    refreshAIState();
+  }
+}
+
+async function generateQuestions() {
+  if (aiParseBusy) { toast('资料还在解析中，请稍候', 'info'); return; }
+  const groups = collectAIGroups();
+  const mixed = groups.mixed;
+  const runMode = mixed ? 'batch' : (groups.hasExams ? 'exam' : 'generate');
+  const noteChars = aiVisibleChars(groups.noteText);
+  const examChars = aiVisibleChars(groups.examText);
+
+  if (mixed) {
+    if (groups.noteText.length > 24000) {
+      toast('笔记资料超过 24,000 字，请拆分后再上传', 'error', 5000);
+      return;
+    }
+    if (groups.examText.length > 48000) {
+      toast('真题资料超过 48,000 字，请拆分后再上传，避免漏题', 'error', 5000);
+      return;
+    }
+    if (noteChars < 50 || examChars < 50) {
+      toast('笔记和真题都需要至少 50 字才能一起整理', 'info');
+      return;
+    }
+  } else if (runMode === 'exam' && groups.examText.length > 48000) {
+    toast('真题资料超过 48,000 字，请拆分后再整理，避免漏题', 'error', 5000);
+    return;
+  }
+
+  const material = runMode === 'exam'
+    ? groups.examText.slice(0, 48000).trim()
+    : groups.noteText.slice(0, 24000).trim();
+  if (!mixed && aiVisibleChars(material) < 50) {
+    toast('请先上传资料或粘贴文字（至少 50 字）', 'info');
+    return;
+  }
+
+  const range = document.getElementById('aiCount');
+  const min = Number(range?.min) || 3;
+  const max = Number(range?.max) || 40;
+  const count = groups.hasNotes ? Math.max(min, Math.min(max, parseInt(range?.value, 10) || min)) : 0;
+  const types = groups.hasNotes ? document.getElementById('aiTypes').value : 'mixed';
+  const codeLanguage = groups.hasNotes && types === 'with-code' ? document.getElementById('aiCodeLang').value : null;
+  const estimate = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
+
+  state.genPreview = null;
+  const form = document.getElementById('aiFormWrap');
+  const run = document.getElementById('aiRunWrap');
+  const footer = document.getElementById('aiModalFooter');
+  const errBox = document.getElementById('aiErrorBox');
+  if (errBox) errBox.hidden = true;
+  if (form) form.hidden = true;
+  if (run) {
+    run.hidden = false;
+    const title = mixed ? 'Qoder AI 正在整理笔记和真题…' : (runMode === 'exam' ? 'Qoder AI 正在整理真题…' : 'Qoder AI 正在出题…');
+    const sub = mixed
+      ? `笔记生成 ${count} 题 · 真题${estimate > 0 ? `约 ${estimate} 题` : ''}全部原样保留`
+      : runMode === 'exam'
+        ? `${estimate > 0 ? `识别到约 ${estimate} 道题，` : ''}逐题保留，不改写不删减`
+        : `共 ${count} 题，${count <= 12 ? '约需 20–60 秒' : count <= 25 ? '约需 1–2 分钟' : '约需 2–4 分钟'}`;
+    run.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px 0;gap:14px">
+      <div class="spinner spinner-lg"></div>
+      <div style="font-size:15px">${title}</div>
+      <div class="text-sm text-muted ai-generating-sub">${sub}</div>
+    </div>`;
+  }
+  if (footer) footer.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" disabled>${runMode === 'generate' ? '生成中…' : '整理中…'}</button>`;
+
+  const controller = new AbortController();
+  const deadline = runMode === 'generate' ? AI_POLL_DEADLINE_MS : AI_EXAM_DEADLINE_MS;
+  const timer = setTimeout(() => controller.abort(), deadline + 10000);
+
+  const payload = mixed
+    ? { mode: 'batch', documents: groups.docs, count, types, codeLanguage }
+    : { material, count, types, codeLanguage, mode: runMode };
+
+  try {
+    const startData = await startAISession(payload, controller.signal, (n) => {
+      const sub = run && run.querySelector('.ai-generating-sub');
+      if (sub) sub.textContent = `服务正在更新，自动重连中（第 ${n} 次）…`;
+    });
+    const sessionId = startData.sessionId;
+    const defaultGroup = runMode === 'exam' ? 'exam' : 'note';
+    const parts = Array.isArray(startData.sessions) && startData.sessions.length
+      ? startData.sessions
+          .map((item, i) => ({
+            id: String((item && item.id) || ''),
+            index: Number(item && item.index) || i,
+            group: item && item.group === 'exam' ? 'exam' : (item && item.group === 'note' ? 'note' : defaultGroup),
+            label: String((item && item.label) || ''),
+            expected: Number(item && item.expected) || 0
+          }))
+          .filter((item) => item.id)
+          .sort((a, b) => a.index - b.index)
+          .map((item) => ({ id: item.id, group: item.group, label: item.label, expected: item.expected, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }))
+      : [{ id: sessionId, group: defaultGroup, label: '', expected: 0, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }];
+    const totalParts = parts.length;
+
+    // 站点网关对单个请求约 45 秒超时，所以由浏览器轮询出题进度；多段时并行轮询
+    const startedAt = Date.now();
+    let set = null;
+    while (!set) {
+      if (Date.now() - startedAt > deadline) {
+        throw new Error(runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量' : '整理超时了，请拆分资料后重试');
+      }
+      await new Promise((resolve) => setTimeout(resolve, AI_POLL_INTERVAL_MS));
+
+      const results = await Promise.all(parts.filter((part) => !part.set).map(async (part) => {
+        try {
+          const res = await fetch('/functions/v1/app/ai/poll', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: part.id }),
+            signal: controller.signal
+          });
+          const data = await res.json().catch(() => null);
+          return { part, res, data };
+        } catch (e) {
+          if (e && e.name === 'AbortError') throw e;
+          return { part, res: null, data: null };
+        }
+      }));
+
+      let failure = null;
+      for (const { part, res, data } of results) {
+        const partNo = part.label || (totalParts > 1 ? `第 ${parts.indexOf(part) + 1} 段` : '');
+        // 网络抖动、网关 5xx、部署窗口的 HTML 响应：连续多次才判定失败，能撑过发布时的后端重启
+        if (!res || !data || res.status >= 500) {
+          part.netErrors = (part.netErrors || 0) + 1;
+          if (part.netErrors < 20) continue;
+          failure = failure || (res ? aiErrorText(res.status, data) : '网络连接中断，请检查网络后再试');
+          continue;
+        }
+        part.netErrors = 0;
+        if (!res.ok) {
+          const code = data && data.error && data.error.code;
+          const message = data && data.error && data.error.message;
+          if (code === 'ai_bad_output' && part.badOutput < 2) {
+            part.badOutput += 1;
+            continue;
+          }
+          failure = failure || (partNo && message ? `${partNo}失败：${message}` : aiErrorText(res.status, data));
+          continue;
+        }
+        if (data.done && data.set) {
+          if (!part.set) part.set = normalizeSet(data.set);
+          continue;
+        }
+        for (const status of data.statuses || []) {
+          if (!status || typeof status.type !== 'string') continue;
+          if (status.type === 'session.status_running') part.running = true;
+          if (status.type === 'session.status_idle') part.idle = true;
+        }
+        // 新会话可能先发一次 idle，等运行状态出现或过了 8 秒才当成真正的结束
+        if (part.idle && !part.set && (part.running || Date.now() - startedAt > 8000)) {
+          const errors = Array.isArray(data.errors) && data.errors.length;
+          failure = failure || (partNo
+            ? `${partNo}没有返回题目，请重试`
+            : (errors ? 'AI 本次没有生成内容，请重试' : 'AI 没有返回题目，请重试'));
+        }
+      }
+      if (failure) throw new Error(failure);
+
+      const doneParts = parts.filter((part) => part.set).length;
+      if (doneParts === totalParts) {
+        set = mergeGeneratedSets(parts.map((part) => part.set), parts);
+        set.subjectId = subjectById(aiSubjectId) ? aiSubjectId : 'sub-inbox';
+        attachCoverage(set, parts);
+        break;
+      }
+      updateAIGenerating(run, count, startedAt, doneParts, totalParts, runMode, parts);
+    }
+    state.genPreview = set;
+
+    const examQuestions = parts.filter((part) => part.group === 'exam' && part.set)
+      .reduce((n, part) => n + part.set.questions.length, 0);
+    const noteQuestions = parts.filter((part) => part.group === 'note' && part.set)
+      .reduce((n, part) => n + part.set.questions.length, 0);
+    const sourceNote = runMode === 'batch'
+      ? `（真题原文 ${examQuestions} · 笔记生成 ${noteQuestions}）`
+      : (runMode === 'exam' ? '（全部来自原文）' : '');
+
+    if (run) {
+      run.hidden = false;
+      run.innerHTML = `
+        <div class="ai-generate-area" style="margin-bottom:0">
+          <h3>${runMode === 'generate' ? '生成成功' : '整理完成'}</h3>
+          <p>${esc(set.name)}</p>
+        </div>
+        <div class="text-sm" style="line-height:1.8">
+          <div>题目数：<b>${set.questions.length}</b>${sourceNote}</div>
+          <div>知识点：<b>${set.knowledgePoints.length}</b></div>
+          <div style="margin-top:6px">题型：${Object.entries(set.questions.reduce((m, q) => (m[q.type] = (m[q.type] || 0) + 1, m), {})).map(([t, n]) => `<span class="badge ${TYPE_CLASS[t] || 'badge-muted'}">${TYPE_LABEL[t] || t} × ${n}</span>`).join(' ')}</div>
+        </div>
+        ${renderQuality(set)}`;
+    }
+    if (footer) footer.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeModal()">放弃</button>
+      <button class="btn btn-primary" onclick="importGenerated()">保存题库</button>`;
+  } catch (e) {
+    const message = e && e.name === 'AbortError'
+      ? (runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量、缩短资料' : '整理超时了，请拆分资料后重试')
+      : (e && e.message) || '请检查网络后重试';
+    if (run) run.hidden = true;
+    if (form) form.hidden = false;
+    if (errBox) {
+      errBox.hidden = false;
+      const previewHint = message.includes(OFFICIAL_SITE_URL)
+        ? `<div style="margin-top:10px"><a class="btn btn-secondary btn-sm" href="${OFFICIAL_SITE_URL}" target="_blank" rel="noopener">在正式站点打开</a></div>`
+        : '';
+      errBox.innerHTML = `<div class="feedback-title">${runMode === 'generate' ? '生成失败' : '整理失败'}</div><div>${esc(message)}</div>${previewHint}`;
+    }
+    if (footer) footer.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">${runMode === 'generate' ? '重新生成' : '重新整理'}</button>`;
+    refreshAIState();
+    toast(message, 'error', 4500);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+let genSaving = false;
+
+function importGenerated() {
+  if (!state.genPreview || genSaving) return;
+  genSaving = true;
+  customSets.push(state.genPreview);
+  if (!saveJSON(STORAGE.sets, customSets)) {
+    customSets.pop();
+    genSaving = false;
+    toast('空间不足，题库没有保存。请先导出备份并清理不用的题库', 'error', 5000);
+    return;
+  }
+  const id = state.genPreview.id;
+  const subjectId = state.genPreview.subjectId || 'sub-inbox';
+  genSaving = false;
+  state.genPreview = null;
+  closeModal();
+  toast(`题库已保存到「${(subjectById(subjectId) || INBOX_SUBJECT).name}」`, 'success');
+  state.view = 'setDetail';
+  state.setId = id;
+  state.subjectId = subjectId;
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
+async function judgeRun(language, source, stdin) {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), 25000) : null;
+  try {
+    const res = await fetch('/functions/v1/app/judge/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language, source, stdin }),
+      ...(controller ? { signal: controller.signal } : {})
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.ok) {
+      if (res.status === 405) {
+        throw new Error(`当前页面不支持后端服务（HTTP 405），编程题判题需要在正式站点使用：${OFFICIAL_SITE_URL}`);
+      }
+      throw new Error((data && data.error && data.error.message) || `判题服务暂不可用（HTTP ${res.status || '未知'}）`);
+    }
+    if (!data.result || typeof data.result !== 'object') {
+      throw new Error('判题服务返回了异常结果，请稍后重试');
+    }
+    return data.result;
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('判题超时（25 秒），请稍后重试');
+    if (e instanceof TypeError) throw new Error('网络连接失败，判题服务暂不可用');
+    throw e;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function gradeObjective(q, ans) {
+  if (q.type === 'single') return ans === q.answer;
+  if (q.type === 'tf') return ans === q.answer;
+  if (q.type === 'multi') return Array.isArray(ans) && ans.length > 0 && sameSet(ans, q.answer);
+  if (q.type === 'fill') {
+    const list = Array.isArray(q.answer) ? q.answer : [q.answer];
+    return list.some((a) => norm(a) === norm(ans));
+  }
+  return null;
+}
+
+function updateWrongBank(setId, qid, correct) {
+  if (correct) removeWrong(setId, qid);
+  else addWrong(setId, qid);
+}
+
+function addWrong(setId, qid) {
+  if (!wrongBank[setId]) wrongBank[setId] = {};
+  wrongBank[setId][qid] = (wrongBank[setId][qid] || 0) + 1;
+  saveJSON(STORAGE.wrong, wrongBank);
+}
+
+function removeWrong(setId, qid) {
+  if (wrongBank[setId] && wrongBank[setId][qid] != null) {
+    delete wrongBank[setId][qid];
+    if (!Object.keys(wrongBank[setId]).length) delete wrongBank[setId];
+    saveJSON(STORAGE.wrong, wrongBank);
+  }
+}
+
+// 异步流程里的异常不阻断页面，只记录，避免用户看到白屏
+window.addEventListener('error', (e) => {
+  if (e && e.error) console.error('[StarQuiz] 未捕获异常', e.error);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  if (e && e.reason) console.error('[StarQuiz] 未处理的异步异常', e.reason);
+});
+// 关闭/切走页面前，把还在防抖里的作答立即落盘
+window.addEventListener('pagehide', () => {
+  if (state.exam) persistExam();
+  if (state.learning) persistLearning();
+});
+
+(async function boot() {
+  await loadMaterials();
+  if (materialsUnavailable) bootNotes.push('当前浏览器无法打开本地资料库，上传的资料这次不会保留');
+  loadResumeSessions();
+  render();
+
+  if (bootNotes.length) {
+    const notes = [...new Set(bootNotes)];
+    setTimeout(() => toast(notes.join('；'), 'info', 6000), 700);
+  }
+})();
