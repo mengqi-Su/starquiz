@@ -1124,9 +1124,9 @@ function renderSidebarSubjects() {
     const accent = setAccent({ id: s.id });
     const qCount = subjectSets(s.id).reduce((n, x) => n + x.questions.length, 0);
     const active = state.view === 'subject' && state.subjectId === s.id;
-    return `<button type="button" class="side-subject${active ? ' is-active' : ''}" onclick="openSubject('${s.id}')" title="${esc(s.name)}">
+    return `<button type="button" class="side-subject${active ? ' is-active' : ''}" data-no-i18n onclick="openSubject('${s.id}')" title="${esc(s.name)}">
       <span class="side-subject-dot" aria-hidden="true" style="background:${accent.bar}"></span>
-      <span class="side-subject-name">${esc(s.name)}</span>
+      <span class="side-subject-name" data-no-i18n>${esc(s.name)}</span>
       <span class="side-subject-num">${qCount}</span>
     </button>`;
   }).join('');
@@ -1247,7 +1247,11 @@ function renderCore() {
   const pageTitle = state.view === 'subject'
     ? ((subjectById(state.subjectId) || {}).name || '学科')
     : PAGE_TITLES[state.view];
-  document.getElementById('pageTitle').textContent = pageTitle || '';
+  const titleEl = document.getElementById('pageTitle');
+  titleEl.textContent = pageTitle || '';
+  /* 学科视图的页头标题就是用户起的学科名，英文模式下不参与翻译 */
+  if (state.view === 'subject') titleEl.setAttribute('data-no-i18n', '');
+  else titleEl.removeAttribute('data-no-i18n');
   document.getElementById('headerActions').innerHTML = renderHeaderActions();
   renderSidebarSubjects();
 
@@ -1388,7 +1392,7 @@ function lrow(o) {
     <button type="button" class="lrow" onclick="${o.onclick}">
       <span class="lrow-dot" aria-hidden="true" style="background:${o.accent}"></span>
       <span class="lrow-main">
-        <span class="lrow-title"><span class="lrow-name">${esc(o.title)}</span><span class="lrow-chip">${o.chip}</span></span>
+        <span class="lrow-title"><span class="lrow-name" data-no-i18n>${esc(o.title)}</span><span class="lrow-chip">${o.chip}</span></span>
         ${o.sub ? `<span class="lrow-sub">${esc(o.sub)}</span>` : ''}
       </span>
       <span class="lrow-tail">${o.tail}</span>
@@ -1473,7 +1477,7 @@ function renderMaterialRow(m) {
     <div class="material-row" data-material="${esc(m.id)}">
       <span class="material-ext">${esc(materialExtLabel(m.ext))}</span>
       <div class="material-main">
-        <div class="material-name" title="${esc(m.name)}">${esc(m.name)}</div>
+        <div class="material-name" data-no-i18n title="${esc(m.name)}">${esc(m.name)}</div>
         <div class="material-meta">${materialKindLabel(m.kind)} · ${fmtSize(m.size)} · ${m.chars.toLocaleString('zh-CN')} 字 · ${fmtDay(m.addedAt)}${m.hasBlob ? '' : ' · 仅文字'}</div>
       </div>
       <div class="material-actions">
@@ -1509,7 +1513,7 @@ function renderSubject() {
         <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
         <div class="subject-head-copy">
           <div class="hero-eyebrow">学科文件夹</div>
-          <h2>${esc(subject.name)}</h2>
+          <h2 data-no-i18n>${esc(subject.name)}</h2>
           <p>${mats.length} 份资料 · ${sets.length} 套题库 · ${qCount} 道题目 · ${chars} 字提取文字</p>
         </div>
       </div>
@@ -1617,7 +1621,7 @@ function nsLayerBody() {
   const mats = subjectMaterials(subject.id || '');
   return `
     <div class="wiz-head">
-      <span class="wiz-title">${esc(subject.name || nsDraft.name)}</span>
+      <span class="wiz-title" data-no-i18n>${esc(subject.name || nsDraft.name)}</span>
       <span class="wiz-hint">已建好</span>
     </div>
     <div class="wiz-summary">
@@ -2022,7 +2026,7 @@ function previewMaterial(id) {
   if (!m) return;
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">${esc(m.name)}</div>
+      <div class="modal-title" data-no-i18n>${esc(m.name)}</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
@@ -2088,7 +2092,7 @@ function moveSetModal(id) {
   if (!set) return;
   const current = subjectOfSet(set).id;
   const options = [...allSubjects(), INBOX_SUBJECT]
-    .map((s) => `<option value="${s.id}" ${s.id === current ? 'selected' : ''}>${esc(s.name)}</option>`)
+    .map((s) => `<option value="${s.id}" ${s.id === current ? 'selected' : ''} data-no-i18n>${esc(s.name)}</option>`)
     .join('');
   openModal(`
     <div class="modal-header">
@@ -2145,8 +2149,8 @@ function renderSetDetail() {
       <div class="detail-head">
         <div class="detail-icon" style="background:${accent.bg};color:${accent.fg}">${esc(set.icon || '题')}</div>
         <div>
-          <div class="hero-eyebrow">${esc(subject.name)} · 题库</div>
-          <h2>${esc(set.name)}</h2>
+          <div class="hero-eyebrow"><span data-no-i18n>${esc(subject.name)}</span> · 题库</div>
+          <h2 data-no-i18n>${esc(set.name)}</h2>
         </div>
       </div>
       <p>${esc(set.description || '')}</p>
@@ -2178,8 +2182,8 @@ function renderSetDetail() {
           <div class="knowledge-item">
             <div class="knowledge-item-icon">${ICON.bulb}</div>
             <div>
-              <div class="knowledge-item-title">${esc(kp.title)}</div>
-              <div class="knowledge-item-desc">${esc(kp.content)}</div>
+              <div class="knowledge-item-title" data-no-i18n>${esc(kp.title)}</div>
+              <div class="knowledge-item-desc" data-no-i18n>${esc(kp.content)}</div>
             </div>
           </div>`).join('')}
       </div>` : ''}
@@ -2369,8 +2373,8 @@ function renderLearning() {
 
       ${kp ? `
         <div class="knowledge-card">
-          <div class="knowledge-card-title">${ICON.bulb} 知识点 · ${esc(kp.title)}</div>
-          <div class="knowledge-card-content">${esc(kp.content)}</div>
+          <div class="knowledge-card-title">${ICON.bulb} 知识点 · <span data-no-i18n>${esc(kp.title)}</span></div>
+          <div class="knowledge-card-content" data-no-i18n>${esc(kp.content)}</div>
         </div>` : ''}
 
       <div class="question-header">
@@ -2381,7 +2385,7 @@ function renderLearning() {
         </span>
       </div>
 
-      <div class="question-text">${esc(q.content)}</div>
+      <div class="question-text" data-no-i18n>${esc(q.content)}</div>
 
       ${bodyHtml}
 
@@ -2416,14 +2420,14 @@ function renderAnswerableQuestion(q, l, mode) {
     html += `<div class="options-list">${opts.map((o, idx) => `
       <div class="option-item" onclick="learningChoose('${q.id}', ${idx})">
         <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content">${esc(o)}</span>
+        <span class="option-content" data-no-i18n>${esc(o)}</span>
       </div>`).join('')}</div>`;
   } else if (q.type === 'multi') {
     const sel = l.answers[q.id] || [];
     html += `<div class="options-list">${q.options.map((o, idx) => `
       <div class="option-item ${sel.includes(idx) ? 'selected' : ''}" onclick="learningToggleMulti('${q.id}', ${idx})">
         <span class="option-marker checkbox">${sel.includes(idx) ? '✓' : ''}</span>
-        <span class="option-content">${esc(o)}</span>
+        <span class="option-content" data-no-i18n>${esc(o)}</span>
       </div>`).join('')}</div>
       <button class="btn btn-primary" onclick="learningSubmitMulti('${q.id}')" ${sel.length === 0 ? 'disabled' : ''}>提交答案</button>`;
   } else if (q.type === 'fill') {
@@ -2448,7 +2452,7 @@ function renderAnsweredQuestion(q, res, mode) {
       else if (idx === userIdx) cls = 'incorrect';
       return `<div class="option-item ${cls}">
         <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content">${esc(o)}</span>
+        <span class="option-content" data-no-i18n>${esc(o)}</span>
       </div>`;
     }).join('')}</div>`;
   } else if (q.type === 'multi') {
@@ -2462,14 +2466,14 @@ function renderAnsweredQuestion(q, res, mode) {
       else if (isUser) cls = 'incorrect';
       return `<div class="option-item ${cls}">
         <span class="option-marker checkbox">${isCorrect ? '✓' : (isUser ? '✗' : '')}</span>
-        <span class="option-content">${esc(o)}</span>
+        <span class="option-content" data-no-i18n>${esc(o)}</span>
       </div>`;
     }).join('')}</div>`;
   } else if (q.type === 'fill') {
     optionsHtml = `
       <div class="answer-compare">
-        <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}">${esc(res.answer || '（空）')}</b></div>
-        <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)">${esc(answerText(q))}</b></div>
+        <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}" data-no-i18n>${esc(res.answer || '（空）')}</b></div>
+        <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)" data-no-i18n>${esc(answerText(q))}</b></div>
       </div>`;
   } else if (q.type === 'code') {
     optionsHtml = renderCodeResult(q, res);
@@ -2478,7 +2482,7 @@ function renderAnsweredQuestion(q, res, mode) {
   return `${optionsHtml}
     <div class="feedback ${feedbackClass}">
       <div class="feedback-title">${correct ? '✓ 回答正确' : '✕ 回答错误'}</div>
-      ${q.explanation ? `<div class="feedback-explanation">${esc(q.explanation)}</div>` : ''}
+      ${q.explanation ? `<div class="feedback-explanation" data-no-i18n>${esc(q.explanation)}</div>` : ''}
     </div>`;
 }
 
@@ -2491,7 +2495,7 @@ function renderCodeResult(q, res) {
     html += `<div class="code-output ${res.correct ? 'success' : 'error'}"><div class="output-label ${res.correct ? 'pass' : 'fail'}">${res.correct ? '运行结果' : '测试结果'}</div>${esc(res.output)}</div>`;
   }
   if (res.revealed && q.answer) {
-    html += `<div class="code-output" style="margin-bottom:16px"><div class="output-label">参考答案</div>${esc(q.answer)}</div>`;
+    html += `<div class="code-output" style="margin-bottom:16px"><div class="output-label">参考答案</div><span data-no-i18n>${esc(q.answer)}</span></div>`;
   }
   return html;
 }
@@ -2794,7 +2798,7 @@ function startExamModal(setId) {
 
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">模拟考试 · ${esc(set.name)}</div>
+      <div class="modal-title">模拟考试 · <span data-no-i18n>${esc(set.name)}</span></div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
@@ -2904,7 +2908,7 @@ function renderExam() {
       else selected = cur === idx;
       return `<div class="option-item ${selected ? 'selected' : ''}" onclick="examChoose(${idx})">
         <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content">${esc(o)}</span>
+        <span class="option-content" data-no-i18n>${esc(o)}</span>
       </div>`;
     }).join('')}</div>`;
   } else if (q.type === 'multi') {
@@ -2912,7 +2916,7 @@ function renderExam() {
     bodyHtml = `<div class="options-list">${q.options.map((o, idx) => `
       <div class="option-item ${cur.includes(idx) ? 'selected' : ''}" onclick="examToggleMulti(${idx})">
         <span class="option-marker checkbox">${cur.includes(idx) ? '✓' : ''}</span>
-        <span class="option-content">${esc(o)}</span>
+        <span class="option-content" data-no-i18n>${esc(o)}</span>
       </div>`).join('')}</div>`;
   } else if (q.type === 'fill') {
     bodyHtml = `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(ex.answers[ex.current] || '')}" oninput="examFillInput(${ex.current}, this.value)">`;
@@ -2940,7 +2944,7 @@ function renderExam() {
         </span>
       </div>
 
-      <div class="question-text">${esc(q.content)}</div>
+      <div class="question-text" data-no-i18n>${esc(q.content)}</div>
       ${bodyHtml}
 
       <div class="nav-buttons">
@@ -3210,11 +3214,11 @@ function renderExamResult() {
               <span class="badge ${TYPE_CLASS[q.type] || 'badge-muted'}">${TYPE_LABEL[q.type] || q.type}</span>
               <span class="badge ${statusCls}">${status}</span>
             </div>
-            <div class="review-question">${i + 1}. ${esc(q.content)}</div>
+            <div class="review-question">${i + 1}. <span data-no-i18n>${esc(q.content)}</span></div>
             <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}">${esc(userAnswerText(q, ans.userAnswer))}</span></div>
             ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text">${esc(answerText(q))}</span></div>` : ''}
-            ${q.explanation ? `<div class="review-answer" style="margin-top:8px;color:var(--text-secondary)">${esc(q.explanation)}</div>` : ''}
-            ${q.type === 'code' && q.answer ? `<div class="code-output" style="margin-top:12px"><div class="output-label">参考答案</div>${esc(q.answer)}</div>` : ''}
+            ${q.explanation ? `<div class="review-answer" data-no-i18n style="margin-top:8px;color:var(--text-secondary)">${esc(q.explanation)}</div>` : ''}
+            ${q.type === 'code' && q.answer ? `<div class="code-output" style="margin-top:12px"><div class="output-label">参考答案</div><span data-no-i18n>${esc(q.answer)}</span></div>` : ''}
           </div>`;
         }).join('')}` : ''}
     </div>`;
@@ -3255,7 +3259,7 @@ function renderRecords() {
           <div class="perf-row">
             <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(x.set.icon || '题')}</span>
             <div style="flex:1;min-width:0">
-              <div class="perf-name">${esc(x.set.name)}</div>
+              <div class="perf-name" data-no-i18n>${esc(x.set.name)}</div>
               <div class="perf-sub">${x.attempts} 次练习 · 最佳 ${x.best}%</div>
             </div>
             <div class="perf-bar">
@@ -3280,7 +3284,7 @@ function renderRecords() {
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
             <div style="display:flex;align-items:center;gap:9px">
               <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(set.icon || '题')}</span>
-              <b>${esc(set.name)}</b>
+              <b data-no-i18n>${esc(set.name)}</b>
               <span class="badge badge-danger">${ids.length} 题</span>
             </div>
             <button class="btn btn-primary btn-sm" onclick="startLearning('${set.id}', true)">刷错题</button>
@@ -3291,7 +3295,7 @@ function renderRecords() {
               return `<div style="padding:10px 0;border-top:1px solid var(--line-soft)">
                 <div style="font-size:14px;margin-bottom:4px">${esc((q.content || '').split('\n')[0])} <span class="text-sm text-muted">（错 ${wb[qid]} 次）</span></div>
                 <div class="text-sm" style="color:var(--text-secondary)">正确答案：<span style="color:var(--success);font-weight:600">${esc(answerText(q))}</span></div>
-                ${q.explanation ? `<div class="text-sm text-muted" style="margin-top:2px">${esc(q.explanation)}</div>` : ''}
+                ${q.explanation ? `<div class="text-sm text-muted" data-no-i18n style="margin-top:2px">${esc(q.explanation)}</div>` : ''}
               </div>`;
             }).join('')}
           </div>
@@ -4178,7 +4182,7 @@ function renderAIReview() {
   const range = document.getElementById('aiCount');
   const count = groups.hasNotes ? (parseInt(range?.value, 10) || 0) : 0;
   const examEst = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
-  const bits = [`<span class="wiz-chip">学科 <b>${esc(subject.name)}</b></span>`];
+  const bits = [`<span class="wiz-chip">学科 <b data-no-i18n>${esc(subject.name)}</b></span>`];
   if (groups.hasNotes) bits.push(`<span class="wiz-chip">笔记 <b>${groups.noteDocs.length}</b> 份 · ${noteChars.toLocaleString('zh-CN')} 字</span>`);
   if (groups.hasExams) bits.push(`<span class="wiz-chip">真题 <b>${groups.examDocs.length}</b> 份 · ${examChars.toLocaleString('zh-CN')} 字</span>`);
   if (groups.hasNotes) bits.push(`<span class="wiz-chip is-soft">将生成 <b>${count}</b> 题</span>`);
@@ -4338,7 +4342,7 @@ function openAIModal(subjectId, materialIds) {
 
 function renderAISubjectOptions() {
   const list = [...allSubjects(), INBOX_SUBJECT];
-  return list.map((s) => `<option value="${s.id}" ${s.id === aiSubjectId ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  return list.map((s) => `<option value="${s.id}" ${s.id === aiSubjectId ? 'selected' : ''} data-no-i18n>${esc(s.name)}</option>`).join('');
 }
 
 function addMaterialsToAI(ids) {
@@ -4385,7 +4389,7 @@ function renderAILibrary() {
         return `<label class="ai-library-item${checked ? ' checked' : ''}">
           <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleLibraryMaterial('${m.id}', this.checked)">
           <span class="ai-library-main">
-            <span class="ai-library-name">${esc(m.name)}</span>
+            <span class="ai-library-name" data-no-i18n>${esc(m.name)}</span>
             <span class="ai-library-meta">${materialKindLabel(m.kind)} · ${m.chars.toLocaleString('zh-CN')} 字</span>
           </span>
         </label>`;
@@ -4676,7 +4680,7 @@ function renderAIFileList() {
       return `<div class="ai-file">
         <span class="ai-file-type ${kind}">${esc(label)}</span>
         <div class="ai-file-main">
-          <div class="ai-file-name" title="${esc(p.name)}">${esc(p.name)}</div>
+          <div class="ai-file-name" data-no-i18n title="${esc(p.name)}">${esc(p.name)}</div>
           <div class="ai-file-meta">${meta}</div>
         </div>
         ${kindTag}
@@ -5333,7 +5337,7 @@ async function generateQuestions() {
       run.innerHTML = `
         <div class="ai-generate-area" style="margin-bottom:0">
           <h3>${runMode === 'generate' ? '生成成功' : '整理完成'}</h3>
-          <p>${esc(set.name)}</p>
+          <p data-no-i18n>${esc(set.name)}</p>
         </div>
         <div class="text-sm" style="line-height:1.8">
           <div>题目数：<b>${set.questions.length}</b>${sourceNote}</div>

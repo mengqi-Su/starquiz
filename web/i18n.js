@@ -810,6 +810,8 @@ function translateNodeValue(node) {
 }
 
 function translateAttrs(el) {
+  // 用户内容（资料名、文件名等）带 data-no-i18n，它的 title/alt 同样保持原样
+  if (el.closest && el.closest('[data-no-i18n]')) return;
   for (const name of LANG_ATTRS) {
     if (!el.hasAttribute || !el.hasAttribute(name)) continue;
     const raw = el.getAttribute(name);
@@ -825,7 +827,13 @@ function translateAttrs(el) {
 /* ---------- DOM 遍历 ---------- */
 
 function walkText(root, fn, onlyHan) {
-  if (root.nodeType === 3) { fn(root); return; }
+  if (root.nodeType === 3) {
+    // observer 直接送来文本节点时也要走同一道闸门：跳过标签白名单和用户内容容器
+    const parent = root.parentElement;
+    if (!parent || SKIP_TAGS[parent.tagName] || parent.closest('[data-no-i18n]')) return;
+    fn(root);
+    return;
+  }
   if (root.nodeType !== 1 && root.nodeType !== 9 && root.nodeType !== 11) return;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
@@ -877,7 +885,7 @@ function ensureLangObserver() {
       if (r.type === 'childList') {
         r.addedNodes.forEach((node) => applyLang(node));
       } else if (r.type === 'characterData') {
-        translateNodeValue(r.target);
+        applyLang(r.target);
       } else if (r.target && r.target.nodeType === 1) {
         translateAttrs(r.target);
       }
