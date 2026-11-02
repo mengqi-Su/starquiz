@@ -1717,6 +1717,31 @@ input[type="file"].form-input:active::file-selector-button {
 }
 .ai-note-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 5px; }
 
+/* Exam Plan AI 联动：考点深链横幅与弹窗提示 */
+.plan-link-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 4px 0 18px;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--lime-soft);
+  box-shadow: var(--shadow-sm);
+}
+.plan-link-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.plan-link-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lime-deep); }
+.plan-link-text { font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+.plan-link-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.plan-link-note { border-style: solid; border-color: var(--ink); background: var(--lime-soft); color: var(--ink-soft); }
+.plan-link-note .ai-note-dot { background: var(--coral); }
+@media (max-width: 640px) {
+  .plan-link-banner { align-items: flex-start; }
+  .plan-link-actions { width: 100%; justify-content: space-between; }
+}
+
 .ai-step {
   border: 2px solid var(--ink);
   border-radius: 16px;

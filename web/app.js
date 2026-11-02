@@ -113,6 +113,9 @@ const BUILTIN_SUBJECTS = [
   { id: 'sub-code', name: '编程', icon: '码', builtin: true }
 ];
 const INBOX_SUBJECT = { id: 'sub-inbox', name: '未分类', icon: '杂', builtin: true, inbox: true };
+// 备考规划伴侣应用：考点级深链互相跳转，数据各自保存在本地浏览器
+const EXAM_PLAN_URL = 'https://exam-plan-ai-zfc3er164xi.qoder.zone';
+let planLink = null; // { subjectId, subject, topic, exam } 来自 Exam Plan AI 的考点深链上下文
 const STORAGE_LIMIT_BYTES = 5 * 1024 * 1024;
 const bootNotes = [];
 let lastStorageWarn = 0;
@@ -800,6 +803,83 @@ function renameSubject(id, name) {
   return true;
 }
 
+// ===== Exam Plan AI 联动：考点级深链 =====
+// 解析 ?from=exam-plan&subject=&topic=&exam=，定位/新建学科并预开 AI 出题弹窗。
+// 仅做导航与上下文提示，不跨域同步任何本地数据。
+function applyPlanDeepLink() {
+  let params;
+  try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+  if (params.get('from') !== 'exam-plan') return;
+
+  const subjectName = String(params.get('subject') || '').trim();
+  const topic = String(params.get('topic') || '').trim();
+  const exam = String(params.get('exam') || '').trim();
+
+  // 清理地址栏，避免刷新或分享时重复触发
+  try {
+    const url = new URL(window.location.href);
+    window.history.replaceState({}, '', url.pathname + url.hash);
+  } catch (e) { /* 地址栏清理失败不影响联动 */ }
+
+  const wanted = subjectName || exam;
+  const key = norm(wanted);
+  const existing = wanted ? allSubjects().find((s) => norm(s.name) === key) : null;
+  const subject = existing || (wanted ? createSubject(wanted) : null);
+
+  if (!subject) {
+    planLink = { subjectId: null, subject: subjectName, topic, exam };
+    navigateTo('sets');
+    toast(topic ? `来自备考规划：练「${topic}」。请先选择或新建一个学科。` : '来自备考规划：请选择或新建一个学科开始出题。', 'info', 6000);
+    return;
+  }
+
+  planLink = { subjectId: subject.id, subject: subject.name, topic, exam };
+  openSubject(subject.id);
+  openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
+  const lead = existing ? `已定位学科「${subject.name}」` : `已为你新建学科「${subject.name}」`;
+  toast(topic ? `${lead}，围绕考点「${topic}」上传资料出题吧` : `${lead}，上传资料即可出题`, 'info', 6000);
+}
+
+// 学科页顶部：备考规划上下文横幅 + 返回入口（仅当深链指向本学科时显示）
+function renderPlanLinkBanner(subjectId) {
+  if (!planLink || planLink.subjectId !== subjectId) return '';
+  const topic = planLink.topic ? esc(planLink.topic) : '';
+  const exam = planLink.exam ? esc(planLink.exam) : '';
+  const ctx = topic ? `考点「${topic}」` : '这个学科';
+  const examPart = exam ? ` · ${exam}` : '';
+  return `
+    <div class="plan-link-banner" role="note">
+      <div class="plan-link-main">
+        <span class="plan-link-eyebrow">来自备考规划${examPart}</span>
+        <span class="plan-link-text">围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本学科。</span>
+      </div>
+      <div class="plan-link-actions">
+        <a class="btn btn-secondary btn-sm" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">返回备考规划 ↗</a>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="dismissPlanLink()" aria-label="关闭提示">×</button>
+      </div>
+    </div>`;
+}
+
+// AI 出题弹窗内：当深链指向当前学科时，提示聚焦的考点
+function renderPlanLinkNote() {
+  if (!planLink || planLink.subjectId !== aiSubjectId) return '';
+  const topic = planLink.topic ? esc(planLink.topic) : '';
+  const exam = planLink.exam ? esc(planLink.exam) : '';
+  const line = topic
+    ? `备考规划聚焦考点「${topic}」${exam ? `（${exam}）` : ''}：上传这个考点的资料，AI 会据此出题。`
+    : `来自备考规划${exam ? `（${exam}）` : ''}：上传资料即可为这个学科出题。`;
+  return `
+    <div class="ai-note plan-link-note">
+      <span class="ai-note-dot"></span>
+      <span>${line} <a class="link-btn" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">返回备考规划 ↗</a></span>
+    </div>`;
+}
+
+function dismissPlanLink() {
+  planLink = null;
+  render();
+}
+
 const MATERIAL_DB = 'starquiz-materials';
 const MATERIAL_STORE = 'materials';
 const MATERIAL_FILE_STORE = 'files';
@@ -1343,6 +1423,7 @@ function renderSubject() {
 
   return `
     <button class="back-link" onclick="navigateTo('sets')">← 全部学科</button>
+    ${renderPlanLinkBanner(subject.id)}
 
     <div class="subject-head">
       <div class="subject-head-main">
@@ -2973,6 +3054,18 @@ function renderSettings() {
     </div>
 
     <div class="settings-section">
+      <h3>备考规划</h3>
+      <p class="text-sm text-muted">复习计划、每日任务与考点梳理在「Exam Plan AI 备考规划」里完成，这里负责出题与练习。两个应用通过考点深链互相跳转，数据各自保存在本地浏览器，不会互相同步。</p>
+      <div class="settings-row">
+        <div>
+          <div style="font-size:14px">Exam Plan AI 备考规划</div>
+          <div class="text-sm text-muted">由资料生成复习计划，按考点一键跳转到这里出题</div>
+        </div>
+        <a class="btn btn-secondary" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">打开备考规划 ↗</a>
+      </div>
+    </div>
+
+    <div class="settings-section">
       <h3>关于</h3>
       <p class="text-sm text-muted">智题 StarQuiz · 为 Qoder 高效创造力大赛打造。<br>支持学习模式与考试模式，普通题目与编程题混合练习，数据保存在本地浏览器。</p>
     </div>
@@ -3654,6 +3747,7 @@ function openAIModal(subjectId, materialIds) {
           <span class="ai-note-dot"></span>
           <span>已内置 Qoder AI，无需 API Key。上传的资料会自动存进所选学科；点「保存题库」后题目也会归入该学科。</span>
         </div>
+        ${renderPlanLinkNote()}
         <div id="aiErrorBox" class="feedback feedback-incorrect" hidden style="margin-bottom:14px"></div>
 
         <div class="ai-subject-bar">
@@ -4896,6 +4990,7 @@ window.addEventListener('pagehide', () => {
   if (materialsUnavailable) bootNotes.push('当前浏览器无法打开本地资料库，上传的资料这次不会保留');
   loadResumeSessions();
   render();
+  applyPlanDeepLink();
 
   if (bootNotes.length) {
     const notes = [...new Set(bootNotes)];
