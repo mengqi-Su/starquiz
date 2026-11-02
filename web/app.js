@@ -1043,6 +1043,7 @@ function toast(msg, type = 'info', ms = 3000) {
   const glyphs = { success: '✓', error: '!', info: 'i' };
   el.innerHTML = `<span class="toast-glyph">${glyphs[type] || 'i'}</span><span>${esc(msg)}</span>`;
   document.getElementById('toastContainer').appendChild(el);
+  if (typeof applyLang === 'function') applyLang(el);
   setTimeout(() => {
     el.style.opacity = '0';
     el.style.transition = 'opacity .3s';
@@ -1055,6 +1056,7 @@ function openModal(html, extraClass = '') {
     <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
       <div class="modal ${extraClass}">${html}</div>
     </div>`;
+  if (typeof applyLang === 'function') applyLang(document.getElementById('modalContainer'));
 }
 
 function closeModal() {
@@ -1208,6 +1210,8 @@ function render() {
     console.error('[StarQuiz] 渲染失败', err);
     renderCrash(err);
   }
+  // 英文模式在渲染完成后就地替换文案；中文是源语言，applyLang 内部直接返回
+  if (typeof applyLang === 'function') applyLang(document.documentElement);
 }
 
 function renderCrash(err) {
@@ -3328,6 +3332,20 @@ function renderSettings() {
   const usage = storageUsage();
   return `
     <div class="settings-wrap">
+    <div class="settings-section">
+      <h3>界面语言</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">显示语言</div>
+          <div class="text-sm text-muted">切换后所有页面即时生效，偏好只保存在本浏览器。题目和资料内容跟随原文，不会被翻译。</div>
+        </div>
+        <div class="lang-seg" data-no-i18n role="group" aria-label="显示语言">
+          <button type="button" class="${isEn() ? '' : 'is-active'}" onclick="setLang('zh')" aria-pressed="${!isEn()}">简体中文</button>
+          <button type="button" class="${isEn() ? 'is-active' : ''}" onclick="setLang('en')" aria-pressed="${isEn()}">English</button>
+        </div>
+      </div>
+    </div>
+
     <div class="settings-section">
       <h3>AI 出题</h3>
       <p class="text-sm text-muted mb-4">已内置 Qoder AI，无需填写 API Key。上传 PDF、Word、PPT 等资料，系统自动提取文字并按篇幅推荐题量，生成单选、多选、判断、填空和编程题；没有文件时也可以直接粘贴文字。</p>
