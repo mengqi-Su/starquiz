@@ -418,14 +418,36 @@ let history = repairHistory(bootHistory.value);
 let wrongBank = repairWrong(bootWrong.value);
 let userSubjects = sanitizeSubjects(bootSubjects.value);
 let materials = [];
+
+// 早期版本会把内置的演示题库和学科写进本地存储。起始状态现在保持干净，
+// 这里一次性清掉那些遗留的演示内容；用户自己上传资料生成的题库不受影响。
+const LEGACY_DEMO_SET_IDS = ['modern-history', 'biology-basics', 'js-basics', 'python-basics'];
+const LEGACY_DEMO_SUBJECT_IDS = ['sub-history', 'sub-bio', 'sub-code'];
+const legacyDemoSetIds = new Set(LEGACY_DEMO_SET_IDS);
+const legacyDemoRemovedSets = customSets.filter((s) => legacyDemoSetIds.has(s.id));
+if (legacyDemoRemovedSets.length) {
+  customSets = customSets.filter((s) => !legacyDemoSetIds.has(s.id));
+  const keptSetIds = new Set(customSets.map((s) => s.id));
+  history = history.filter((h) => keptSetIds.has(h.setId));
+  wrongBank = Object.keys(wrongBank).reduce((acc, setId) => {
+    if (keptSetIds.has(setId)) acc[setId] = wrongBank[setId];
+    return acc;
+  }, {});
+}
+const legacyDemoSubjectIds = new Set(LEGACY_DEMO_SUBJECT_IDS);
+if (userSubjects.some((s) => legacyDemoSubjectIds.has(s.id))) {
+  userSubjects = userSubjects.filter((s) => !legacyDemoSubjectIds.has(s.id));
+}
+const removedDemoContent = legacyDemoRemovedSets.length > 0;
 let materialsReady = false;
 let materialsUnavailable = false;
 
 if (repairedSets.droppedSets) bootNotes.push(`已跳过 ${repairedSets.droppedSets} 个损坏的题库`);
 if (repairedSets.droppedQuestions) bootNotes.push(`已修复 ${repairedSets.droppedQuestions} 道异常题目`);
+if (removedDemoContent) bootNotes.push('已移除早期内置的演示题库，题目现在只来自你上传的资料');
 if (!bootSets.missing && bootSets.ok && !bootSets.corrupt) {
   const rawCount = arrOf(bootSets.value).length;
-  if (repairedSets.sets.length !== rawCount || repairedSets.droppedQuestions) {
+  if (customSets.length !== rawCount || repairedSets.droppedQuestions) {
     saveJSONQuiet(STORAGE.sets, customSets);
   }
 }
