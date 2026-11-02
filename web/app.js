@@ -434,9 +434,15 @@ if (legacyDemoRemovedSets.length) {
     return acc;
   }, {});
 }
+// 内置学科可能已经被用户自己的题库使用：只要还有题库挂在上面，就把它当普通学科保留。
 const legacyDemoSubjectIds = new Set(LEGACY_DEMO_SUBJECT_IDS);
-if (userSubjects.some((s) => legacyDemoSubjectIds.has(s.id))) {
-  userSubjects = userSubjects.filter((s) => !legacyDemoSubjectIds.has(s.id));
+const referencedSubjectIds = new Set(
+  customSets.map((s) => s.subjectId).filter((id) => typeof id === 'string' && id)
+);
+if (userSubjects.some((s) => legacyDemoSubjectIds.has(s.id) && !referencedSubjectIds.has(s.id))) {
+  userSubjects = userSubjects.filter(
+    (s) => !legacyDemoSubjectIds.has(s.id) || referencedSubjectIds.has(s.id)
+  );
 }
 const removedDemoContent = legacyDemoRemovedSets.length > 0;
 let materialsReady = false;
