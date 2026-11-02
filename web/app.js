@@ -106,12 +106,8 @@ const STORAGE = {
 };
 const SESSION_KEYS = { exam: 'sq_exam_v1', learning: 'sq_learning_v1' };
 
-// 内置学科固定存在，自建学科存在 sq_subjects_v1；未归档的题库进入「未分类」
-const BUILTIN_SUBJECTS = [
-  { id: 'sub-history', name: '历史', icon: '史', builtin: true },
-  { id: 'sub-bio', name: '生物', icon: '生', builtin: true },
-  { id: 'sub-code', name: '编程', icon: '码', builtin: true }
-];
+// 起始不预置任何学科：科目由用户新建或在 AI 生成时自动创建；未归档的题库进入「未分类」
+const BUILTIN_SUBJECTS = [];
 const INBOX_SUBJECT = { id: 'sub-inbox', name: '未分类', icon: '杂', builtin: true, inbox: true };
 // 备考规划伴侣应用：考点级深链互相跳转，数据各自保存在本地浏览器
 const EXAM_PLAN_URL = 'https://exam-plan-ai-zfc3er164xi.qoder.zone';
@@ -1216,21 +1212,21 @@ function heroArt() {
     <g transform="rotate(-5 118 72)">
       <rect x="50" y="48" width="148" height="42" rx="10" fill="#f8f7f4" fill-opacity="0.06" stroke="#f8f7f4" stroke-opacity="0.45" stroke-width="1.5"/>
       <rect x="60" y="57" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.12" stroke="#f8f7f4" stroke-opacity="0.4" stroke-width="1.2"/>
-      <text x="72" y="74" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Roboto, sans-serif" font-size="13" font-weight="600">C</text>
+      <text x="72" y="74" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Product Sans, Roboto, Noto Sans SC, system-ui, sans-serif" font-size="13" font-weight="600">C</text>
       <rect x="94" y="62" width="82" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
       <rect x="94" y="74" width="50" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
     </g>
     <g transform="rotate(4 118 110)">
       <rect x="38" y="88" width="152" height="42" rx="10" fill="#f8f7f4" fill-opacity="0.06" stroke="#f8f7f4" stroke-opacity="0.45" stroke-width="1.5"/>
       <rect x="48" y="97" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.12" stroke="#f8f7f4" stroke-opacity="0.4" stroke-width="1.2"/>
-      <text x="60" y="114" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Roboto, sans-serif" font-size="13" font-weight="600">B</text>
+      <text x="60" y="114" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Product Sans, Roboto, Noto Sans SC, system-ui, sans-serif" font-size="13" font-weight="600">B</text>
       <rect x="82" y="102" width="90" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
       <rect x="82" y="114" width="56" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
     </g>
     <g transform="rotate(-2 118 150)">
       <rect x="44" y="128" width="156" height="44" rx="10" fill="#f8f7f4" fill-opacity="0.08" stroke="#f8f7f4" stroke-opacity="0.55" stroke-width="1.5"/>
       <rect x="54" y="138" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.9"/>
-      <text x="66" y="155" text-anchor="middle" fill="#1c1b1a" font-family="Google Sans, Roboto, sans-serif" font-size="13" font-weight="600">A</text>
+      <text x="66" y="155" text-anchor="middle" fill="#1c1b1a" font-family="Google Sans, Product Sans, Roboto, Noto Sans SC, system-ui, sans-serif" font-size="13" font-weight="600">A</text>
       <rect x="88" y="143" width="76" height="6" rx="3" fill="#f8f7f4" opacity="0.22"/>
       <rect x="88" y="156" width="46" height="6" rx="3" fill="#f8f7f4" opacity="0.22"/>
     </g>
@@ -1429,7 +1425,7 @@ function renderSubject() {
       <div class="subject-head-main">
         <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
         <div class="subject-head-copy">
-          <div class="hero-eyebrow">SUBJECT · 学科</div>
+          <div class="hero-eyebrow">学科文件夹</div>
           <h2>${esc(subject.name)}</h2>
           <p>${subject.inbox ? '还没有归入学科的题库和资料会先放在这里。' : '这个文件夹里的资料和题库只属于本学科。'}</p>
         </div>
@@ -1813,7 +1809,7 @@ function renderSetDetail() {
       <div class="detail-head">
         <div class="detail-icon" style="background:${accent.bg};color:${accent.fg}">${esc(set.icon || '题')}</div>
         <div>
-          <div class="hero-eyebrow">${esc(subject.name)} · DECK</div>
+          <div class="hero-eyebrow">${esc(subject.name)} · 题库</div>
           <h2>${esc(set.name)}</h2>
         </div>
       </div>
@@ -2550,7 +2546,7 @@ function renderExam() {
       <div class="code-editor-wrapper">
         <div class="code-editor-toolbar">
           <label>${LANG_LABEL[q.language || 'javascript'] || q.language}</label>
-          <span style="font-size:11.5px">交卷后自动运行测试用例评分</span>
+          <span style="font-size:12px">交卷后自动运行测试用例评分</span>
         </div>
         <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="examCodeInput(${ex.current}, this.value)">${esc(ex.answers[ex.current] || q.template || '')}</textarea>
         ${(q.testCases || []).length ? `
@@ -2590,7 +2586,7 @@ function renderExam() {
     <div class="question-container">
       <div class="exam-header">
         <div>
-          <div style="font-size:14.5px;font-weight:700;margin-bottom:1px">${esc(examName)}</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:1px">${esc(examName)}</div>
           <div class="text-sm text-muted">已答 ${answeredCount} / ${total} 题</div>
         </div>
         <div class="timer" id="examTimer">--:--</div>
@@ -2950,9 +2946,9 @@ function renderRecords() {
           <div style="margin-top:12px">
             ${ids.map((qid) => {
               const q = getQuestion(set, qid);
-              return `<div style="padding:10px 0;border-top:1.5px solid var(--border-light)">
+              return `<div style="padding:10px 0;border-top:1px solid var(--line-soft)">
                 <div style="font-size:14px;margin-bottom:4px">${esc((q.content || '').split('\n')[0])} <span class="text-sm text-muted">（错 ${wb[qid]} 次）</span></div>
-                <div class="text-sm" style="color:var(--text-secondary)">正确答案：<span style="color:var(--success);font-weight:700">${esc(answerText(q))}</span></div>
+                <div class="text-sm" style="color:var(--text-secondary)">正确答案：<span style="color:var(--success);font-weight:600">${esc(answerText(q))}</span></div>
                 ${q.explanation ? `<div class="text-sm text-muted" style="margin-top:2px">${esc(q.explanation)}</div>` : ''}
               </div>`;
             }).join('')}
@@ -2964,7 +2960,7 @@ function renderRecords() {
     ${history.length === 0 ? `<div class="card"><div class="text-sm text-muted text-center" style="padding:20px">还没有练习记录，从学习模式开始吧</div></div>` : `
       <div class="card">
         ${history.slice(0, 50).map((a, i) => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < Math.min(history.length, 50) - 1 ? 'border-bottom:1.5px solid var(--border-light)' : ''}">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < Math.min(history.length, 50) - 1 ? 'border-bottom:1px solid var(--line-soft)' : ''}">
             <span class="badge ${a.mode === 'exam' ? 'badge-primary' : 'badge-success'}">${a.mode === 'exam' ? '考试' : '学习'}</span>
             <div style="flex:1;min-width:0">
               <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.setName)}</div>
@@ -2999,7 +2995,7 @@ function renderSettings() {
       <p class="text-sm text-muted mb-4">已内置 Qoder AI，无需填写 API Key。上传 PDF、Word、PPT 等资料，系统自动提取文字并按篇幅推荐题量，生成单选、多选、判断、填空和编程题；没有文件时也可以直接粘贴文字。</p>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">出题引擎</div>
+          <div class="settings-row-title">出题引擎</div>
           <div class="text-sm text-muted">Qoder AI · 由站点后端安全调用，密钥不会进入浏览器</div>
         </div>
         <span class="badge badge-success">已内置</span>
@@ -3018,35 +3014,35 @@ function renderSettings() {
       <h3>数据管理</h3>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">导出全部数据</div>
+          <div class="settings-row-title">导出全部数据</div>
           <div class="text-sm text-muted">题库、学科、资料文字、练习记录与错题本（不含原始文件）</div>
         </div>
         <button class="btn btn-secondary" onclick="exportData()">导出 JSON</button>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">导入数据备份</div>
+          <div class="settings-row-title">导入数据备份</div>
           <div class="text-sm text-muted">从导出的 JSON 恢复，已存在的题库、资料与记录会自动跳过</div>
         </div>
         <button class="btn btn-secondary" onclick="importData()">选择文件</button>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">本地存储</div>
+          <div class="settings-row-title">本地存储</div>
           <div class="text-sm text-muted">题库与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份，原始文件单独存放` : ''}</div>
         </div>
         <span class="badge ${usage.pct >= 80 ? 'badge-danger' : 'badge-muted'}">${usage.pct}%</span>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">清空练习记录</div>
+          <div class="settings-row-title">清空练习记录</div>
           <div class="text-sm text-muted">清除所有历史成绩与错题本，保留题库</div>
         </div>
         <button class="btn btn-secondary" onclick="clearRecords()">清空</button>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">恢复初始状态</div>
+          <div class="settings-row-title">恢复初始状态</div>
           <div class="text-sm text-muted">删除所有自建题库、学科、资料、记录与设置</div>
         </div>
         <button class="btn btn-danger" onclick="resetAll()">重置</button>
@@ -3058,16 +3054,16 @@ function renderSettings() {
       <p class="text-sm text-muted">复习计划、每日任务与考点梳理在「Exam Plan AI 备考规划」里完成，这里负责出题与练习。两个应用通过考点深链互相跳转，数据各自保存在本地浏览器，不会互相同步。</p>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">Exam Plan AI 备考规划</div>
+          <div class="settings-row-title">Exam Plan AI 备考规划</div>
           <div class="text-sm text-muted">由资料生成复习计划，按考点一键跳转到这里出题</div>
         </div>
         <a class="btn btn-secondary" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">打开备考规划 ↗</a>
       </div>
     </div>
 
-    <div class="settings-section">
-      <h3>关于</h3>
-      <p class="text-sm text-muted">智题 StarQuiz · 为 Qoder 高效创造力大赛打造。<br>支持学习模式与考试模式，普通题目与编程题混合练习，数据保存在本地浏览器。</p>
+    <div class="settings-footer">
+      <p>智题 StarQuiz · 学习模式与考试模式，普通题目与编程题混合练习，数据保存在本地浏览器。</p>
+      <p class="settings-footer-sub">复习计划在 Exam Plan AI 里完成，两个应用通过考点深链互相跳转。</p>
     </div>
     </div>`;
 }
@@ -3766,7 +3762,7 @@ function openAIModal(subjectId, materialIds) {
           <div class="ai-step-head">
             <span class="ai-step-num">1</span>
             <span>上传学习资料</span>
-            <span class="ai-step-hint">PDF · WORD · PPT · TXT</span>
+            <span class="ai-step-hint">PDF · Word · PPT · TXT</span>
           </div>
           <label class="ai-dropzone" id="aiDropzone" for="aiFileInput">
             <input type="file" id="aiFileInput" multiple hidden
