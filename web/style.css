@@ -4772,3 +4772,7 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 @media (max-width: 560px) {
   .settings-row:has(.lang-seg) { flex-direction: column; align-items: flex-start; }
 }
+
+/* 英文模式微调：数字后面的小字单位（如「3 questions」）比单个汉字宽，留一点间隙 */
+html[lang="en"] .ai-count-value small { margin-left: 5px; }
+

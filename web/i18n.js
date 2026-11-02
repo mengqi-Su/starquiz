@@ -301,9 +301,16 @@ const EN = Object.assign({
   '下一步：上传资料': 'Next: upload materials',
   '下一步：处理方式': 'Next: how to handle',
   '下一步：确认生成': 'Next: confirm',
+  '下一步：完成': 'Next: finish',
   '拖入文件，或点击选择': 'Drop files here, or click to choose',
   '支持多选 · 笔记和真题可以一起传 · 单文件 ≤ 30MB · 扫描版 PDF 需先 OCR':
     'Multiple files · notes and past papers together · up to 30 MB each · scanned PDFs need OCR',
+  '点击选择或拖入 · PDF / Word / PPT / TXT · 可多选 · 单文件 ≤ 30MB':
+    'Click to choose or drop in · PDF / Word / PPT / TXT · multiple files OK · up to 30 MB each',
+  /* 单独可拼进长文案的片段：整句查不到时由分段兜底逐段替换 */
+  '点击选择或拖入': 'Click to choose or drop in',
+  '可多选': 'multiple files OK',
+  '单文件 ≤ 30MB': 'up to 30 MB each',
   '没有文件？直接粘贴文字': 'No file? Paste text instead',
   '可跳过 · 之后在文件夹里也能传': 'Optional · you can also upload later in the folder',
   '这段文字属于': 'This text belongs to',
@@ -371,6 +378,8 @@ const EN = Object.assign({
   '勾选后直接参与出题': 'Checked items go straight into generation',
   '先整理资料，稍后再出题': 'Clean the materials first, generate later',
   '直接 AI 出题': 'Generate with AI directly',
+  '先上传资料，或粘贴一段文字': 'Upload materials first, or paste a passage of text',
+  '笔记生成新题，真题原样整理': 'Notes become new questions, past papers stay verbatim',
   '生成成功': 'Generated',
   '整理完成': 'Cleaned up',
   '生成失败': 'Generation failed',
