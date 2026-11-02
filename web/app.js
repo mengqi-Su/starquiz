@@ -1235,36 +1235,6 @@ function renderHeaderActions() {
   return '';
 }
 
-function heroArt() {
-  return `<svg viewBox="0 0 240 210" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M40 190c20 12 48 13 74 2" stroke="#f8f7f4" stroke-opacity="0.35" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 9"/>
-    <g transform="rotate(-5 118 72)">
-      <rect x="50" y="48" width="148" height="42" rx="10" fill="#f8f7f4" fill-opacity="0.06" stroke="#f8f7f4" stroke-opacity="0.45" stroke-width="1.5"/>
-      <rect x="60" y="57" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.12" stroke="#f8f7f4" stroke-opacity="0.4" stroke-width="1.2"/>
-      <text x="72" y="74" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Product Sans, Roboto, Noto Sans SC, system-ui, sans-serif" font-size="13" font-weight="600">C</text>
-      <rect x="94" y="62" width="82" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
-      <rect x="94" y="74" width="50" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
-    </g>
-    <g transform="rotate(4 118 110)">
-      <rect x="38" y="88" width="152" height="42" rx="10" fill="#f8f7f4" fill-opacity="0.06" stroke="#f8f7f4" stroke-opacity="0.45" stroke-width="1.5"/>
-      <rect x="48" y="97" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.12" stroke="#f8f7f4" stroke-opacity="0.4" stroke-width="1.2"/>
-      <text x="60" y="114" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Product Sans, Roboto, Noto Sans SC, system-ui, sans-serif" font-size="13" font-weight="600">B</text>
-      <rect x="82" y="102" width="90" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
-      <rect x="82" y="114" width="56" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
-    </g>
-    <g transform="rotate(-2 118 150)">
-      <rect x="44" y="128" width="156" height="44" rx="10" fill="#f8f7f4" fill-opacity="0.08" stroke="#f8f7f4" stroke-opacity="0.55" stroke-width="1.5"/>
-      <rect x="54" y="138" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.9"/>
-      <text x="66" y="155" text-anchor="middle" fill="#1c1b1a" font-family="Google Sans, Product Sans, Roboto, Noto Sans SC, system-ui, sans-serif" font-size="13" font-weight="600">A</text>
-      <rect x="88" y="143" width="76" height="6" rx="3" fill="#f8f7f4" opacity="0.22"/>
-      <rect x="88" y="156" width="46" height="6" rx="3" fill="#f8f7f4" opacity="0.22"/>
-    </g>
-    <circle cx="199" cy="48" r="28" fill="#f8f7f4"/>
-    <path d="M186 48l9 9 17-18" stroke="#1c1b1a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M26 60l4.5 10 10 4.5-10 4.5-4.5 10-4.5-10-10-4.5 10-4.5z" fill="#f8f7f4" fill-opacity="0.5"/>
-  </svg>`;
-}
-
 /* 卡片解剖（对齐 Exam Plan AI）：统计卡 = 标签 + 淡图标 / 大号数字 / 说明或进度；
    学科与题库卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 6px 进度 + 分隔页脚。 */
 function statCard(label, value, opts) {
@@ -1321,7 +1291,7 @@ function renderDashboard() {
           <button class="btn btn-ghost-light" onclick="navigateTo('records')">看看进度</button>
         </div>
       </div>
-      <div class="hero-art" aria-hidden="true">${heroArt()}</div>
+      <div class="hero-paper-corner" aria-hidden="true"></div>
     </div>
 
     <div class="stat-rail">
@@ -1549,34 +1519,302 @@ function renderSubject() {
     </div>`;
 }
 
+// 新建学科向导：一层一层（名称 → 资料 → 完成），参考 Exam Plan 的三步流程
+const NS_STEPS = ['学科名称', '上传资料', '完成'];
+let nsDraft = { step: 1, subjectId: null, name: '', parsing: false, added: 0, chars: 0, failed: [] };
+
+function nsReset() {
+  nsDraft = { step: 1, subjectId: null, name: '', parsing: false, added: 0, chars: 0, failed: [] };
+}
+
+function nsRail() {
+  return `<div class="wiz-steps" role="list">
+    ${NS_STEPS.map((label, i) => {
+      const n = i + 1;
+      const cls = n === nsDraft.step ? 'is-current' : (n < nsDraft.step ? 'is-done' : 'is-idle');
+      const inner = n < nsDraft.step
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`
+        : String(n);
+      const clickable = n < nsDraft.step && !nsDraft.parsing;
+      return `${i > 0 ? '<span class="wiz-gap" aria-hidden="true"></span>' : ''}
+        <div role="listitem" class="wiz-step ${cls}"${clickable ? ` onclick="nsGoTo(${n})"` : ''}${n === nsDraft.step ? ' aria-current="step"' : ''}>
+          <span class="wiz-step-num">${inner}</span>
+          <span class="wiz-step-label">${label}</span>
+        </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function nsLayerBody() {
+  if (nsDraft.step === 1) {
+    return `
+      <div class="wiz-head">
+        <span class="wiz-title">学科名称</span>
+        <span class="wiz-hint">必填</span>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="newSubjectName">这个文件夹叫什么</label>
+        <input class="form-input" id="newSubjectName" maxlength="20" placeholder="例如：高等数学、英语写作、导游实务" value="${esc(nsDraft.name)}" onkeydown="if(event.key==='Enter'){event.preventDefault();nsNext();}">
+        <p class="wiz-note">之后上传的资料和生成的题库都会放进这个文件夹。</p>
+      </div>`;
+  }
+  if (nsDraft.step === 2) {
+    const subjectName = esc(nsDraft.name || (subjectById(nsDraft.subjectId) || {}).name || '新学科');
+    return `
+      <div class="wiz-head">
+        <span class="wiz-title">上传资料</span>
+        <span class="wiz-hint">可跳过 · 之后在文件夹里也能传</span>
+      </div>
+      <input type="file" id="nsFileInput" multiple hidden
+        accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
+        onchange="handleNsFileInput(this)">
+      <label class="ai-dropzone" for="nsFileInput">
+        <span class="ai-dropzone-icon">${ICON.upload}</span>
+        <span class="ai-dropzone-title">把资料放进「${subjectName}」</span>
+        <span class="ai-dropzone-hint">点击选择或拖入 · PDF / Word / PPT / TXT · 可多选 · 单文件 ≤ 30MB</span>
+      </label>
+      <div class="upload-status" id="nsUploadStatus"${nsDraft.parsing ? '' : ' hidden'}>${nsDraft.parsing ? '正在解析资料…' : ''}</div>
+      <div class="wiz-summary" id="nsSummary">${nsSummaryBits()}</div>
+      <p class="wiz-note">扫描版 PDF 没有文字层，需要先 OCR；解析失败会在下面说明原因。</p>`;
+  }
+  const subject = subjectById(nsDraft.subjectId) || {};
+  const mats = subjectMaterials(subject.id || '');
+  return `
+    <div class="wiz-head">
+      <span class="wiz-title">${esc(subject.name || nsDraft.name)}</span>
+      <span class="wiz-hint">已建好</span>
+    </div>
+    <div class="wiz-summary">
+      <span class="wiz-chip"><b>${mats.length}</b> 份资料</span>
+      <span class="wiz-chip"><b>${mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')}</b> 字可用</span>
+      ${nsDraft.failed.length ? `<span class="wiz-chip is-soft">${nsDraft.failed.length} 份未成功</span>` : ''}
+    </div>
+    <div style="margin-top:14px">
+      <button type="button" class="wiz-choice" onclick="nsFinish('ai')">
+        <span class="wiz-choice-main">
+          <span class="wiz-choice-title">直接 AI 出题${mats.length ? `（用这 ${mats.length} 份资料）` : ''}</span>
+          <span class="wiz-choice-desc">${mats.length ? '笔记生成新题，真题原样整理' : '先上传资料，或粘贴一段文字'}</span>
+        </span>
+        <span class="set-row-foot-go">开始 →</span>
+      </button>
+      <button type="button" class="wiz-choice" style="margin-top:8px" onclick="nsFinish('folder')">
+        <span class="wiz-choice-main">
+          <span class="wiz-choice-title">进入学科文件夹</span>
+          <span class="wiz-choice-desc">先整理资料，稍后再出题</span>
+        </span>
+        <span class="set-row-foot-go">打开 →</span>
+      </button>
+    </div>`;
+}
+
+function nsSummaryBits() {
+  const subject = subjectById(nsDraft.subjectId) || {};
+  const mats = subjectMaterials(subject.id || '');
+  const bits = [];
+  if (mats.length) bits.push(`<span class="wiz-chip"><b>${mats.length}</b> 份资料已存入</span>`);
+  if (mats.length) bits.push(`<span class="wiz-chip is-soft">${mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')} 字</span>`);
+  nsDraft.failed.slice(0, 3).forEach((msg) => bits.push(`<span class="wiz-chip is-soft">${esc(msg)}</span>`));
+  if (nsDraft.failed.length > 3) bits.push(`<span class="wiz-chip is-soft">另有 ${nsDraft.failed.length - 3} 份失败</span>`);
+  return bits.join('');
+}
+
+function nsFooter() {
+  if (nsDraft.step === 1) {
+    return `<button class="btn btn-secondary" onclick="nsCancel()">取消</button>
+      <button class="btn btn-primary" onclick="nsNext()">下一步：上传资料 ${ICON.arrow}</button>`;
+  }
+  if (nsDraft.step === 2) {
+    return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 上一步</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-secondary" onclick="nsSkip()">跳过</button>
+      <button class="btn btn-primary" id="nsNextBtn" onclick="nsNext()"${nsDraft.parsing ? ' disabled' : ''}>下一步：完成 ${ICON.arrow}</button>`;
+  }
+  return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 上一步</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-secondary" onclick="closeModal()">稍后再说</button>`;
+}
+
+function nsRender() {
+  const body = document.getElementById('nsBody');
+  const foot = document.getElementById('nsFooter');
+  const rail = document.getElementById('nsRail');
+  if (rail) rail.innerHTML = nsRail();
+  if (body) body.innerHTML = nsLayerBody();
+  if (foot) foot.innerHTML = nsFooter();
+  if (nsDraft.step === 1) setTimeout(() => document.getElementById('newSubjectName')?.focus(), 40);
+  if (nsDraft.step === 2) setTimeout(() => bindNsDropzone(), 20);
+}
+
 function newSubjectModal() {
+  nsReset();
   openModal(`
     <div class="modal-header">
       <div class="modal-title">新建学科</div>
-      <button class="modal-close" onclick="closeModal()">×</button>
+      <button class="modal-close" onclick="nsCancel()">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">学科名称</label>
-        <input class="form-input" id="newSubjectName" maxlength="20" placeholder="例如：高等数学" onkeydown="if(event.key==='Enter')submitNewSubject()">
-        <p class="text-sm text-muted" style="margin:8px 0 0">之后上传的资料和生成的题库都会放进这个文件夹。</p>
-      </div>
+      <div id="nsRail">${nsRail()}</div>
+      <div id="nsBody" class="wiz-layer">${nsLayerBody()}</div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="submitNewSubject()">创建学科</button>
-    </div>`);
-  setTimeout(() => document.getElementById('newSubjectName')?.focus(), 40);
+    <div class="modal-footer" id="nsFooter">${nsFooter()}</div>`);
 }
 
-function submitNewSubject() {
-  const input = document.getElementById('newSubjectName');
-  const subject = createSubject(input ? input.value : '');
-  if (!subject) { if (input) input.focus(); return; }
+function nsCancel() {
+  if (nsDraft.parsing) { toast('资料还在解析中，先等它结束', 'info'); return; }
+  nsReset();
   closeModal();
-  toast(`学科「${subject.name}」已创建`, 'success');
-  openSubject(subject.id);
 }
+
+function nsBack() {
+  if (nsDraft.parsing || nsDraft.step === 1) return;
+  nsDraft.step -= 1;
+  nsRender();
+}
+
+function nsGoTo(n) {
+  if (nsDraft.parsing || n >= nsDraft.step) return;
+  nsDraft.step = n;
+  nsRender();
+}
+
+function nsSkip() {
+  nsDraft.step = 3;
+  nsRender();
+}
+
+function nsNext() {
+  if (nsDraft.step === 1) {
+    const input = document.getElementById('newSubjectName');
+    const name = input ? input.value : '';
+    nsDraft.name = name.trim();
+    const subject = createSubject(name);
+    if (!subject) {
+      if (input) input.focus();
+      return;
+    }
+    nsDraft.subjectId = subject.id;
+    nsDraft.name = subject.name;
+    nsDraft.step = 2;
+    toast(`已建好「${subject.name}」文件夹`, 'success');
+    nsRender();
+    return;
+  }
+  if (nsDraft.step === 2) {
+    if (nsDraft.parsing) { toast('资料还在解析中，请稍候', 'info'); return; }
+    nsDraft.step = 3;
+    nsRender();
+  }
+}
+
+function nsFinish(where) {
+  const id = nsDraft.subjectId;
+  const mats = subjectMaterials(id);
+  nsReset();
+  closeModal();
+  if (!id) return;
+  if (where === 'ai') openAIModal(id, mats.map((m) => m.id));
+  else openSubject(id);
+}
+
+function pickNsFiles() {
+  const input = document.getElementById('nsFileInput');
+  if (!input) return;
+  if (materialsUnavailable) {
+    toast('当前浏览器无法保存资料，请更换浏览器或关闭无痕模式', 'error', 5000);
+    return;
+  }
+  input.click();
+}
+
+function bindNsDropzone() {
+  const dz = document.querySelector('#nsBody .ai-dropzone');
+  if (!dz || dz.dataset.bound === '1') return;
+  dz.dataset.bound = '1';
+  let depth = 0;
+  dz.addEventListener('dragenter', (e) => { e.preventDefault(); depth++; dz.classList.add('dragover'); });
+  dz.addEventListener('dragover', (e) => e.preventDefault());
+  dz.addEventListener('dragleave', (e) => { e.preventDefault(); depth = Math.max(0, depth - 1); if (!depth) dz.classList.remove('dragover'); });
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    depth = 0;
+    dz.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (files.length) nsUpload(files);
+  });
+}
+
+async function handleNsFileInput(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (files.length) await nsUpload(files);
+}
+
+async function nsUpload(files) {
+  if (!nsDraft.subjectId || nsDraft.parsing) return;
+  if (materialsUnavailable) {
+    toast('当前浏览器无法保存资料，请更换浏览器或关闭无痕模式', 'error', 5000);
+    return;
+  }
+  const status = document.getElementById('nsUploadStatus');
+  nsDraft.parsing = true;
+  const existing = new Set(subjectMaterials(nsDraft.subjectId).map((m) => `${m.name}|${m.size}`));
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const label = file.name || `文件 ${i + 1}`;
+    if (status) {
+      status.hidden = false;
+      status.textContent = `正在解析 ${i + 1}/${files.length}：${label}`;
+    }
+    if (file.size > MATERIAL_MAX_BYTES) {
+      nsDraft.failed.push(`${label}：超过 30MB`);
+      continue;
+    }
+    if (existing.has(`${file.name}|${file.size}`)) {
+      nsDraft.failed.push(`${label}：已存在`);
+      continue;
+    }
+    try {
+      const { text, meta } = await extractMaterial(file);
+      const clean = cleanMaterialText(text);
+      const chars = aiVisibleChars(clean);
+      if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版');
+      const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
+      const pageMatch = String(meta || '').match(/(\d+)/);
+      const record = {
+        id: 'mat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        subjectId: nsDraft.subjectId,
+        name: String(file.name || '未命名资料').slice(0, 160),
+        size: file.size,
+        ext,
+        kind: aiGuessFileKind(clean, file.name),
+        pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
+        chars,
+        addedAt: Date.now(),
+        text: clean
+      };
+      let saved = null;
+      try {
+        saved = await saveMaterialRecord(record, file.size <= MATERIAL_BLOB_LIMIT ? file : null);
+      } catch {
+        saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
+      }
+      materials.unshift(saved);
+      existing.add(`${file.name}|${file.size}`);
+      nsDraft.added += 1;
+    } catch (e) {
+      nsDraft.failed.push(`${label}：${(e && e.message) || '解析失败'}`);
+    }
+    materials.sort((a, b) => b.addedAt - a.addedAt);
+    const sum = document.getElementById('nsSummary');
+    if (sum) sum.innerHTML = nsSummaryBits();
+  }
+  nsDraft.parsing = false;
+  if (nsDraft.step === 2) nsRender();
+  const foot = document.getElementById('nsFooter');
+  if (foot) foot.innerHTML = nsFooter();
+  render();
+}
+
 
 function renameSubjectModal(id) {
   const subject = userSubjects.find((s) => s.id === id);
@@ -1867,7 +2105,7 @@ function renderSetDetail() {
   return `
     <button class="back-link" onclick="openSubject('${subject.id}')">← 返回${esc(subject.name)}</button>
 
-    <div class="set-detail-hero" style="--set-accent:${accent.bg}">
+    <div class="set-detail-hero" style="--set-accent:${accent.bg};--set-accent-bar:${accent.bar}">
       <div class="detail-head">
         <div class="detail-icon" style="background:${accent.bg};color:${accent.fg}">${esc(set.icon || '题')}</div>
         <div>
@@ -3790,6 +4028,122 @@ function collectAIGroups() {
   };
 }
 
+const AI_STEPS = ['上传资料', '处理方式', '生成题库'];
+let aiStep = 1;
+
+function aiRailHTML() {
+  return `<div class="wiz-steps" role="list">
+    ${AI_STEPS.map((label, i) => {
+      const n = i + 1;
+      const cls = n === aiStep ? 'is-current' : (n < aiStep ? 'is-done' : 'is-idle');
+      const inner = n < aiStep
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`
+        : String(n);
+      const clickable = n < aiStep && !aiParseBusy;
+      return `${i > 0 ? '<span class="wiz-gap" aria-hidden="true"></span>' : ''}
+        <div role="listitem" class="wiz-step ${cls}"${clickable ? ` onclick="goAIStep(${n})"` : ''}${n === aiStep ? ' aria-current="step"' : ''}>
+          <span class="wiz-step-num">${inner}</span>
+          <span class="wiz-step-label">${label}</span>
+        </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// 每一层是否已经可以往下走：资料层要求解析完成且字数够，方式层要求题量有效
+function aiStepReady(n) {
+  if (aiParseBusy) return false;
+  const groups = collectAIGroups();
+  const noteChars = aiVisibleChars(groups.noteText);
+  const examChars = aiVisibleChars(groups.examText);
+  const hasMaterial = (groups.hasNotes && noteChars >= 50) || (groups.hasExams && examChars >= 50);
+  if (n === 1) return hasMaterial;
+  if (n === 2) {
+    if (!hasMaterial) return false;
+    if (groups.noteText.length > 24000 || groups.examText.length > 48000) return false;
+    return true;
+  }
+  return hasMaterial;
+}
+
+function renderAIRail() {
+  const rail = document.getElementById('aiRail');
+  if (rail) rail.innerHTML = aiRailHTML();
+}
+
+function syncAILayerState() {
+  renderAIRail();
+  const next = document.getElementById('aiNextBtn');
+  if (next) next.disabled = !aiStepReady(aiStep);
+  if (aiStep === 3) renderAIReview();
+}
+
+function renderAIFooter() {
+  const foot = document.getElementById('aiModalFooter');
+  if (!foot) return;
+  if (aiStep === 1) {
+    foot.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(2)"${aiStepReady(1) ? '' : ' disabled'}>下一步：处理方式 ${ICON.arrow}</button>`;
+    return;
+  }
+  if (aiStep === 2) {
+    foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(1)">← 上一步</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(3)"${aiStepReady(2) ? '' : ' disabled'}>下一步：确认生成 ${ICON.arrow}</button>`;
+    return;
+  }
+  foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(2)">← 上一步</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">生成题目</button>`;
+}
+
+function showAILayer() {
+  [1, 2, 3].forEach((n) => {
+    const el = document.getElementById(`aiLayer${n}`);
+    if (el) el.hidden = n !== aiStep;
+  });
+  renderAIRail();
+  renderAIFooter();
+  if (aiStep === 3) renderAIReview();
+}
+
+function goAIStep(target) {
+  if (aiParseBusy) { toast('资料还在解析中，请稍候', 'info'); return; }
+  if (target > aiStep && !aiStepReady(aiStep)) {
+    toast(aiStep === 1 ? '先上传或粘贴至少 50 字的资料' : '资料还不能用，请检查上面的提示', 'info');
+    return;
+  }
+  aiStep = Math.max(1, Math.min(3, target));
+  showAILayer();
+  refreshAIState();
+}
+
+function renderAIReview() {
+  const box = document.getElementById('aiReviewSummary');
+  if (!box) return;
+  const groups = collectAIGroups();
+  const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const noteChars = aiVisibleChars(groups.noteText);
+  const examChars = aiVisibleChars(groups.examText);
+  const range = document.getElementById('aiCount');
+  const count = groups.hasNotes ? (parseInt(range?.value, 10) || 0) : 0;
+  const examEst = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
+  const bits = [`<span class="wiz-chip">学科 <b>${esc(subject.name)}</b></span>`];
+  if (groups.hasNotes) bits.push(`<span class="wiz-chip">笔记 <b>${groups.noteDocs.length}</b> 份 · ${noteChars.toLocaleString('zh-CN')} 字</span>`);
+  if (groups.hasExams) bits.push(`<span class="wiz-chip">真题 <b>${groups.examDocs.length}</b> 份 · ${examChars.toLocaleString('zh-CN')} 字</span>`);
+  if (groups.hasNotes) bits.push(`<span class="wiz-chip is-soft">将生成 <b>${count}</b> 题</span>`);
+  if (groups.hasExams) bits.push(`<span class="wiz-chip is-soft">真题<b>原样保留</b>${examEst ? ` 约 ${examEst} 题` : ''}</span>`);
+  const pasteOnly = !groups.hasFiles && (groups.hasNotes || groups.hasExams);
+  if (pasteOnly) bits.push('<span class="wiz-chip is-soft">来源：粘贴文字</span>');
+  box.innerHTML = bits.join('');
+  const title = document.getElementById('aiReviewTitle');
+  if (title) {
+    title.textContent = groups.mixed
+      ? '笔记出题 + 真题整理'
+      : (groups.hasExams ? '原样整理真题' : '根据资料出题');
+  }
+}
+
 function openAIModal(subjectId, materialIds) {
   const target = subjectById(subjectId);
   if (target) aiSubjectId = target.id;
@@ -3799,40 +4153,40 @@ function openAIModal(subjectId, materialIds) {
     aiPieces = [];
     aiLastRecommended = 0;
   }
-  if (Array.isArray(materialIds) && materialIds.length) addMaterialsToAI(materialIds);
+  aiStep = 1;
+  if (Array.isArray(materialIds) && materialIds.length) {
+    addMaterialsToAI(materialIds);
+    aiStep = 2;
+  }
   openModal(`
     <div class="modal-header">
       <div class="modal-title">AI 出题 · 真题整理</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
+      <div id="aiRail">${aiRailHTML()}</div>
       <div id="aiFormWrap">
-        <div class="ai-note">
-          <span class="ai-note-dot"></span>
-          <span>已内置 Qoder AI，无需 API Key。上传的资料会自动存进所选学科；点「保存题库」后题目也会归入该学科。</span>
-        </div>
         ${renderPlanLinkNote()}
         <div id="aiErrorBox" class="feedback feedback-incorrect" hidden style="margin-bottom:14px"></div>
 
-        <div class="ai-subject-bar">
-          <label class="ai-subject-label" for="aiSubjectSelect">保存到学科</label>
-          <select class="form-select ai-subject-select" id="aiSubjectSelect" onchange="onAISubjectChange(this.value)">${renderAISubjectOptions()}</select>
-          <button type="button" class="link-btn" onclick="toggleNewSubjectInline()">＋ 新建</button>
-          <span class="ai-new-subject" id="aiNewSubjectWrap" hidden>
-            <input class="form-input" id="aiNewSubjectName" maxlength="20" placeholder="学科名称" onkeydown="if(event.key==='Enter')createSubjectInline()">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="createSubjectInline()">建立</button>
-          </span>
-        </div>
-
-        <div class="ai-library" id="aiLibrary" hidden></div>
-
-        <section class="ai-step">
-          <div class="ai-step-head">
-            <span class="ai-step-num">1</span>
-            <span>上传学习资料</span>
-            <span class="ai-step-hint">PDF · Word · PPT · TXT</span>
+        <section class="wiz-layer" id="aiLayer1"${aiStep === 1 ? '' : ' hidden'}>
+          <div class="wiz-head">
+            <span class="wiz-title">资料从哪来</span>
+            <span class="wiz-hint">PDF · Word · PPT · TXT · 粘贴</span>
           </div>
-          <label class="ai-dropzone" id="aiDropzone" for="aiFileInput">
+          <div class="ai-subject-bar">
+            <label class="ai-subject-label" for="aiSubjectSelect">保存到学科</label>
+            <select class="form-select ai-subject-select" id="aiSubjectSelect" onchange="onAISubjectChange(this.value)">${renderAISubjectOptions()}</select>
+            <button type="button" class="link-btn" onclick="toggleNewSubjectInline()">＋ 新建</button>
+            <span class="ai-new-subject" id="aiNewSubjectWrap" hidden>
+              <input class="form-input" id="aiNewSubjectName" maxlength="20" placeholder="学科名称" onkeydown="if(event.key==='Enter')createSubjectInline()">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="createSubjectInline()">建立</button>
+            </span>
+          </div>
+
+          <div class="ai-library" id="aiLibrary" hidden></div>
+
+          <label class="ai-dropzone" id="aiDropzone" for="aiFileInput" style="margin-top:12px">
             <input type="file" id="aiFileInput" multiple hidden
               accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
               onchange="handleAIFileInput(this)">
@@ -3856,10 +4210,10 @@ function openAIModal(subjectId, materialIds) {
           </div>
         </section>
 
-        <section class="ai-step">
-          <div class="ai-step-head">
-            <span class="ai-step-num">2</span>
-            <span>处理方式</span>
+        <section class="wiz-layer" id="aiLayer2"${aiStep === 2 ? '' : ' hidden'}>
+          <div class="wiz-head">
+            <span class="wiz-title">怎么处理这些资料</span>
+            <span class="wiz-hint">笔记出题 · 真题原样保留</span>
           </div>
           <div class="ai-mode" id="aiModeGroup" role="group" aria-label="处理方式">
             <button type="button" class="ai-mode-btn active" data-mode="generate" onclick="setAIMode('generate')">
@@ -3903,6 +4257,18 @@ function openAIModal(subjectId, materialIds) {
             <b id="aiExamEstimate">将全部整理</b>
             <span id="aiExamNoteText">题干、选项和答案按原文保留，不改写、不删减；原文没有答案时会给出参考答案。</span>
           </div>
+        </section>
+
+        <section class="wiz-layer" id="aiLayer3"${aiStep === 3 ? '' : ' hidden'}>
+          <div class="wiz-head">
+            <span class="wiz-title">确认并生成</span>
+            <span class="wiz-hint">保存前会先给你看结果</span>
+          </div>
+          <div class="ai-note">
+            <span class="ai-note-dot"></span>
+            <span id="aiReviewTitle">根据资料出题</span>
+          </div>
+          <div class="wiz-summary" id="aiReviewSummary"></div>
           <details class="ai-preview" id="aiPreview" hidden>
             <summary>查看提取的文字<span id="aiPreviewCount"></span></summary>
             <pre id="aiPreviewText"></pre>
@@ -3911,14 +4277,12 @@ function openAIModal(subjectId, materialIds) {
       </div>
       <div id="aiRunWrap" hidden></div>
     </div>
-    <div class="modal-footer" id="aiModalFooter">
-      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">生成题目</button>
-    </div>`, 'modal-wide');
+    <div class="modal-footer" id="aiModalFooter"></div>`, 'modal-wide');
   bindAIDropzone();
   setAIMode(aiMode);
   renderAIFileList();
   renderAILibrary();
+  showAILayer();
   refreshAIState();
 }
 
@@ -4234,6 +4598,7 @@ function refreshAIState() {
         ? (examOversize ? '请先拆分资料' : '整理全部真题')
         : '生成题目';
   }
+  syncAILayerState();
 }
 
 function renderAIFileList() {
@@ -4774,11 +5139,14 @@ async function generateQuestions() {
   const estimate = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
 
   state.genPreview = null;
+  aiStep = 3;
+  const rail = document.getElementById('aiRail');
   const form = document.getElementById('aiFormWrap');
   const run = document.getElementById('aiRunWrap');
   const footer = document.getElementById('aiModalFooter');
   const errBox = document.getElementById('aiErrorBox');
   if (errBox) errBox.hidden = true;
+  if (rail) renderAIRail();
   if (form) form.hidden = true;
   if (run) {
     run.hidden = false;
@@ -4941,8 +5309,10 @@ async function generateQuestions() {
       errBox.innerHTML = `<div class="feedback-title">${runMode === 'generate' ? '生成失败' : '整理失败'}</div><div>${esc(message)}</div>${previewHint}`;
     }
     if (footer) footer.innerHTML = `
-      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-ghost btn-sm" onclick="goAIStep(2)">← 上一步</button>
+      <span style="flex:1"></span>
       <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">${runMode === 'generate' ? '重新生成' : '重新整理'}</button>`;
+    if (rail) renderAIRail();
     refreshAIState();
     toast(message, 'error', 4500);
   } finally {
