@@ -62,13 +62,14 @@ const ICON = {
   trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4.5v2A3.5 3.5 0 0 0 8 10.5M16 5h3.5v2a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 13v4M8.5 21h7M10 17h4l.5 4h-5z"/></svg>`
 };
 
+// bar 用于学科/题库卡左侧的 3px 色条：需要在白卡上可读，所以用实色而不是淡底。
 const SET_ACCENTS = [
-  { bg: 'var(--lime-soft)', fg: 'var(--ink)' },
-  { bg: 'var(--coral-soft)', fg: 'var(--coral)' },
-  { bg: 'var(--sun-soft)', fg: 'var(--sun)' },
-  { bg: 'var(--mint-soft)', fg: 'var(--green)' },
-  { bg: 'var(--paper-2)', fg: 'var(--ink)' },
-  { bg: 'var(--ink)', fg: 'var(--paper)' }
+  { bg: 'var(--lime-soft)', fg: 'var(--ink)', bar: '#1c1b1a' },
+  { bg: 'var(--coral-soft)', fg: 'var(--coral)', bar: '#b42318' },
+  { bg: 'var(--sun-soft)', fg: 'var(--sun)', bar: '#8a5a00' },
+  { bg: 'var(--mint-soft)', fg: 'var(--green)', bar: '#3f6b4f' },
+  { bg: 'var(--paper-2)', fg: 'var(--ink)', bar: '#a39e97' },
+  { bg: 'var(--ink)', fg: 'var(--paper)', bar: '#1c1b1a' }
 ];
 
 function setAccent(set) {
@@ -1264,6 +1265,33 @@ function heroArt() {
   </svg>`;
 }
 
+/* 卡片解剖（对齐 Exam Plan AI）：统计卡 = 标签 + 淡图标 / 大号数字 / 说明或进度；
+   学科与题库卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 6px 进度 + 分隔页脚。 */
+function statCard(label, value, opts) {
+  const o = opts || {};
+  const pct = typeof o.pct === 'number' ? Math.max(0, Math.min(100, Math.round(o.pct))) : null;
+  return `
+    <div class="stat">
+      <div class="stat-head">
+        <span class="stat-label">${esc(label)}</span>
+        ${o.icon ? `<span class="stat-ico" aria-hidden="true">${o.icon}</span>` : ''}
+      </div>
+      <div class="stat-value">${value}</div>
+      ${pct != null
+        ? `<div class="stat-track"><div style="width:${pct}%"></div></div>
+           ${o.note ? `<div class="stat-note">${esc(o.note)}</div>` : ''}`
+        : (o.note ? `<div class="stat-note">${esc(o.note)}</div>` : '')}
+    </div>`;
+}
+
+function subjectStats(subjectId) {
+  const ids = new Set(subjectSets(subjectId).map((s) => s.id));
+  const attempts = history.filter((a) => ids.has(a.setId));
+  const graded = attempts.reduce((n, a) => n + (a.graded || 0), 0);
+  const correct = attempts.reduce((n, a) => n + (a.correct || 0), 0);
+  return { attempts: attempts.length, accuracy: graded ? Math.round((correct / graded) * 100) : null };
+}
+
 function renderDashboard() {
   const sets = allSets();
   const st = overallStats();
@@ -1297,10 +1325,16 @@ function renderDashboard() {
     </div>
 
     <div class="stat-rail">
-      <div class="stat"><div class="stat-value">${sets.length}</div><div class="stat-label">题库</div></div>
-      <div class="stat"><div class="stat-value">${st.totalQ}</div><div class="stat-label">题目</div></div>
-      <div class="stat"><div class="stat-value">${st.accuracy == null ? '--' : st.accuracy + '%'}</div><div class="stat-label">正确率</div></div>
-      <div class="stat"><div class="stat-value">${st.count}</div><div class="stat-label">练习次数</div></div>
+      ${statCard('题库', sets.length, { icon: ICON.archive, note: `${visibleSubjects().length} 个学科` })}
+      ${statCard('题目', st.totalQ, { icon: ICON.doc, note: '只来自你上传的资料' })}
+      ${statCard('正确率', st.accuracy == null ? '--' : st.accuracy + '%', {
+        icon: ICON.target, pct: st.accuracy == null ? 0 : st.accuracy,
+        note: st.count ? `基于 ${st.count} 次练习` : '还没有练习记录'
+      })}
+      ${statCard('练习次数', st.count, {
+        icon: ICON.chart,
+        note: today ? `今日已练 ${today} 题` : '今天还没开始'
+      })}
     </div>
 
     <div class="section-title">
@@ -1323,13 +1357,11 @@ function renderDashboard() {
 
 function renderEmptySets() {
   return `
-    <div class="card" style="text-align:center;padding:40px 20px">
-      <div class="empty-state-icon">${ICON.book}</div>
-      <div class="card-title">还没有题库</div>
-      <div class="card-desc mb-4">上传 PDF、Word、PPT 或粘贴文字，AI 自动整理成题库</div>
-      <div class="btn-group" style="justify-content:center">
-        <button class="btn btn-primary" onclick="openAIModal()">AI 生成</button>
-      </div>
+    <div class="empty-card">
+      <div class="empty-card-icon">${ICON.book}</div>
+      <div class="empty-card-title">还没有题库</div>
+      <div class="empty-card-desc">上传 PDF、Word、PPT 或粘贴文字，AI 自动整理成题库</div>
+      <button class="btn btn-primary" onclick="openAIModal()">${ICON.spark} AI 生成</button>
     </div>`;
 }
 
@@ -1337,16 +1369,21 @@ function renderSetRow(s) {
   const st = setStats(s.id);
   const kpCount = (s.knowledgePoints || []).length;
   const accent = setAccent(s);
-  const acc = st.accuracy == null ? '' : ` · 正确率 ${st.accuracy}%`;
+  const acc = st.accuracy;
   return `
     <button type="button" class="set-row" onclick="openSet('${s.id}')">
-      <span class="set-row-icon" style="background:${accent.bg};color:${accent.fg}">${esc(s.icon || '题')}</span>
-      <span class="set-row-main">
+      <span class="set-row-accent" aria-hidden="true" style="background:${accent.bar}"></span>
+      <span class="set-row-head">
         <span class="set-row-title">${esc(s.name)}</span>
-        <span class="set-row-desc">${esc(s.description || '')}</span>
+        <span class="set-row-chip">${s.questions.length} 题</span>
       </span>
-      <span class="set-row-meta">${s.questions.length} 题 · ${kpCount} 知识点${acc}</span>
-      <span class="set-row-arrow" aria-hidden="true">→</span>
+      <span class="set-row-desc">${esc(s.description || '点击开始这套练习')}</span>
+      <span class="set-row-meta">${ICON.clock}<span>${st.attempts ? `已练 ${st.attempts} 次` : '还没有练过'}</span></span>
+      <span class="set-row-track" aria-hidden="true"><div style="width:${acc == null ? 0 : acc}%"></div></span>
+      <span class="set-row-foot">
+        <span class="set-row-foot-info">${kpCount} 知识点${acc == null ? ' · 正确率 --' : ` · 正确率 ${acc}%`}</span>
+        <span class="set-row-foot-go">开始练习 →</span>
+      </span>
     </button>`;
 }
 
@@ -1354,19 +1391,25 @@ function renderSubjectRow(subject) {
   const sets = subjectSets(subject.id);
   const mats = subjectMaterials(subject.id);
   const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
+  const acc = subjectStats(subject.id).accuracy;
   const accent = setAccent({ id: subject.id });
   const desc = mats.length
     ? `最近资料：${mats[0].name}`
     : (sets[0] ? (sets[0].description || `${sets[0].name} · ${qCount} 题`) : '还没有资料，点进去上传');
   return `
     <button type="button" class="set-row subject-row" onclick="openSubject('${subject.id}')">
-      <span class="set-row-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
-      <span class="set-row-main">
+      <span class="set-row-accent" aria-hidden="true" style="background:${accent.bar}"></span>
+      <span class="set-row-head">
         <span class="set-row-title">${esc(subject.name)}</span>
-        <span class="set-row-desc">${esc(desc)}</span>
+        <span class="set-row-chip">${qCount} 题</span>
       </span>
-      <span class="set-row-meta">${mats.length} 份资料 · ${sets.length} 套题库</span>
-      <span class="set-row-arrow" aria-hidden="true">→</span>
+      <span class="set-row-desc">${esc(desc)}</span>
+      <span class="set-row-meta">${ICON.doc}<span>${mats.length} 份资料 · ${sets.length} 套题库</span></span>
+      <span class="set-row-track" aria-hidden="true"><div style="width:${acc == null ? 0 : acc}%"></div></span>
+      <span class="set-row-foot">
+        <span class="set-row-foot-info">${acc == null ? '正确率 --' : `正确率 ${acc}%`}</span>
+        <span class="set-row-foot-go">打开文件夹 →</span>
+      </span>
     </button>`;
 }
 
@@ -1380,13 +1423,10 @@ function renderSets() {
     <p class="page-lead">按学科归档：上传的原始资料、提取的文字和生成的题库都在同一个文件夹里。</p>
     <div class="set-list">
       ${subjects.map((s) => renderSubjectRow(s)).join('')}
-      <button type="button" class="set-row set-row-add" onclick="newSubjectModal()">
-        <span class="set-row-icon" aria-hidden="true">＋</span>
-        <span class="set-row-main">
-          <span class="set-row-title">新建学科</span>
-          <span class="set-row-desc">例如：高等数学、英语写作、数据结构</span>
-        </span>
-        <span class="set-row-arrow" aria-hidden="true">→</span>
+      <button type="button" class="set-add" onclick="newSubjectModal()">
+        <span class="set-add-plus" aria-hidden="true">＋</span>
+        <span class="set-add-title">新建学科</span>
+        <span class="set-add-desc">例如：高等数学、英语写作、数据结构</span>
       </button>
     </div>`;
 }
@@ -1488,13 +1528,10 @@ function renderSubject() {
     </div>
     ${materialsUnavailable
       ? `<div class="feedback feedback-incorrect" style="margin-top:12px">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
-      : `<button type="button" class="set-row set-row-add" onclick="pickSubjectFiles()">
-          <span class="set-row-icon" aria-hidden="true">＋</span>
-          <span class="set-row-main">
-            <span class="set-row-title">上传资料到「${esc(subject.name)}」</span>
-            <span class="set-row-desc">支持多选 · PDF / Word / PPT / TXT · 单文件 ≤ 30MB</span>
-          </span>
-          <span class="set-row-arrow" aria-hidden="true">→</span>
+      : `<button type="button" class="set-add set-add-wide" onclick="pickSubjectFiles()">
+          <span class="set-add-plus" aria-hidden="true">＋</span>
+          <span class="set-add-title">上传资料到「${esc(subject.name)}」</span>
+          <span class="set-add-desc">支持多选 · PDF / Word / PPT / TXT · 单文件 ≤ 30MB</span>
         </button>
         <div class="upload-status" id="subjectUploadStatus" hidden></div>`}
 
@@ -1504,13 +1541,10 @@ function renderSubject() {
     </div>
     <div class="set-list">
       ${sets.length ? sets.map((s) => renderSetRow(s)).join('') : '<div class="material-empty">还没有题库。用上面的资料让 AI 出一套，或从其他学科移动过来。</div>'}
-      <button type="button" class="set-row set-row-add" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">
-        <span class="set-row-icon" aria-hidden="true">＋</span>
-        <span class="set-row-main">
-          <span class="set-row-title">在本学科新建题库</span>
-          <span class="set-row-desc">${mats.length ? `可直接使用这 ${mats.length} 份资料出题` : '上传资料，或直接粘贴文字'}</span>
-        </span>
-        <span class="set-row-arrow" aria-hidden="true">→</span>
+      <button type="button" class="set-add set-add-wide" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">
+        <span class="set-add-plus" aria-hidden="true">＋</span>
+        <span class="set-add-title">在本学科新建题库</span>
+        <span class="set-add-desc">${mats.length ? `可直接使用这 ${mats.length} 份资料出题` : '上传资料，或直接粘贴文字'}</span>
       </button>
     </div>`;
 }
@@ -2924,10 +2958,16 @@ function renderRecords() {
 
   return `
     <div class="stat-rail">
-      <div class="stat"><div class="stat-value">${st.count}</div><div class="stat-label">练习次数</div></div>
-      <div class="stat"><div class="stat-value">${st.accuracy == null ? '--' : st.accuracy + '%'}</div><div class="stat-label">平均正确率</div></div>
-      <div class="stat"><div class="stat-value">${st.avg == null ? '--' : st.avg}</div><div class="stat-label">平均得分</div></div>
-      <div class="stat"><div class="stat-value">${wrongTotal}</div><div class="stat-label">错题数</div></div>
+      ${statCard('练习次数', st.count, { icon: ICON.chart, note: `今日 ${todayAnswered()} 题` })}
+      ${statCard('平均正确率', st.accuracy == null ? '--' : st.accuracy + '%', {
+        icon: ICON.target, pct: st.accuracy == null ? 0 : st.accuracy,
+        note: st.count ? `共批改 ${st.graded} 题` : '还没有练习记录'
+      })}
+      ${statCard('平均得分', st.avg == null ? '--' : st.avg, { icon: ICON.trophy, note: '每次练习的得分均值' })}
+      ${statCard('错题数', wrongTotal, {
+        icon: ICON.flask,
+        note: wrongTotal ? `分布在 ${Object.keys(wrongBank).length} 套题库` : '暂时没有待复习的错题'
+      })}
     </div>
 
     ${perSet.length ? `
