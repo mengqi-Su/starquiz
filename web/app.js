@@ -63,12 +63,12 @@ const ICON = {
 };
 
 const SET_ACCENTS = [
-  { bg: 'var(--lime)', fg: 'var(--ink)' },
-  { bg: 'var(--coral)', fg: 'var(--ink)' },
   { bg: 'var(--lime-soft)', fg: 'var(--ink)' },
-  { bg: 'var(--coral-soft)', fg: 'var(--ink)' },
+  { bg: 'var(--coral-soft)', fg: 'var(--coral)' },
+  { bg: 'var(--sun-soft)', fg: 'var(--sun)' },
+  { bg: 'var(--mint-soft)', fg: 'var(--green)' },
   { bg: 'var(--paper-2)', fg: 'var(--ink)' },
-  { bg: 'var(--ink)', fg: 'var(--lime)' }
+  { bg: 'var(--ink)', fg: 'var(--paper)' }
 ];
 
 function setAccent(set) {
@@ -1212,31 +1212,31 @@ function renderHeaderActions() {
 
 function heroArt() {
   return `<svg viewBox="0 0 240 210" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M40 190c20 12 48 13 74 2" stroke="#D6F65B" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9"/>
-    <g transform="rotate(-6 118 72)">
-      <rect x="50" y="48" width="148" height="42" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
-      <rect x="60" y="57" width="24" height="24" rx="7" fill="#1A1812" stroke="#1A1812" stroke-width="2.5"/>
-      <text x="72" y="75" text-anchor="middle" fill="#F7F0DC" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">C</text>
-      <rect x="94" y="62" width="82" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-      <rect x="94" y="75" width="50" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+    <path d="M40 190c20 12 48 13 74 2" stroke="#f8f7f4" stroke-opacity="0.35" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 9"/>
+    <g transform="rotate(-5 118 72)">
+      <rect x="50" y="48" width="148" height="42" rx="10" fill="#f8f7f4" fill-opacity="0.06" stroke="#f8f7f4" stroke-opacity="0.45" stroke-width="1.5"/>
+      <rect x="60" y="57" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.12" stroke="#f8f7f4" stroke-opacity="0.4" stroke-width="1.2"/>
+      <text x="72" y="74" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Roboto, sans-serif" font-size="13" font-weight="600">C</text>
+      <rect x="94" y="62" width="82" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
+      <rect x="94" y="74" width="50" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
     </g>
-    <g transform="rotate(5 118 110)">
-      <rect x="38" y="88" width="152" height="42" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
-      <rect x="48" y="97" width="24" height="24" rx="7" fill="#FF6B45" stroke="#1A1812" stroke-width="2.5"/>
-      <text x="60" y="115" text-anchor="middle" fill="#1A1812" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">B</text>
-      <rect x="82" y="102" width="90" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-      <rect x="82" y="115" width="56" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+    <g transform="rotate(4 118 110)">
+      <rect x="38" y="88" width="152" height="42" rx="10" fill="#f8f7f4" fill-opacity="0.06" stroke="#f8f7f4" stroke-opacity="0.45" stroke-width="1.5"/>
+      <rect x="48" y="97" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.12" stroke="#f8f7f4" stroke-opacity="0.4" stroke-width="1.2"/>
+      <text x="60" y="114" text-anchor="middle" fill="#f8f7f4" fill-opacity="0.85" font-family="Google Sans, Roboto, sans-serif" font-size="13" font-weight="600">B</text>
+      <rect x="82" y="102" width="90" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
+      <rect x="82" y="114" width="56" height="6" rx="3" fill="#f8f7f4" opacity="0.18"/>
     </g>
     <g transform="rotate(-2 118 150)">
-      <rect x="44" y="128" width="156" height="44" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
-      <rect x="54" y="138" width="24" height="24" rx="7" fill="#D6F65B" stroke="#1A1812" stroke-width="2.5"/>
-      <text x="66" y="156" text-anchor="middle" fill="#1A1812" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">A</text>
-      <rect x="88" y="143" width="76" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-      <rect x="88" y="156" width="46" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
+      <rect x="44" y="128" width="156" height="44" rx="10" fill="#f8f7f4" fill-opacity="0.08" stroke="#f8f7f4" stroke-opacity="0.55" stroke-width="1.5"/>
+      <rect x="54" y="138" width="24" height="24" rx="6" fill="#f8f7f4" fill-opacity="0.9"/>
+      <text x="66" y="155" text-anchor="middle" fill="#1c1b1a" font-family="Google Sans, Roboto, sans-serif" font-size="13" font-weight="600">A</text>
+      <rect x="88" y="143" width="76" height="6" rx="3" fill="#f8f7f4" opacity="0.22"/>
+      <rect x="88" y="156" width="46" height="6" rx="3" fill="#f8f7f4" opacity="0.22"/>
     </g>
-    <circle cx="199" cy="48" r="30" fill="#D6F65B" stroke="#1A1812" stroke-width="3"/>
-    <path d="M186 48l9 9 17-18" stroke="#1A1812" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M26 60l4.5 10 10 4.5-10 4.5-4.5 10-4.5-10-10-4.5 10-4.5z" fill="#FF6B45" stroke="#1A1812" stroke-width="2.5" stroke-linejoin="round"/>
+    <circle cx="199" cy="48" r="28" fill="#f8f7f4"/>
+    <path d="M186 48l9 9 17-18" stroke="#1c1b1a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M26 60l4.5 10 10 4.5-10 4.5-4.5 10-4.5-10-10-4.5 10-4.5z" fill="#f8f7f4" fill-opacity="0.5"/>
   </svg>`;
 }
 
