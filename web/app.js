@@ -1092,6 +1092,51 @@ function closeSidebar() {
   document.getElementById('sidebarOverlay').classList.remove('open');
 }
 
+/* 侧栏收纳（对齐 Exam Plan AI）：桌面端可收起，收起后左上角留一个浮动展开按钮 */
+const SIDEBAR_PREF_KEY = 'sq_sidebar_collapsed';
+
+function sidebarCollapsed() {
+  try { return localStorage.getItem(SIDEBAR_PREF_KEY) === '1'; } catch { return false; }
+}
+
+function applySidebarPref() {
+  document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed());
+}
+
+function collapseSidebar() {
+  document.body.classList.add('sidebar-collapsed');
+  try { localStorage.setItem(SIDEBAR_PREF_KEY, '1'); } catch { /* 偏好存不下也不影响本次使用 */ }
+}
+
+function expandSidebar() {
+  document.body.classList.remove('sidebar-collapsed');
+  try { localStorage.setItem(SIDEBAR_PREF_KEY, '0'); } catch { /* 同上 */ }
+}
+
+// 侧栏中间那组学科列表：色点 + 名称 + 题数，点击直达文件夹，底下挂一个新建入口
+function renderSidebarSubjects() {
+  const host = document.getElementById('sidebarSubjects');
+  if (!host) return;
+  const subjects = visibleSubjects();
+  const rows = subjects.map((s) => {
+    const accent = setAccent({ id: s.id });
+    const qCount = subjectSets(s.id).reduce((n, x) => n + x.questions.length, 0);
+    const active = state.view === 'subject' && state.subjectId === s.id;
+    return `<button type="button" class="side-subject${active ? ' is-active' : ''}" onclick="openSubject('${s.id}')" title="${esc(s.name)}">
+      <span class="side-subject-dot" aria-hidden="true" style="background:${accent.bar}"></span>
+      <span class="side-subject-name">${esc(s.name)}</span>
+      <span class="side-subject-num">${qCount}</span>
+    </button>`;
+  }).join('');
+  host.innerHTML = `
+    <div class="sidebar-group-head">
+      <span>我的学科</span>
+      <span class="sidebar-count">${subjects.length}</span>
+    </div>
+    ${rows || '<p class="sidebar-empty">还没有学科文件夹</p>'}
+    <button type="button" class="side-add" onclick="newSubjectModal()"><span class="side-add-plus" aria-hidden="true">＋</span>新建学科</button>`;
+}
+
 const PAGE_TITLES = {
   dashboard: '首页',
   sets: '学科',
@@ -1200,6 +1245,7 @@ function renderCore() {
     : PAGE_TITLES[state.view];
   document.getElementById('pageTitle').textContent = pageTitle || '';
   document.getElementById('headerActions').innerHTML = renderHeaderActions();
+  renderSidebarSubjects();
 
   const main = document.getElementById('mainContent');
   switch (state.view) {
@@ -1223,16 +1269,23 @@ function renderCore() {
 }
 
 function renderHeaderActions() {
+  // 首页与学科列表的顶级动作；学科页内部的上传 / AI 出题都留在页面里，顶栏不再重复一遍
   if (state.view === 'dashboard' || state.view === 'sets') {
     return `
       <button class="btn btn-primary btn-sm" onclick="openAIModal()">${ICON.spark} AI 生成</button>`;
   }
-  if (state.view === 'subject') {
-    return `
-      <button class="btn btn-secondary btn-sm" onclick="pickSubjectFiles()">${ICON.upload} 上传资料</button>
-      <button class="btn btn-primary btn-sm" onclick="openAIModal('${state.subjectId}')">${ICON.spark} AI 出题</button>`;
-  }
   return '';
+}
+
+function toggleSubjectMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('subjectMenu');
+  if (menu) menu.hidden = !menu.hidden;
+}
+
+function hideSubjectMenu() {
+  const menu = document.getElementById('subjectMenu');
+  if (menu) menu.hidden = true;
 }
 
 /* 卡片解剖（对齐 Exam Plan AI）：统计卡 = 标签 + 淡图标 / 大号数字 / 说明或进度；
@@ -1272,7 +1325,7 @@ function renderDashboard() {
   const goal = 20;
   const goalPct = Math.min(100, Math.round((today / goal) * 100));
 
-  const cards = visibleSubjects().slice(0, 4).map((s) => renderSubjectRow(s)).join('');
+  const cards = visibleSubjects().slice(0, 5).map((s) => renderSubjectRow(s)).join('');
 
   return `
     <div class="dash-hero">
@@ -1294,110 +1347,96 @@ function renderDashboard() {
       <div class="hero-paper-corner" aria-hidden="true"></div>
     </div>
 
-    <div class="stat-rail">
-      ${statCard('题库', sets.length, { icon: ICON.archive, note: `${visibleSubjects().length} 个学科` })}
-      ${statCard('题目', st.totalQ, { icon: ICON.doc, note: '只来自你上传的资料' })}
-      ${statCard('正确率', st.accuracy == null ? '--' : st.accuracy + '%', {
-        icon: ICON.target, pct: st.accuracy == null ? 0 : st.accuracy,
-        note: st.count ? `基于 ${st.count} 次练习` : '还没有练习记录'
-      })}
-      ${statCard('练习次数', st.count, {
-        icon: ICON.chart,
-        note: today ? `今日已练 ${today} 题` : '今天还没开始'
-      })}
+    <div class="dash-meta">
+      <span><b>${sets.length}</b> 套题库</span>
+      <span><b>${st.totalQ}</b> 道题目</span>
+      <span><b>${st.accuracy == null ? '--' : `${st.accuracy}%`}</b> 正确率${st.count ? ` · ${st.count} 次练习` : ''}</span>
+      <span><b>${today}</b> / ${goal} 今日目标</span>
     </div>
 
     <div class="section-title">
-      <span>学科文件夹</span>
-      <button class="btn btn-ghost btn-sm" onclick="navigateTo('sets')">全部学科 ${ICON.arrow}</button>
+      <span>学科文件夹<span class="section-count">${visibleSubjects().length}</span></span>
+      <button class="link-btn" onclick="navigateTo('sets')">全部学科 →</button>
     </div>
-    <div class="set-list">
-      ${cards || renderEmptySets()}
-    </div>
-    <div class="ai-cta" onclick="openAIModal()">
-      <div class="ai-cta-icon">${ICON.spark}</div>
-      <div class="ai-cta-copy">
-        <div class="ai-cta-title">上传资料，AI 出题</div>
-        <div class="ai-cta-desc">笔记自动出题，真题原样整理，全部保留</div>
-      </div>
-      <span class="ai-cta-go">开始出题 ${ICON.arrow}</span>
+    <div class="lrow-list">
+      ${cards || renderEmptyFolders()}
     </div>
   `;
 }
 
-function renderEmptySets() {
+function renderEmptyFolders() {
   return `
     <div class="empty-card">
       <div class="empty-card-icon">${ICON.book}</div>
-      <div class="empty-card-title">还没有题库</div>
-      <div class="empty-card-desc">上传 PDF、Word、PPT 或粘贴文字，AI 自动整理成题库</div>
-      <button class="btn btn-primary" onclick="openAIModal()">${ICON.spark} AI 生成</button>
+      <div class="empty-card-title">还没有学科文件夹</div>
+      <div class="empty-card-desc">建一个文件夹，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成题库</div>
+      <div class="btn-group" style="justify-content:center">
+        <button class="btn btn-primary" onclick="newSubjectModal()">新建学科</button>
+        <button class="btn btn-secondary" onclick="openAIModal()">${ICON.spark} AI 生成</button>
+      </div>
     </div>`;
+}
+
+/* 紧凑列表行（对齐 Exam Plan 的清单）：色点 + 标题 + 计数胶囊 + 一行说明 + 右侧次要数据。
+   页面只保留一层卡片（hero / 页头），其余内容用细线分行，不再一块块平铺大卡。 */
+function lrow(o) {
+  return `
+    <button type="button" class="lrow" onclick="${o.onclick}">
+      <span class="lrow-dot" aria-hidden="true" style="background:${o.accent}"></span>
+      <span class="lrow-main">
+        <span class="lrow-title"><span class="lrow-name">${esc(o.title)}</span><span class="lrow-chip">${o.chip}</span></span>
+        ${o.sub ? `<span class="lrow-sub">${esc(o.sub)}</span>` : ''}
+      </span>
+      <span class="lrow-tail">${o.tail}</span>
+      <span class="lrow-go" aria-hidden="true">→</span>
+    </button>`;
+}
+
+function tailAccuracy(acc) {
+  return acc == null
+    ? '<span class="lrow-tail-idle">未练习</span>'
+    : `<b>${acc}%</b><span class="lrow-tail-idle">正确率</span>`;
 }
 
 function renderSetRow(s) {
   const st = setStats(s.id);
   const kpCount = (s.knowledgePoints || []).length;
-  const accent = setAccent(s);
-  const acc = st.accuracy;
-  return `
-    <button type="button" class="set-row" onclick="openSet('${s.id}')">
-      <span class="set-row-accent" aria-hidden="true" style="background:${accent.bar}"></span>
-      <span class="set-row-head">
-        <span class="set-row-title">${esc(s.name)}</span>
-        <span class="set-row-chip">${s.questions.length} 题</span>
-      </span>
-      <span class="set-row-desc">${esc(s.description || '点击开始这套练习')}</span>
-      <span class="set-row-meta">${ICON.clock}<span>${st.attempts ? `已练 ${st.attempts} 次` : '还没有练过'}</span></span>
-      <span class="set-row-track" aria-hidden="true"><div style="width:${acc == null ? 0 : acc}%"></div></span>
-      <span class="set-row-foot">
-        <span class="set-row-foot-info">${kpCount} 知识点${acc == null ? ' · 正确率 --' : ` · 正确率 ${acc}%`}</span>
-        <span class="set-row-foot-go">开始练习 →</span>
-      </span>
-    </button>`;
+  return lrow({
+    onclick: `openSet('${s.id}')`,
+    accent: setAccent(s).bar,
+    title: s.name,
+    chip: `${s.questions.length} 题`,
+    sub: s.description || `${kpCount} 知识点 · ${st.attempts ? `已练 ${st.attempts} 次` : '还没有练过'}`,
+    tail: tailAccuracy(st.accuracy)
+  });
 }
 
 function renderSubjectRow(subject) {
   const sets = subjectSets(subject.id);
   const mats = subjectMaterials(subject.id);
   const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
-  const acc = subjectStats(subject.id).accuracy;
-  const accent = setAccent({ id: subject.id });
-  const desc = mats.length
-    ? `最近资料：${mats[0].name}`
-    : (sets[0] ? (sets[0].description || `${sets[0].name} · ${qCount} 题`) : '还没有资料，点进去上传');
-  return `
-    <button type="button" class="set-row subject-row" onclick="openSubject('${subject.id}')">
-      <span class="set-row-accent" aria-hidden="true" style="background:${accent.bar}"></span>
-      <span class="set-row-head">
-        <span class="set-row-title">${esc(subject.name)}</span>
-        <span class="set-row-chip">${qCount} 题</span>
-      </span>
-      <span class="set-row-desc">${esc(desc)}</span>
-      <span class="set-row-meta">${ICON.doc}<span>${mats.length} 份资料 · ${sets.length} 套题库</span></span>
-      <span class="set-row-track" aria-hidden="true"><div style="width:${acc == null ? 0 : acc}%"></div></span>
-      <span class="set-row-foot">
-        <span class="set-row-foot-info">${acc == null ? '正确率 --' : `正确率 ${acc}%`}</span>
-        <span class="set-row-foot-go">打开文件夹 →</span>
-      </span>
-    </button>`;
+  return lrow({
+    onclick: `openSubject('${subject.id}')`,
+    accent: setAccent({ id: subject.id }).bar,
+    title: subject.name,
+    chip: `${qCount} 题`,
+    sub: mats.length || sets.length
+      ? `${mats.length} 份资料 · ${sets.length} 套题库`
+      : '还没有资料，点进去上传',
+    tail: tailAccuracy(subjectStats(subject.id).accuracy)
+  });
 }
 
 function renderSets() {
   const subjects = visibleSubjects();
   return `
     <div class="section-title">
-      <span>全部学科</span>
-      <span class="text-sm text-muted">共 ${subjects.length} 个</span>
+      <span>全部学科<span class="section-count">${subjects.length}</span></span>
+      <button type="button" class="link-btn" onclick="newSubjectModal()">＋ 新建学科</button>
     </div>
     <p class="page-lead">按学科归档：上传的原始资料、提取的文字和生成的题库都在同一个文件夹里。</p>
-    <div class="set-list">
-      ${subjects.map((s) => renderSubjectRow(s)).join('')}
-      <button type="button" class="set-add" onclick="newSubjectModal()">
-        <span class="set-add-plus" aria-hidden="true">＋</span>
-        <span class="set-add-title">新建学科</span>
-        <span class="set-add-desc">例如：高等数学、英语写作、数据结构</span>
-      </button>
+    <div class="lrow-list">
+      ${subjects.length ? subjects.map((s) => renderSubjectRow(s)).join('') : renderEmptyFolders()}
     </div>`;
 }
 
@@ -1454,6 +1493,8 @@ function renderSubject() {
   const own = !subject.builtin;
   const matIds = mats.map((m) => `'${m.id}'`).join(',');
   const busy = !materialsReady;
+  const chars = mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN');
+  const kpTotal = sets.reduce((n, s) => n + (s.knowledgePoints || []).length, 0);
 
   return `
     <button class="back-link" onclick="navigateTo('sets')">← 全部学科</button>
@@ -1465,22 +1506,19 @@ function renderSubject() {
         <div class="subject-head-copy">
           <div class="hero-eyebrow">学科文件夹</div>
           <h2>${esc(subject.name)}</h2>
-          <p>${subject.inbox ? '还没有归入学科的题库和资料会先放在这里。' : '这个文件夹里的资料和题库只属于本学科。'}</p>
+          <p>${mats.length} 份资料 · ${sets.length} 套题库 · ${qCount} 道题目 · ${chars} 字提取文字</p>
         </div>
       </div>
       <div class="subject-head-actions">
-        <button class="btn btn-primary btn-sm" onclick="pickSubjectFiles()">${ICON.upload} 上传资料</button>
-        <button class="btn btn-secondary btn-sm" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">${ICON.spark} AI 出题</button>
-        ${own ? `<button class="btn btn-ghost btn-sm" onclick="renameSubjectModal('${subject.id}')">重命名</button>
-        <button class="btn btn-ghost btn-sm link-danger" onclick="deleteSubject('${subject.id}')">删除学科</button>` : ''}
+        <button class="btn btn-primary btn-sm" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">${ICON.spark} AI 出题</button>
+        ${own ? `<div class="pop-wrap">
+          <button class="btn btn-ghost btn-sm icon-btn" onclick="toggleSubjectMenu(event)" aria-label="更多操作" title="更多操作">⋯</button>
+          <div class="pop-menu" id="subjectMenu" hidden>
+            <button type="button" class="pop-item" onclick="hideSubjectMenu();renameSubjectModal('${subject.id}')">重命名</button>
+            <button type="button" class="pop-item pop-danger" onclick="hideSubjectMenu();deleteSubject('${subject.id}')">删除学科</button>
+          </div>
+        </div>` : ''}
       </div>
-    </div>
-
-    <div class="subject-counts">
-      <span><b>${mats.length}</b> 份资料</span>
-      <span><b>${sets.length}</b> 套题库</span>
-      <span><b>${qCount}</b> 道题目</span>
-      <span><b>${subjectMaterials(subject.id).reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')}</b> 字资料</span>
     </div>
 
     <input type="file" id="subjectFileInput" multiple hidden
@@ -1488,8 +1526,10 @@ function renderSubject() {
       onchange="handleSubjectFileInput(this)">
 
     <div class="section-title">
-      <span>资料</span>
-      ${mats.length ? `<button class="btn btn-ghost btn-sm" onclick="openAIModal('${subject.id}', [${matIds}])">用这些资料出题 ${ICON.arrow}</button>` : `<span class="text-sm text-muted">原始文件 + 提取文字</span>`}
+      <span>资料<span class="section-count">${mats.length}</span></span>
+      <span class="section-actions">
+        <button type="button" class="link-btn" onclick="pickSubjectFiles()">＋ 上传资料</button>
+      </span>
     </div>
     <div class="material-list" id="materialList">
       ${mats.length
@@ -1498,24 +1538,16 @@ function renderSubject() {
     </div>
     ${materialsUnavailable
       ? `<div class="feedback feedback-incorrect" style="margin-top:12px">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
-      : `<button type="button" class="set-add set-add-wide" onclick="pickSubjectFiles()">
-          <span class="set-add-plus" aria-hidden="true">＋</span>
-          <span class="set-add-title">上传资料到「${esc(subject.name)}」</span>
-          <span class="set-add-desc">支持多选 · PDF / Word / PPT / TXT · 单文件 ≤ 30MB</span>
-        </button>
-        <div class="upload-status" id="subjectUploadStatus" hidden></div>`}
+      : '<div class="upload-status" id="subjectUploadStatus" hidden></div>'}
 
     <div class="section-title">
-      <span>题库</span>
-      <span class="text-sm text-muted">${sets.length} 套 · ${qCount} 题</span>
+      <span>题库<span class="section-count">${sets.length} 套 · ${qCount} 题</span></span>
+      <span class="text-sm text-muted">${kpTotal} 个知识点</span>
     </div>
-    <div class="set-list">
-      ${sets.length ? sets.map((s) => renderSetRow(s)).join('') : '<div class="material-empty">还没有题库。用上面的资料让 AI 出一套，或从其他学科移动过来。</div>'}
-      <button type="button" class="set-add set-add-wide" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">
-        <span class="set-add-plus" aria-hidden="true">＋</span>
-        <span class="set-add-title">在本学科新建题库</span>
-        <span class="set-add-desc">${mats.length ? `可直接使用这 ${mats.length} 份资料出题` : '上传资料，或直接粘贴文字'}</span>
-      </button>
+    <div class="lrow-list">
+      ${sets.length
+        ? sets.map((s) => renderSetRow(s)).join('')
+        : `<div class="material-empty">还没有题库。用上面的资料让 AI 出一套，或从其他学科移动过来。</div>`}
     </div>`;
 }
 
@@ -5420,6 +5452,12 @@ window.addEventListener('pagehide', () => {
 });
 
 (async function boot() {
+  applySidebarPref();
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t && t.closest && (t.closest('.pop-menu') || t.closest('.icon-btn'))) return;
+    hideSubjectMenu();
+  });
   await loadMaterials();
   if (materialsUnavailable) bootNotes.push('当前浏览器无法打开本地资料库，上传的资料这次不会保留');
   loadResumeSessions();
