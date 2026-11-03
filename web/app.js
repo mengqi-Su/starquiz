@@ -4442,10 +4442,15 @@ let aiLastRecommended = 0;
 let aiMode = 'generate';
 let aiSubjectId = null;
 
-// 出题任务分两步（start / poll），单个请求都很短，避免撞上网关 45 秒超时
+// 出题任务有两条通道：
+//   同步批次（站点配了 DeepSeek Key）：一次请求只出一小批，浏览器并发编排；
+//   Qoder AI 会话（兜底）：start / poll 两步，单个请求都很短。
+// 网关约 60 秒掐断单个请求，所以两条通道都不让一次请求扛整份资料。
 const AI_POLL_INTERVAL_MS = 1500;
 const AI_POLL_DEADLINE_MS = 360000;
 const AI_EXAM_DEADLINE_MS = 600000;
+const AI_SYNC_CONCURRENCY = 3;
+const AI_SYNC_RETRY_DELAYS = [800, 2500];
 const OFFICIAL_SITE_URL = 'https://starquiz-zfc3er164xi.qoder.zone';
 
 function aiErrorText(status, data) {
@@ -4492,6 +4497,51 @@ async function startAISession(payload, signal, onRetry) {
     if (onRetry && attempt < AI_START_RETRY_DELAYS.length) onRetry(attempt + 1);
   }
   throw new Error(lastMessage || 'AI 服务暂时不可用，请稍后重试');
+}
+
+// 并发上限的小工具：批次多时也不要一起压给上游，3 路并发最稳
+async function mapLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  const runners = new Array(Math.max(1, Math.min(limit, items.length))).fill(0).map(async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index], index);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
+
+// 同步批次：请求体与 /ai/start 完全一致，只多一个 jobIndex，
+// 函数用同样的纯函数还原出这一批的提示词，生成后直接返回题目。
+async function requestAISyncJob(payload, jobIndex, signal) {
+  const body = JSON.stringify({ ...payload, jobIndex });
+  let lastMessage = '';
+  for (let attempt = 0; attempt <= AI_SYNC_RETRY_DELAYS.length; attempt++) {
+    if (attempt) await new Promise((resolve) => setTimeout(resolve, AI_SYNC_RETRY_DELAYS[attempt - 1]));
+    let res = null;
+    let data = null;
+    try {
+      res = await fetch('/functions/v1/app/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal
+      });
+      data = await res.json().catch(() => null);
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      lastMessage = '网络连接中断，请检查网络后再试';
+      continue;
+    }
+    if (res.ok && data && data.ok && data.set) return data;
+    // 一批失败多半是这一批太大或上游抖动：换个批次大小重跑没有意义，试两次就放弃这一批
+    lastMessage = aiErrorText(res ? res.status : 0, data);
+    if (data && data.error && data.error.code) throw new Error(lastMessage);
+  }
+  throw new Error(lastMessage || '这一批没有生成成功');
 }
 
 function updateAIGenerating(run, count, startedAt, doneParts = 0, totalParts = 1, mode = aiMode, parts = []) {
@@ -5749,14 +5799,41 @@ async function generateQuestions() {
           }))
           .filter((item) => item.id)
           .sort((a, b) => a.index - b.index)
-          .map((item) => ({ id: item.id, group: item.group, label: item.label, expected: item.expected, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }))
-      : [{ id: sessionId, group: defaultGroup, label: '', expected: 0, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }];
+          .map((item) => ({ id: item.id, index: item.index, group: item.group, label: item.label, expected: item.expected, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }))
+      : [{ id: sessionId, index: 0, group: defaultGroup, label: '', expected: 0, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }];
     const totalParts = parts.length;
 
-    // 站点网关对单个请求约 45 秒超时，所以由浏览器轮询出题进度；多段时并行轮询
     const startedAt = Date.now();
     let set = null;
-    while (!set) {
+    // 合并已在浏览器里定稿的段：知识点重编号后必须重新验证目标考点与题目映射
+    const mergeDoneParts = () => {
+      const doneParts = parts.filter((part) => part.set);
+      const merged = mergeGeneratedSets(doneParts.map((part) => part.set), doneParts);
+      merged.subjectId = subjectById(aiSubjectId) ? aiSubjectId : 'sub-inbox';
+      attachCoverage(merged, doneParts);
+      attachGeneratedSource(merged, focusLink);
+      return merged;
+    };
+
+    if (startData.sync) {
+      // 同步批次通道：3 路并发把每批题目拉回来。某一批失败只少这一批的题，
+      // 其余批次照常入库，比整次生成失败重来划算。
+      const failures = [];
+      await mapLimit(parts, AI_SYNC_CONCURRENCY, async (part) => {
+        try {
+          const data = await requestAISyncJob(payload, part.index, controller.signal);
+          if (data && data.set) part.set = normalizeSet(data.set);
+        } catch (error) {
+          if (error && error.name === 'AbortError') throw error;
+          failures.push((error && error.message) || '这一批没有生成成功');
+        }
+        updateAIGenerating(run, count, startedAt, parts.filter((item) => item.set).length, totalParts, runMode, parts);
+      });
+      if (!parts.some((part) => part.set)) {
+        throw new Error(failures[0] || 'AI 没有返回题目，请重试');
+      }
+      set = mergeDoneParts();
+    } else while (!set) {
       if (Date.now() - startedAt > deadline) {
         throw new Error(runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量' : '整理超时了，请拆分资料后重试');
       }
@@ -5820,11 +5897,7 @@ async function generateQuestions() {
 
       const doneParts = parts.filter((part) => part.set).length;
       if (doneParts === totalParts) {
-        set = mergeGeneratedSets(parts.map((part) => part.set), parts);
-        set.subjectId = subjectById(aiSubjectId) ? aiSubjectId : 'sub-inbox';
-        attachCoverage(set, parts);
-        // 合并后知识点会重编号，必须在这里重新验证目标考点与题目映射
-        attachGeneratedSource(set, focusLink);
+        set = mergeDoneParts();
         break;
       }
       updateAIGenerating(run, count, startedAt, doneParts, totalParts, runMode, parts);
