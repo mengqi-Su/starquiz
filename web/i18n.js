@@ -286,6 +286,7 @@ const EN = Object.assign({
   'Exam Plan AI 备考规划': 'Exam Plan AI',
   '打开备考规划 ↗': 'Open Exam Plan AI ↗',
   '返回备考规划 ↗': 'Back to Exam Plan AI ↗',
+  '带回备考规划 ↗': 'Send this result back ↗',
   '由资料生成复习计划，按考点一键跳转到这里出题':
     'Turns materials into a study plan and deep-links each key point here for practice',
   '题库、学科、资料文字、练习记录与错题本（不含原始文件）':
@@ -631,6 +632,10 @@ const EN_PATTERNS = [
   [/^知识点：(\d+)$/, 'Key points: $1'],
   [/^联动考点：(.+?) 已归入 (\d+) 题，练习结果可回流$/, (m) => `Linked topic "${m[1]}" · ${m[2]} question(s) attributed — results can flow back`],
   [/^联动考点：(.+?) 没有可靠归属，本题库只记录来源$/, (m) => `Linked topic "${m[1]}" has no reliable attribution — this set only records its source`],
+  [/^备考规划练习回执(.*)$/, 'Exam Plan practice receipt$1'],
+  [/^目标考点「(.+?)」本次计分 (\d+) 题，答对 (\d+) 题，正确率 (\d+)%。$/, (m) => `Target topic "${m[1]}": ${m[2]} graded, ${m[3]} correct, ${m[4]}% accuracy.`],
+  [/^考试模式 · (.+?) · 按题目归属统计，未评分题不计入$/, (m) => `Exam mode · ${m[1]} · counted per attributed question; unscored ones excluded`],
+  [/^学习模式 · (.+?) · 按题目归属统计，未评分题不计入$/, (m) => `Study mode · ${m[1]} · counted per attributed question; unscored ones excluded`],
   [/^(\d+) 字笔记 · 建议 (\d+) 题$/, (m) => `${Number(m[1]).toLocaleString('en-US')} chars of notes · about ${m[2]} questions`],
   [/^笔记 (\d+) 份$/, 'Notes $1'],
   [/^笔记 (\d+) 份、真题 (\d+) 份$/, (m) => `Notes ${m[1]} · Papers ${m[2]}`],

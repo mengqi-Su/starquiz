@@ -1655,6 +1655,9 @@ input[type="file"].form-input:active::file-selector-button {
 .plan-link-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .plan-link-note { border-style: solid; border-color: var(--ink); background: var(--lime-soft); color: var(--ink-soft); }
 .plan-link-note .ai-note-dot { background: var(--coral); }
+/* 联动回程：练习结果回执卡片，复用横幅的质感，只加统计与时间行 */
+.plan-receipt .plan-link-text { color: var(--ink); font-weight: 500; }
+.plan-receipt-meta { font-size: 12px; line-height: 1.5; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .plan-link-banner { align-items: flex-start; }
   .plan-link-actions { width: 100%; justify-content: space-between; }

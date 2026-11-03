@@ -122,6 +122,7 @@ let lastStorageWarn = 0;
 const PLAN_LINK_SCHEMA_VERSION = 1;
 // 超长标题判为无效而不是截断：截断后两端算出的钥匙会对不上
 const PLAN_PARAM_LIMITS = { plan: 64, subject: 100, unit: 400, topic: 400, exam: 150, task: 128 };
+const PLAN_LINK_ID_RE = /^([\w.\-]{1,64}):(t1_[0-9a-f]{32})$/;
 const PLAN_ID_RE = /^[\w.\-:]{1,64}$/;
 const PLAN_TOPIC_KEY_RE = /^t1_[0-9a-f]{32}$/;
 const PLAN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -385,6 +386,8 @@ function repairHistory(raw) {
     const gradedDefault = answers.filter((x) => x.correct !== null).length;
     const graded = intOf(a.graded, gradedDefault, 0, 1000);
     const correct = intOf(a.correct, answers.filter((x) => x.correct === true).length, 0, graded || 1000);
+    // 考点成绩快照要能挺过刷新和备份导入；旧历史没有它就只当普通成绩，不补算
+    const planResult = sanitizePlanResult(a.planResult);
     out.push({
       id,
       setId,
@@ -398,7 +401,8 @@ function repairHistory(raw) {
       correct,
       ungraded: intOf(a.ungraded, 0, 0, 1000),
       score: intOf(a.score, graded ? Math.round((correct / graded) * 100) : 0, 0, 100),
-      answers
+      answers,
+      ...(planResult ? { planResult } : {})
     });
   });
   return out.sort((x, y) => y.finishedAt - x.finishedAt).slice(0, 200);
@@ -1025,6 +1029,142 @@ function attachGeneratedSource(set, snapshot) {
   return set;
 }
 
+// ===== 联动 → 回程：考点成绩归因与回执 =====
+// 归因只在练习完成的那一刻算一次，并把结果作为快照写进历史。
+// 之后题库被编辑、移动或删除，回程用的仍是这次练习的真实统计，
+// 而不是拿新的题库结构去重算旧成绩。
+
+// 目标考点在本次作答里的计分情况；任何一环不可靠就返回 null，宁可不报也不虚报。
+function planResultForAttempt(set, answers) {
+  const src = set && set.source;
+  if (!src || src.returnEnabled !== true || !src.knowledgePointId) return null;
+  // 持久联动关系被清掉时不猜上下文：没有 link 就没有考点成绩可回
+  if (!planLinkStore.links[src.linkId]) return null;
+  if (!(set.knowledgePoints || []).some((kp) => kp && kp.id === src.knowledgePointId)) return null;
+  const byQid = new Map((set.questions || []).map((q) => [q.id, q]));
+  let graded = 0;
+  let correct = 0;
+  arrOf(answers).forEach((a) => {
+    if (!a || !a.qid) return;
+    const q = byQid.get(a.qid);
+    if (!q) return;                        // 题目已被删除：这道题无法归因
+    if (q.kpUnmatched === true) return;    // 兜底塞进第一个知识点的题不算目标考点
+    if (q.knowledgePointId !== src.knowledgePointId) return;
+    if (a.correct !== true && a.correct !== false) return; // 未评分题不进考点统计
+    graded += 1;
+    if (a.correct === true) correct += 1;
+  });
+  if (graded <= 0) return null; // 没有计分题就不输出考点正确率
+  return {
+    schemaVersion: 1,
+    linkId: src.linkId,
+    topicKey: src.topicKey,
+    knowledgePointId: src.knowledgePointId,
+    graded,
+    correct
+  };
+}
+
+// 历史快照要能挺过刷新和备份导入，但只认合法值：
+// 钥匙对不上、题数非法或答对数超过计分数，整段快照一起丢，不做部分放行。
+function sanitizePlanResult(raw) {
+  const src = objOf(raw);
+  if (Number(src.schemaVersion) !== 1) return null;
+  const linkId = strOf(src.linkId, 200).trim();
+  const topicKey = strOf(src.topicKey, 40).trim();
+  const hit = PLAN_LINK_ID_RE.exec(linkId);
+  if (!hit || hit[2] !== topicKey) return null;
+  const knowledgePointId = strOf(src.knowledgePointId, 40).trim();
+  const graded = Number(src.graded);
+  const correct = Number(src.correct);
+  if (!knowledgePointId || !Number.isInteger(graded) || graded <= 0 || graded > 1000) return null;
+  if (!Number.isInteger(correct) || correct < 0 || correct > graded) return null;
+  return { schemaVersion: 1, linkId, topicKey, knowledgePointId, graded, correct };
+}
+
+// 回程只指向预先配置的备考规划站点，绝不接受外部传来的 back 地址。
+// path 原样带上，Exam Plan 入站后用同一算法重算 tk 并校验一致性。
+function planReturnUrl(link, result) {
+  const params = new URLSearchParams();
+  params.set('from', 'starquiz');
+  params.set('v', '1');
+  params.set('plan', link.planId);
+  params.set('tk', link.topicKey);
+  params.set('level', link.path.level);
+  params.set('subject', link.path.subject);
+  params.set('unit', link.path.unit);
+  params.set('topic', link.path.topic);
+  if (link.path.exam) params.set('exam', link.path.exam);
+  if (link.sourceContext && link.sourceContext.date) params.set('date', link.sourceContext.date);
+  if (link.sourceContext && link.sourceContext.task) params.set('task', link.sourceContext.task);
+  if (result) {
+    params.set('attempt', String(result.attemptId));
+    // 只作展示来源（练的是哪套题），Exam Plan 侧缺失时留空，不影响归因统计
+    if (result.setId) params.set('set', String(result.setId));
+    params.set('graded', String(result.graded));
+    params.set('correct', String(result.correct));
+    params.set('at', String(result.completedAt));
+  }
+  return `${EXAM_PLAN_URL}/?${params.toString()}`;
+}
+
+// 只带定位上下文、不带成绩的回程：横幅用它，避免拿旧成绩冒充本次练习
+function planReturnHref(link) {
+  return link ? planReturnUrl(link) : `${EXAM_PLAN_URL}/`;
+}
+
+function planCompletedTimeLabel(finishedAt) {
+  const d = new Date(finishedAt);
+  if (!Number.isFinite(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// 回执卡片：只报本次归因到目标考点的计分情况，回程参数由这次 attempt 固定生成。
+// 题库被删或联动关系被清除时卡片不出现，页面退回普通行为。
+function renderPlanReceiptCard(receipt) {
+  if (!receipt || !receipt.result || !receipt.link) return '';
+  const { result, link, attempt } = receipt;
+  const pct = result.graded ? Math.round((result.correct / result.graded) * 100) : 0;
+  const examPart = link.path.exam ? ` · ${esc(link.path.exam)}` : '';
+  const href = planReturnUrl(link, {
+    attemptId: attempt.id,
+    setId: attempt.setId,
+    graded: result.graded,
+    correct: result.correct,
+    completedAt: new Date(attempt.finishedAt).toISOString()
+  });
+  return `
+    <div class="plan-link-banner plan-receipt" role="note">
+      <div class="plan-link-main">
+        <span class="plan-link-eyebrow">备考规划练习回执${examPart}</span>
+        <span class="plan-link-text">目标考点「${esc(link.path.topic)}」本次计分 ${result.graded} 题，答对 ${result.correct} 题，正确率 ${pct}%。</span>
+        <span class="plan-receipt-meta">${attempt.mode === 'exam' ? '考试模式' : '学习模式'} · ${planCompletedTimeLabel(attempt.finishedAt)} · 按题目归属统计，未评分题不计入</span>
+      </div>
+      <div class="plan-link-actions">
+        <a class="btn btn-primary btn-sm" href="${href}">带回备考规划 ↗</a>
+      </div>
+    </div>`;
+}
+
+// attempt 与持久联动关系都齐了才构成一张回执；缺一就退回普通页面
+function receiptForAttempt(attempt) {
+  if (!attempt || !attempt.planResult) return null;
+  const link = planLinkStore.links[attempt.planResult.linkId];
+  if (!link) return null;
+  return { attempt, link, result: attempt.planResult };
+}
+
+// 题库这次练习里最近一条带考点成绩的记录；优先本页刚完成的那次。
+function findPlanReceipt(setId) {
+  const pageAttempt = state.lastPlanAttempt;
+  const pool = arrOf(history).filter((a) => a && a.setId === setId && a.planResult);
+  if (!pool.length) return null;
+  const fresh = pageAttempt && receiptForAttempt(pool.find((a) => a.id === pageAttempt.id && a.setId === pageAttempt.setId));
+  const receipt = fresh || receiptForAttempt(pool.slice().sort((x, y) => y.finishedAt - x.finishedAt)[0]);
+  return receipt ? Object.assign({}, receipt, { isCurrent: !!fresh }) : null;
+}
+
 // 出题开始时冻结联动快照：异步期间关闭横幅或切换学科都不会串到别的考点
 function captureFocusLink() {
   if (!planLink || planLink.subjectId !== aiSubjectId) return null;
@@ -1177,6 +1317,8 @@ function renderPlanLinkBanner(subjectId) {
   const exam = planLink.exam ? esc(planLink.exam) : '';
   const ctx = topic ? `考点「${topic}」` : '这个学科';
   const examPart = exam ? ` · ${exam}` : '';
+  // 横幅只负责带回原考点，不带任何成绩：这里没有「本次练习」可依附
+  const back = planReturnHref(planLinkStore.links[planLink.linkId]);
   return `
     <div class="plan-link-banner" role="note">
       <div class="plan-link-main">
@@ -1184,7 +1326,7 @@ function renderPlanLinkBanner(subjectId) {
         <span class="plan-link-text">围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本学科。</span>
       </div>
       <div class="plan-link-actions">
-        <a class="btn btn-secondary btn-sm" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">返回备考规划 ↗</a>
+        <a class="btn btn-secondary btn-sm" href="${back}">返回备考规划 ↗</a>
         <button type="button" class="btn btn-ghost btn-sm" onclick="dismissPlanLink()" aria-label="关闭提示">×</button>
       </div>
     </div>`;
@@ -2486,6 +2628,8 @@ function renderSetDetail() {
       ${renderQuality(set)}
     </div>
 
+    ${renderPlanReceiptCard(findPlanReceipt(set.id))}
+
     <div class="section-title">题型分布</div>
     <div class="tags mb-6">
       ${Object.entries(types).map(([t, n]) => `<span class="badge ${TYPE_CLASS[t] || 'badge-muted'}">${TYPE_LABEL[t] || t} × ${n}</span>`).join('')}
@@ -2977,6 +3121,13 @@ function finishLearning(silent) {
     answers: attempts
   };
 
+  // 完成时立刻按目标考点算一次统计并落快照：之后题库怎么变都不影响这次成绩
+  const planResult = planResultForAttempt(set, attempts);
+  if (planResult) {
+    attempt.planResult = planResult;
+    state.lastPlanAttempt = { id: attempt.id, setId: attempt.setId };
+  }
+
   history.unshift(attempt);
   if (history.length > 200) history = history.slice(0, 200);
   saveJSON(STORAGE.history, history);
@@ -3461,6 +3612,13 @@ async function confirmSubmitExam() {
     answers: gradedAnswers
   };
 
+  // 考试模式同样保留考点快照：未评分题由归因函数排除，不混进考点正确率
+  const planResult = planResultForAttempt(set, gradedAnswers);
+  if (planResult) {
+    attempt.planResult = planResult;
+    state.lastPlanAttempt = { id: attempt.id, setId: attempt.setId };
+  }
+
   gradedAnswers.forEach((a) => {
     if (a.correct === true) removeWrong(ex.setId, a.qid);
     else if (a.correct === false) addWrong(ex.setId, a.qid);
@@ -3511,6 +3669,8 @@ function renderExamResult() {
         </div>
         ${a.ungraded ? `<p class="text-sm text-muted" style="margin-top:12px">另有 ${a.ungraded} 题未作答或未评分，不计入得分</p>` : ''}
       </div>
+
+      ${renderPlanReceiptCard(receiptForAttempt(a))}
 
       <div class="btn-group" style="justify-content:center;margin-bottom:28px;flex-wrap:wrap">
         ${set ? `<button class="btn btn-primary" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
@@ -3976,6 +4136,7 @@ function resetAll() {
     materials = [];
     planLinkStore = sanitizePlanLinks(null);
     planLink = null;
+    state.lastPlanAttempt = null;
     state.exam = null;
     state.learning = null;
     state.subjectId = null;
