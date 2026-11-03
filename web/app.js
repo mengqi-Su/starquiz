@@ -103,7 +103,8 @@ const STORAGE = {
   history: 'sq_history_v1',
   wrong: 'sq_wrong_v1',
   settings: 'sq_settings_v1',
-  subjects: 'sq_subjects_v1'
+  subjects: 'sq_subjects_v1',
+  planLinks: 'sq_plan_links_v1'
 };
 const SESSION_KEYS = { exam: 'sq_exam_v1', learning: 'sq_learning_v1' };
 
@@ -112,10 +113,19 @@ const BUILTIN_SUBJECTS = [];
 const INBOX_SUBJECT = { id: 'sub-inbox', name: '未分类', icon: '杂', builtin: true, inbox: true };
 // 备考规划伴侣应用：考点级深链互相跳转，数据各自保存在本地浏览器
 const EXAM_PLAN_URL = 'https://exam-plan-ai-zfc3er164xi.qoder.zone';
-let planLink = null; // { subjectId, subject, topic, exam } 来自 Exam Plan AI 的考点深链上下文
+let planLink = null; // 当前页面的临时联动上下文；持久关系保存在 sq_plan_links_v1（planLinkStore）
 const STORAGE_LIMIT_BYTES = 5 * 1024 * 1024;
 const bootNotes = [];
 let lastStorageWarn = 0;
+
+// 联动协议 v1 的常量与长度闸门（必须在启动读取 planLinks 之前就声明）
+const PLAN_LINK_SCHEMA_VERSION = 1;
+// 超长标题判为无效而不是截断：截断后两端算出的钥匙会对不上
+const PLAN_PARAM_LIMITS = { plan: 64, subject: 100, unit: 400, topic: 400, exam: 150, task: 128 };
+const PLAN_ID_RE = /^[\w.\-:]{1,64}$/;
+const PLAN_TOPIC_KEY_RE = /^t1_[0-9a-f]{32}$/;
+const PLAN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const PLAN_ISO_RE = /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
 
 function arrOf(x) { return Array.isArray(x) ? x : []; }
 function objOf(x) { return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
@@ -207,6 +217,8 @@ function sanitizeStoredQuestion(raw, takenIds) {
     content,
     explanation: strOf(raw.explanation, 6000)
   };
+  // 归属状态要跟着题目落盘：被默认塞进第一个知识点的题不能算作目标考点
+  if (raw.kpUnmatched === true) q.kpUnmatched = true;
   if (type === 'single' || type === 'multi') {
     const options = arrOf(raw.options).slice(0, 8).map((o) => strOf(o, 800).trim()).filter(Boolean);
     if (options.length < 2) return null;
@@ -266,15 +278,17 @@ function sanitizeStoredSet(raw, takenSetIds) {
   arrOf(raw.questions).slice(0, 500).forEach((rq) => {
     const q = sanitizeStoredQuestion(rq, qTaken);
     if (!q) { dropped++; return; }
-    q.knowledgePointId = knowledgePoints.some((k) => k.id === (rq && rq.knowledgePointId))
-      ? rq.knowledgePointId
-      : (knowledgePoints[0] ? knowledgePoints[0].id : null);
+    const matched = knowledgePoints.some((k) => k.id === (rq && rq.knowledgePointId));
+    q.knowledgePointId = matched ? rq.knowledgePointId : (knowledgePoints[0] ? knowledgePoints[0].id : null);
+    if (!matched) q.kpUnmatched = true;
     questions.push(q);
   });
   if (!questions.length) return null;
   const id = idOf(raw.id && !takenSetIds.has(String(raw.id)) ? raw.id : '', 'custom-');
   takenSetIds.add(id);
   const quality = sanitizeQuality(raw.quality);
+  // 联动来源必须显式放行并校验，否则刷新和备份导入后来源就丢了
+  const source = sanitizeSetSource(raw.source, knowledgePoints.map((kp) => kp.id));
   return {
     id,
     name: name.slice(0, 40),
@@ -284,6 +298,7 @@ function sanitizeStoredSet(raw, takenSetIds) {
     knowledgePoints,
     questions,
     ...(/^sub-[A-Za-z0-9_-]{1,32}$/.test(String(raw.subjectId)) ? { subjectId: raw.subjectId } : {}),
+    ...(source ? { source } : {}),
     ...(Number.isInteger(raw.accent) ? { accent: ((raw.accent % 6) + 6) % 6 } : {}),
     ...(quality ? { quality } : {}),
     ...(dropped ? { droppedQuestions: dropped } : {})
@@ -407,6 +422,7 @@ const bootSets = readStored(STORAGE.sets);
 const bootHistory = readStored(STORAGE.history);
 const bootWrong = readStored(STORAGE.wrong);
 const bootSubjects = readStored(STORAGE.subjects);
+const bootPlanLinks = readStored(STORAGE.planLinks);
 const settings = objOf(readStored(STORAGE.settings).value);
 
 const baseSetIds = new Set(
@@ -418,6 +434,7 @@ let customSets = repairedSets.sets;
 let history = repairHistory(bootHistory.value);
 let wrongBank = repairWrong(bootWrong.value);
 let userSubjects = sanitizeSubjects(bootSubjects.value);
+let planLinkStore = sanitizePlanLinks(bootPlanLinks.value);
 let materials = [];
 
 // 早期版本会把内置的演示题库和学科写进本地存储。起始状态现在保持干净，
@@ -829,23 +846,234 @@ function renameSubject(id, name) {
 }
 
 // ===== Exam Plan AI 联动：考点级深链 =====
-// 解析 ?from=exam-plan&subject=&topic=&exam=，定位/新建学科并预开 AI 出题弹窗。
-// 仅做导航与上下文提示，不跨域同步任何本地数据。
-function applyPlanDeepLink() {
-  let params;
-  try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
-  if (params.get('from') !== 'exam-plan') return;
+// 入站解析 ?from=exam-plan[&v=1&plan=&level=&unit=&subject=&topic=&exam=&date=&task=]：
+// 用与 Exam Plan 完全一致的算法算出考点钥匙，持久化联动关系，再定位/新建学科。
+// 所有入站参数都按不可信输入处理；只保存联动上下文，不跨域读取对方的计划、题库或资料。
+// 协议常量与长度闸门见文件顶部（启动阶段读取 planLinks 前就必须可用）。
 
-  const subjectName = String(params.get('subject') || '').trim();
-  const topic = String(params.get('topic') || '').trim();
-  const exam = String(params.get('exam') || '').trim();
+function planParam(params, name) {
+  const raw = String(params.get(name) ?? '').trim();
+  return raw.length > PLAN_PARAM_LIMITS[name] ? null : raw;
+}
 
-  // 清理地址栏，避免刷新或分享时重复触发
+// 完整内容路径才算有效联动上下文：层级参与身份，学科显示名被截到 20 字也不影响这里
+function sanitizePlanPath(raw) {
+  const src = objOf(raw);
+  const level = src.level === 'unit' || src.level === 'subtopic' ? src.level : '';
+  const subject = strOf(src.subject, PLAN_PARAM_LIMITS.subject).trim();
+  const unit = strOf(src.unit, PLAN_PARAM_LIMITS.unit).trim();
+  const topic = strOf(src.topic, PLAN_PARAM_LIMITS.topic).trim();
+  const exam = strOf(src.exam, PLAN_PARAM_LIMITS.exam).trim();
+  if (!level || !subject || !unit || !topic) return null;
+  return { level, exam, subject, unit, topic };
+}
+
+function sanitizePlanLink(raw) {
+  const src = objOf(raw);
+  const path = sanitizePlanPath(src.path);
+  const planId = strOf(src.planId, PLAN_PARAM_LIMITS.plan).trim();
+  const topicKey = strOf(src.topicKey, 40).trim();
+  if (!path || !PLAN_ID_RE.test(planId) || !PLAN_TOPIC_KEY_RE.test(topicKey)) return null;
+  const linkId = `${planId}:${topicKey}`;
+  if (src.linkId && strOf(src.linkId, 200).trim() && strOf(src.linkId, 200).trim() !== linkId) return null;
+  const ctx = objOf(src.sourceContext);
+  const date = strOf(ctx.date, 20).trim();
+  const now = new Date().toISOString();
+  const linkedAt = PLAN_ISO_RE.test(strOf(src.linkedAt, 40).trim()) ? strOf(src.linkedAt, 40).trim() : now;
+  const updatedAt = PLAN_ISO_RE.test(strOf(src.updatedAt, 40).trim()) ? strOf(src.updatedAt, 40).trim() : linkedAt;
+  return {
+    linkId,
+    planId,
+    topicKey,
+    path,
+    sourceContext: {
+      date: PLAN_DATE_RE.test(date) ? date : '',
+      task: strOf(ctx.task, PLAN_PARAM_LIMITS.task).trim()
+    },
+    subjectId: strOf(src.subjectId, 64).trim(),
+    linkedAt,
+    updatedAt
+  };
+}
+
+// 损坏数据只丢联动记录，不能让整个应用起不来
+function sanitizePlanLinks(raw) {
+  const out = {};
+  Object.entries(objOf(objOf(raw).links)).forEach(([key, item]) => {
+    const link = sanitizePlanLink(item);
+    if (!link || key !== link.linkId) return;
+    const prev = out[link.linkId];
+    if (prev && String(prev.updatedAt) >= String(link.updatedAt)) return;
+    out[link.linkId] = link;
+  });
+  return { schemaVersion: PLAN_LINK_SCHEMA_VERSION, links: out };
+}
+
+// 写入前先读磁盘最新值再合并：本页内存里的旧状态不能覆盖别的记录
+function putPlanLink(link) {
+  const clean = sanitizePlanLink(link);
+  if (!clean) return false;
+  const fresh = sanitizePlanLinks(readStored(STORAGE.planLinks).value);
+  const prev = fresh.links[clean.linkId];
+  if (prev && String(prev.updatedAt) > String(clean.updatedAt)) {
+    planLinkStore = fresh;
+    return true;
+  }
+  fresh.links[clean.linkId] = clean;
+  planLinkStore = fresh;
+  return saveJSON(STORAGE.planLinks, fresh);
+}
+
+function transientPlanLink(link, subject) {
+  return {
+    subjectId: subject.id,
+    subject: subject.name,
+    topic: link.path.topic,
+    exam: link.path.exam,
+    level: link.path.level,
+    unit: link.path.unit,
+    planSubject: link.path.subject,
+    planId: link.planId,
+    topicKey: link.topicKey,
+    linkId: link.linkId,
+    linkedAt: link.linkedAt
+  };
+}
+
+// ===== 联动 → 出题：题库来源留痕与考点归属校验 =====
+// set.source 只回答「这份题库来自哪条联动关系」。
+// 能不能用它回流考点成绩，取决于生成结果里是否真的存在目标知识点、
+// 且确有题目归属到它（returnEnabled），不是「显示过横幅」就算数。
+
+function normalizeFocusTitle(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .normalize('NFKC')
+    .replace(/[\u3000\u00a0\s]+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+// 展示标题比对：相等优先，其次互相包含（AI 常把「武昌起义」写成「武昌起义（1911 年）」）
+function focusTitleMatches(a, b) {
+  const left = normalizeFocusTitle(a);
+  const right = normalizeFocusTitle(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
+// 学科名与计划科目名可能不同（本地学科被改名），以联动记录里的路径科目为准
+function sanitizeSetSource(raw, kpIds) {
+  const src = objOf(raw);
+  if (strOf(src.from, 20).trim() !== 'exam-plan') return null;
+  const planId = strOf(src.planId, PLAN_PARAM_LIMITS.plan).trim();
+  const topicKey = strOf(src.topicKey, 40).trim();
+  const linkId = strOf(src.linkId, 200).trim();
+  const path = sanitizePlanPath(src.path);
+  if (!PLAN_ID_RE.test(planId) || !PLAN_TOPIC_KEY_RE.test(topicKey) || !path) return null;
+  if (linkId && linkId !== `${planId}:${topicKey}`) return null;
+  const kp = strOf(src.knowledgePointId, 40).trim();
+  const linkedAt = strOf(src.linkedAt, 40).trim();
+  // 回流必须指向一个真实存在的知识点，否则降级成纯留痕
+  const returnEnabled = src.returnEnabled === true && !!kp && Array.isArray(kpIds) && kpIds.includes(kp);
+  return {
+    from: 'exam-plan',
+    linkId: `${planId}:${topicKey}`,
+    planId,
+    topicKey,
+    path,
+    knowledgePointId: returnEnabled ? kp : '',
+    returnEnabled,
+    linkedAt: PLAN_ISO_RE.test(linkedAt) ? linkedAt : ''
+  };
+}
+
+// 目标知识点必须唯一：多个候选同名时宁可承认「归属不了」，也不猜一个
+function findFocusKnowledgePoint(set, topic) {
+  const hits = ((set && set.knowledgePoints) || []).filter((kp) => kp && focusTitleMatches(kp.title, topic));
+  return hits.length === 1 ? hits[0] : null;
+}
+
+function attachGeneratedSource(set, snapshot) {
+  if (!set || !snapshot || !snapshot.linkId || !snapshot.topicKey || !snapshot.planId) return set;
+  const source = {
+    from: 'exam-plan',
+    linkId: snapshot.linkId,
+    planId: snapshot.planId,
+    topicKey: snapshot.topicKey,
+    path: {
+      level: snapshot.level,
+      exam: snapshot.exam,
+      subject: snapshot.planSubject || snapshot.subject,
+      unit: snapshot.unit,
+      topic: snapshot.topic
+    },
+    knowledgePointId: '',
+    returnEnabled: false,
+    linkedAt: snapshot.linkedAt
+  };
+  const target = findFocusKnowledgePoint(set, snapshot.topic);
+  if (target) {
+    // 被默认塞进第一个知识点的题目不算归属，避免把无关题算成目标考点成绩
+    const attributed = (set.questions || []).filter((q) => q.knowledgePointId === target.id && q.kpUnmatched !== true).length;
+    if (attributed > 0) {
+      source.knowledgePointId = target.id;
+      source.returnEnabled = true;
+    }
+  }
+  const clean = sanitizeSetSource(source, ((set.knowledgePoints) || []).map((kp) => kp.id));
+  if (clean) set.source = clean;
+  return set;
+}
+
+// 出题开始时冻结联动快照：异步期间关闭横幅或切换学科都不会串到别的考点
+function captureFocusLink() {
+  if (!planLink || planLink.subjectId !== aiSubjectId) return null;
+  if (!planLink.linkId || !planLink.topicKey || !planLink.planId || !planLink.topic) return null;
+  return Object.assign({}, planLink);
+}
+
+function clearPlanLinkParams() {
   try {
     const url = new URL(window.location.href);
     window.history.replaceState({}, '', url.pathname + url.hash);
-  } catch (e) { /* 地址栏清理失败不影响联动 */ }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
+// 解析入站参数：任一核心参数超长视为脏输入（返回 null）；
+// v/plan/level/subject/unit/topic 不齐时 linked=false，按旧的普通跳转处理，不启用结果回流。
+function readPlanLinkParams(params) {
+  const subjectName = planParam(params, 'subject');
+  const topic = planParam(params, 'topic');
+  const exam = planParam(params, 'exam');
+  const unit = planParam(params, 'unit');
+  const planId = planParam(params, 'plan');
+  if (subjectName === null || topic === null || exam === null || unit === null || planId === null) return null;
+  const level = String(params.get('level') || '').trim();
+  const date = String(params.get('date') || '').trim();
+  const task = String(params.get('task') || '').trim();
+  const linked = params.get('v') === '1'
+    && PLAN_ID_RE.test(planId)
+    && (level === 'unit' || level === 'subtopic')
+    && !!subjectName && !!unit && !!topic;
+  return {
+    linked,
+    planId,
+    level,
+    subjectName,
+    unit,
+    topic,
+    exam,
+    date: PLAN_DATE_RE.test(date) ? date : '',
+    task: task.length <= PLAN_PARAM_LIMITS.task ? task : ''
+  };
+}
+
+// 旧链接（缺少联动上下文）：保持原有体验——定位/新建学科、预开 AI 出题弹窗
+function applyLegacyPlanLink(subjectName, topic, exam) {
+  clearPlanLinkParams();
   const wanted = subjectName || exam;
   const key = norm(wanted);
   const existing = wanted ? allSubjects().find((s) => norm(s.name) === key) : null;
@@ -863,6 +1091,83 @@ function applyPlanDeepLink() {
   openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
   const lead = existing ? `已定位学科「${subject.name}」` : `已为你新建学科「${subject.name}」`;
   toast(topic ? `${lead}，围绕考点「${topic}」上传资料出题吧` : `${lead}，上传资料即可出题`, 'info', 6000);
+}
+
+async function applyPlanDeepLink() {
+  let params;
+  try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+  if (params.get('from') !== 'exam-plan') return;
+
+  const parsed = readPlanLinkParams(params);
+  const keyApi = globalThis.StarQuizTopicKey;
+  if (!parsed || !parsed.linked || !keyApi) {
+    // 参数超长或没有联动上下文：按旧的普通跳转处理，仍做长度保护
+    const loose = parsed || {
+      subjectName: String(params.get('subject') || '').trim().slice(0, PLAN_PARAM_LIMITS.subject),
+      topic: String(params.get('topic') || '').trim().slice(0, PLAN_PARAM_LIMITS.topic),
+      exam: String(params.get('exam') || '').trim().slice(0, PLAN_PARAM_LIMITS.exam)
+    };
+    applyLegacyPlanLink(loose.subjectName, loose.topic, loose.exam);
+    return;
+  }
+
+  const { planId, level, subjectName, unit, topic, exam, date, task } = parsed;
+  let topicKey = '';
+  try {
+    topicKey = await keyApi.topicKey({ level, subject: subjectName, unit, topic });
+  } catch (e) {
+    console.warn('[StarQuiz] 考点钥匙计算失败，退化为普通跳转', e);
+    applyLegacyPlanLink(subjectName, topic, exam);
+    return;
+  }
+  const linkId = keyApi.composeLinkId(planId, topicKey);
+  const existingLink = planLinkStore.links[linkId] || null;
+
+  // 已有联动记录就复用它绑定的学科；学科被删过则回落到名称匹配，最后才新建
+  let subject = existingLink && existingLink.subjectId ? subjectById(existingLink.subjectId) : null;
+  if (!subject) {
+    const key = norm(subjectName);
+    subject = allSubjects().find((s) => norm(s.name) === key) || null;
+    if (!subject) subject = createSubject(subjectName);
+  }
+  if (!subject) {
+    planLink = { subjectId: null, subject: subjectName, topic, exam };
+    navigateTo('sets');
+    toast(`来自备考规划：练「${topic}」。请先选择或新建一个学科。`, 'info', 6000);
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const link = {
+    linkId,
+    planId,
+    topicKey,
+    path: { level, exam, subject: subjectName, unit, topic },
+    sourceContext: { date, task },
+    subjectId: subject.id,
+    linkedAt: existingLink ? existingLink.linkedAt : now,
+    updatedAt: now
+  };
+
+  // 先持久化，成功后才清理地址栏：存储失败时保留可重试的联动上下文
+  if (!putPlanLink(link)) {
+    planLink = transientPlanLink(link, subject);
+    openSubject(subject.id);
+    toast('联动关系没有保存成功，请检查浏览器本地存储空间后重新进入', 'error', 6000);
+    return;
+  }
+
+  planLink = transientPlanLink(link, subject);
+  clearPlanLinkParams();
+  openSubject(subject.id);
+  if (existingLink) {
+    // 重复进入同一个考点：复用关系与学科，不重复建数据、不重复自动弹窗
+    toast(`继续「${subject.name}」的考点「${topic}」练习`, 'info', 5000);
+    return;
+  }
+  openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
+  const lead = `已定位学科「${subject.name}」`;
+  toast(`${lead}，围绕考点「${topic}」上传资料出题吧`, 'info', 6000);
 }
 
 // 学科页顶部：备考规划上下文横幅 + 返回入口（仅当深链指向本学科时显示）
@@ -900,7 +1205,19 @@ function renderPlanLinkNote() {
     </div>`;
 }
 
+// 生成结果里的目标考点归属：只有校验通过才开放练习结果回流
+function renderFocusAttribution(set, snapshot) {
+  if (!snapshot || !snapshot.topic) return '';
+  const topic = esc(snapshot.topic);
+  if (set.source && set.source.returnEnabled) {
+    const n = (set.questions || []).filter((q) => q.knowledgePointId === set.source.knowledgePointId && q.kpUnmatched !== true).length;
+    return `<div class="text-muted">联动考点：${topic} 已归入 ${n} 题，练习结果可回流</div>`;
+  }
+  return `<div class="text-muted">联动考点：${topic} 没有可靠归属，本题库只记录来源</div>`;
+}
+
 function dismissPlanLink() {
+  // 只收起本页的临时提示；持久联动关系留在 sq_plan_links_v1，删除学科也不物理删除历史关系
   planLink = null;
   render();
 }
@@ -3636,7 +3953,7 @@ function clearRecords() {
 }
 
 function resetAll() {
-  confirmModal('恢复初始状态', '将删除所有自建题库、学科文件夹、上传的资料、练习记录、错题本和本地设置。确定继续吗？', '重置全部', async () => {
+  confirmModal('恢复初始状态', '将删除所有自建题库、学科文件夹、上传的资料、练习记录、错题本、考点联动关系和本地设置。确定继续吗？', '重置全部', async () => {
     Object.values(STORAGE).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
     Object.values(SESSION_KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
     try {
@@ -3657,6 +3974,8 @@ function resetAll() {
     wrongBank = {};
     userSubjects = [];
     materials = [];
+    planLinkStore = sanitizePlanLinks(null);
+    planLink = null;
     state.exam = null;
     state.learning = null;
     state.subjectId = null;
@@ -3678,6 +3997,13 @@ function normalizeSet(raw) {
     title: String(kp.title || `知识点 ${i + 1}`).slice(0, 60),
     content: String(kp.content || '')
   }));
+  // 知识点会被重编号：先记下「原 id → 新 id」，否则题目引用的原 id 全部匹配不上，
+  // 整套题的归属会被静默打散（内置样例用 kpA 这类 id 时尤其明显）
+  const kpIdMap = new Map();
+  rawKps.forEach((kp, i) => {
+    const from = kp && kp.id !== null && kp.id !== undefined ? String(kp.id) : '';
+    if (from) kpIdMap.set(from, 'kp' + (i + 1));
+  });
   const rawQs = Array.isArray(raw.questions) ? raw.questions : [];
   if (!rawQs.length) throw new Error('题库中没有题目');
 
@@ -3708,9 +4034,15 @@ function normalizeSet(raw) {
         type,
         difficulty: Math.min(3, Math.max(1, parseInt(rq.difficulty, 10) || 2)),
         content,
-        explanation: String(rq.explanation || ''),
-        knowledgePointId: knowledgePoints.some((k) => k.id === rq.knowledgePointId) ? rq.knowledgePointId : (knowledgePoints[0] ? knowledgePoints[0].id : null)
+        explanation: String(rq.explanation || '')
       };
+      // 只有明确匹配到知识点才认归属；兜底塞进第一个知识点的题保留 kpUnmatched 状态，
+      // 后续联动成绩统计不能把这些题当成目标考点
+      const mappedKp = kpIdMap.has(String(rq.knowledgePointId))
+        ? kpIdMap.get(String(rq.knowledgePointId))
+        : (knowledgePoints.some((k) => k.id === rq.knowledgePointId) ? rq.knowledgePointId : null);
+      q.knowledgePointId = mappedKp || (knowledgePoints[0] ? knowledgePoints[0].id : null);
+      if (!mappedKp || rq.kpUnmatched === true) q.kpUnmatched = true;
       if (type === 'single') {
         const opts = Array.isArray(rq.options) ? rq.options.map(String) : [];
         if (opts.length < 2) throw new Error(`第 ${i + 1} 题（单选）至少需要 2 个选项`);
@@ -3763,6 +4095,9 @@ function normalizeSet(raw) {
   }
   if (quality) quality.kept = questions.length;
 
+  // 两条清洗链都显式放行 source，联动来源才不会在刷新或备份导入后消失
+  const source = sanitizeSetSource(raw.source, knowledgePoints.map((kp) => kp.id));
+
   return {
     id: 'custom-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: name.slice(0, 40),
@@ -3771,6 +4106,7 @@ function normalizeSet(raw) {
     tags,
     knowledgePoints,
     questions,
+    ...(source ? { source } : {}),
     ...(quality ? { quality } : {})
   };
 }
@@ -3862,7 +4198,10 @@ function mergeGeneratedSets(rawSets, partsMeta = []) {
       }
       seen.push(question.content);
       const copy = Object.assign({}, question);
-      copy.knowledgePointId = remap.get(question.knowledgePointId) || (knowledgePoints[0] && knowledgePoints[0].id) || null;
+      const remapped = remap.get(question.knowledgePointId);
+      copy.knowledgePointId = remapped || (knowledgePoints[0] && knowledgePoints[0].id) || null;
+      // 合并后知识点会重编号：映射丢失或原本就没归属的题，不能默认算进目标考点
+      if (!remapped || question.kpUnmatched === true) copy.kpUnmatched = true;
       questions.push(copy);
     }
   }
@@ -5191,6 +5530,11 @@ async function generateQuestions() {
   const types = groups.hasNotes ? document.getElementById('aiTypes').value : 'mixed';
   const codeLanguage = groups.hasNotes && types === 'with-code' ? document.getElementById('aiCodeLang').value : null;
   const estimate = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
+  // 冻结联动快照：真题整理模式绝不为了联动改写或强行归类原题，所以只有出题/笔记段带 focusTopic
+  const focusLink = captureFocusLink();
+  const focusTopic = focusLink && runMode !== 'exam'
+    ? String(focusLink.topic).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, PLAN_PARAM_LIMITS.topic)
+    : '';
 
   state.genPreview = null;
   aiStep = 3;
@@ -5223,8 +5567,8 @@ async function generateQuestions() {
   const timer = setTimeout(() => controller.abort(), deadline + 10000);
 
   const payload = mixed
-    ? { mode: 'batch', documents: groups.docs, count, types, codeLanguage }
-    : { material, count, types, codeLanguage, mode: runMode };
+    ? { mode: 'batch', documents: groups.docs, count, types, codeLanguage, ...(focusTopic ? { focusTopic } : {}) }
+    : { material, count, types, codeLanguage, mode: runMode, ...(focusTopic ? { focusTopic } : {}) };
 
   try {
     const startData = await startAISession(payload, controller.signal, (n) => {
@@ -5318,6 +5662,8 @@ async function generateQuestions() {
         set = mergeGeneratedSets(parts.map((part) => part.set), parts);
         set.subjectId = subjectById(aiSubjectId) ? aiSubjectId : 'sub-inbox';
         attachCoverage(set, parts);
+        // 合并后知识点会重编号，必须在这里重新验证目标考点与题目映射
+        attachGeneratedSource(set, focusLink);
         break;
       }
       updateAIGenerating(run, count, startedAt, doneParts, totalParts, runMode, parts);
@@ -5342,6 +5688,7 @@ async function generateQuestions() {
         <div class="text-sm" style="line-height:1.8">
           <div>题目数：<b>${set.questions.length}</b>${sourceNote}</div>
           <div>知识点：<b>${set.knowledgePoints.length}</b></div>
+          ${renderFocusAttribution(set, focusLink)}
           <div style="margin-top:6px">题型：${Object.entries(set.questions.reduce((m, q) => (m[q.type] = (m[q.type] || 0) + 1, m), {})).map(([t, n]) => `<span class="badge ${TYPE_CLASS[t] || 'badge-muted'}">${TYPE_LABEL[t] || t} × ${n}</span>`).join(' ')}</div>
         </div>
         ${renderQuality(set)}`;
@@ -5379,6 +5726,7 @@ let genSaving = false;
 function importGenerated() {
   if (!state.genPreview || genSaving) return;
   genSaving = true;
+  // 题库与联动关系的关联只由 set.source.linkId 派生，不在 link 上另存一份 setIds
   customSets.push(state.genPreview);
   if (!saveJSON(STORAGE.sets, customSets)) {
     customSets.pop();
@@ -5484,7 +5832,8 @@ window.addEventListener('pagehide', () => {
   if (materialsUnavailable) bootNotes.push('当前浏览器无法打开本地资料库，上传的资料这次不会保留');
   loadResumeSessions();
   render();
-  applyPlanDeepLink();
+  // 联动入站要算考点钥匙（Web Crypto 异步），放在首屏渲染之后，不阻塞页面
+  await applyPlanDeepLink();
 
   if (bootNotes.length) {
     const notes = [...new Set(bootNotes)];

@@ -145,9 +145,29 @@ function countRangeFor(material: string) {
   return { chars, min, max, recommended };
 }
 
-function buildPrompt(material: string, count: number, types: string, codeLanguage: string | null): string {
+// 联动聚焦出题：考点标题是浏览器传来的不可信文本，只作为提示词内容，
+// 长度截断、剥掉控制字符，绝不参与任何路径、身份或判分逻辑。
+const FOCUS_MAX_CHARS = 400;
+
+function focusTopicFrom(body: Record<string, unknown>): string {
+  // 只接受字符串：对象/数字一律当成没有考点，避免把 "[object Object]" 之类的噪声塞进提示词
+  if (typeof body.focusTopic !== 'string') return '';
+  return body.focusTopic
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .trim()
+    .slice(0, FOCUS_MAX_CHARS);
+}
+
+function buildPrompt(material: string, count: number, types: string, codeLanguage: string | null, focus = ''): string {
   const codeLang = types === 'with-code' ? (codeLanguage === 'javascript' ? 'javascript' : 'python') : '';
   const kpCount = Math.max(3, Math.min(12, Math.ceil(count / 3)));
+  const scopeRule = focus
+    ? `2. 全部题目只围绕考点「${focus}」出题；这份资料如果覆盖不到这个考点，就少出题，绝不扩展到无关考点，也不得改写考点名称。\n   知识点（knowledgePoints）只返回 1 个，title 必须原样使用「${focus}」，每道题的 knowledgePointId 必须是 "kp1"。`
+    : `2. 题目要覆盖资料中的不同知识点，避免重复考同一个细节；每个知识点最多出 4 道题。`;
+  const kpRule = focus
+    ? '5. 只返回上面规定的这 1 个知识点，题目全部归属它。'
+    : `5. 生成约 ${kpCount} 个知识点（knowledgePoints，不超过 12 个），每道题通过 knowledgePointId 关联其中一个知识点。`;
   return `你是一位严谨的出题专家。请根据下面提供的学习资料，生成 ${count} 道高质量的练习题。
 
 ## 资料
@@ -155,10 +175,10 @@ ${material}
 
 ## 要求
 1. ${TYPE_RULES[types] || TYPE_RULES.mixed}
-2. 题目要覆盖资料中的不同知识点，避免重复考同一个细节；每个知识点最多出 4 道题。
+${scopeRule}
 3. 题目必须完全基于资料内容，不要编造资料以外的知识点。资料篇幅足够时必须出满 ${count} 道；只有资料确实不足时才可少出，并在解析里不要提及题量。
 4. 每道题必须有明确的正确答案和简短的解析（explanation）。
-5. 生成约 ${kpCount} 个知识点（knowledgePoints，不超过 12 个），每道题通过 knowledgePointId 关联其中一个知识点。
+${kpRule}
 6. 题目难度 difficulty 取 1-3 的整数，整体难度分布均匀。
 7. 所有文本使用与资料相同的语言（中文资料用中文出题）。
 8. 输出尽量精简：题干不超过 80 字，选项不超过 20 字，解析不超过 40 字，知识点讲解不超过 60 字，不要复述大段资料原文。
@@ -687,10 +707,68 @@ function sanitizeSet(raw: unknown): Record<string, unknown> {
   };
 }
 
+interface BatchJob {
+  group: 'note' | 'exam';
+  label: string;
+  prompt: string;
+  expected: number;
+}
+
+interface BatchJobPlan {
+  noteParts: string[];
+  counts: number[];
+  types: string;
+  codeLanguage: string | null;
+  examParts: string[];
+  examSplit: boolean;
+  multiExamDocs: boolean;
+  focus: string;
+}
+
+/**
+ * 把混合资料排成实际发给 AI 的任务列表。
+ *
+ * 抽成纯函数是为了能直接断言联动约束的落点：focusTopic 只进笔记段，
+ * 真题段永远走原样整理提示词，绝不为了归属到某个考点而改写或强行归类原题。
+ */
+function planBatchJobs(plan: BatchJobPlan): BatchJob[] {
+  const jobs: BatchJob[] = [];
+  plan.noteParts.forEach((part, index) => {
+    jobs.push({
+      group: 'note',
+      label: plan.noteParts.length > 1 ? `笔记第 ${index + 1} 段` : '笔记出题',
+      // 聚焦只作用于笔记生成的那几段：每段都用同一条考点约束
+      prompt: buildPrompt(part, plan.counts[index], plan.types, plan.codeLanguage, plan.focus),
+      expected: 0
+    });
+  });
+  plan.examParts.forEach((part, index) => {
+    jobs.push({
+      group: 'exam',
+      label: plan.examSplit ? `真题第 ${index + 1} 段` : '真题整理',
+      expected: examQuestionStarts(part).length,
+      // 真题原文整理不受联动考点影响：不能为了归属而改写或强行归类原题
+      prompt: buildExamPrompt(
+        part,
+        plan.examSplit
+          ? {
+              index: index + 1,
+              total: plan.examParts.length,
+              overlap: index > 0 ? plan.examParts[index - 1].slice(-600) : ''
+            }
+          : undefined,
+        plan.multiExamDocs
+      )
+    });
+  });
+  return jobs;
+}
+
 async function handleAIBatch(
   body: Record<string, unknown>,
   types: string,
-  codeLanguage: string | null
+  codeLanguage: string | null,
+  focus = ''
 ): Promise<Response> {
   const docs = parseBatchDocuments(body);
   const noteDocs = docs.filter((doc) => doc.kind === 'note');
@@ -725,28 +803,15 @@ async function handleAIBatch(
   const examParts = splitExamParts(examMaterial, examBudget);
   const examSplit = examParts.length > 1;
 
-  const jobs: Array<{ group: 'note' | 'exam'; label: string; prompt: string; expected: number }> = [];
-  noteParts.forEach((part, index) => {
-    jobs.push({
-      group: 'note',
-      label: noteParts.length > 1 ? `笔记第 ${index + 1} 段` : '笔记出题',
-      prompt: buildPrompt(part, counts[index], types, codeLanguage),
-      expected: 0
-    });
-  });
-  examParts.forEach((part, index) => {
-    jobs.push({
-      group: 'exam',
-      label: examSplit ? `真题第 ${index + 1} 段` : '真题整理',
-      expected: examQuestionStarts(part).length,
-      prompt: buildExamPrompt(
-        part,
-        examSplit
-          ? { index: index + 1, total: examParts.length, overlap: index > 0 ? examParts[index - 1].slice(-600) : '' }
-          : undefined,
-        examDocs.length > 1
-      )
-    });
+  const jobs = planBatchJobs({
+    noteParts,
+    counts,
+    types,
+    codeLanguage,
+    examParts,
+    examSplit,
+    multiExamDocs: examDocs.length > 1,
+    focus
   });
 
   try {
@@ -784,7 +849,10 @@ async function handleAIStart(req: Request): Promise<Response> {
   if (codeLanguage && codeLanguage !== 'python' && codeLanguage !== 'javascript') {
     return fail('invalid_request', '不支持的编程语言');
   }
-  if (mode === 'batch') return await handleAIBatch(body, types, codeLanguage);
+  if (mode === 'batch') return await handleAIBatch(body, types, codeLanguage, focusTopicFrom(body));
+
+  // 真题模式没有 focusTopic：原样整理不允许为了联动考点而改写或强行归类
+  const focus = mode === 'exam' ? '' : focusTopicFrom(body);
 
   const material = String(body.material || '').trim();
   if (mode === 'exam' && material.length > 48000) {
@@ -806,7 +874,7 @@ async function handleAIStart(req: Request): Promise<Response> {
       : range.recommended;
   }
 
-  const prompt = mode === 'exam' ? buildExamPrompt(material) : buildPrompt(material, count, types, codeLanguage);
+  const prompt = mode === 'exam' ? buildExamPrompt(material) : buildPrompt(material, count, types, codeLanguage, focus);
 
   try {
     // 真题较长时切段并行整理：每段一个会话同时跑，墙钟时间约为单段的耗时
@@ -895,7 +963,7 @@ async function handleAIPoll(req: Request): Promise<Response> {
 /* ---------------- 路由 ---------------- */
 
 // 供本地测试直接调用的纯函数（生产路径不依赖这些导出）
-export { examQuestionStarts, extractJson, isNearDuplicate, normalizeForDedupe, sanitizeSet };
+export { buildExamPrompt, buildPrompt, examQuestionStarts, extractJson, focusTopicFrom, isNearDuplicate, normalizeForDedupe, planBatchJobs, sanitizeSet };
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);

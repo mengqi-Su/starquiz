@@ -531,8 +531,8 @@ const EN = Object.assign({
   '清空记录': 'Clear history',
   '将清除所有练习历史和错题本，题库不受影响。确定继续吗？':
     'This clears all practice history and the mistake book. Question sets are untouched — continue?',
-  '将删除所有自建题库、学科文件夹、上传的资料、练习记录、错题本和本地设置。确定继续吗？':
-    'This deletes every custom set, subject folder, uploaded material, record, mistake book and local setting. Continue?',
+  '将删除所有自建题库、学科文件夹、上传的资料、练习记录、错题本、考点联动关系和本地设置。确定继续吗？':
+    'This deletes every custom set, subject folder, uploaded material, record, mistake book, topic link and local setting. Continue?',
   '删除资料': 'Delete material',
   '重置全部': 'Reset everything',
   '判题服务返回了异常结果，请稍后重试': 'The judge returned an unexpected result — try again shortly',
@@ -629,6 +629,8 @@ const EN_PATTERNS = [
   [/^前 (\d+) 条（共 (\d+) 条）$/, 'first $1 of $2'],
   [/^题目数：(\d+)$/, 'Questions: $1'],
   [/^知识点：(\d+)$/, 'Key points: $1'],
+  [/^联动考点：(.+?) 已归入 (\d+) 题，练习结果可回流$/, (m) => `Linked topic "${m[1]}" · ${m[2]} question(s) attributed — results can flow back`],
+  [/^联动考点：(.+?) 没有可靠归属，本题库只记录来源$/, (m) => `Linked topic "${m[1]}" has no reliable attribution — this set only records its source`],
   [/^(\d+) 字笔记 · 建议 (\d+) 题$/, (m) => `${Number(m[1]).toLocaleString('en-US')} chars of notes · about ${m[2]} questions`],
   [/^笔记 (\d+) 份$/, 'Notes $1'],
   [/^笔记 (\d+) 份、真题 (\d+) 份$/, (m) => `Notes ${m[1]} · Papers ${m[2]}`],
