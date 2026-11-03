@@ -128,6 +128,21 @@ const PLAN_TOPIC_KEY_RE = /^t1_[0-9a-f]{32}$/;
 const PLAN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const PLAN_ISO_RE = /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
 
+// 考试级联动快照：Exam Plan 在点击「练这个考点」时，把这场考试的资料与真题原文，
+// 留在同一个标签页的 window.name 里随跳转一起过来。读到即清空，不经过服务器，
+// 也不跨域读取对方的 IndexedDB / localStorage——只在用户自己点这一次换一手数据。
+const HANDOFF_PROTOCOL = 'exam-plan-handoff';
+const HANDOFF_VERSION = 1;
+const HANDOFF_LIMITS = {
+  maxJson: 1_500_000,
+  materials: 20,
+  name: 160,
+  text: 200_000,        // 与 sanitizeMaterialMeta 的文本上限一致，超过会被截到这里
+  minVisibleChars: 50,  // 与上传解析的字数闸门一致：少于这个字数出不出题
+};
+// 本次跳转带来的快照；启动时取一次，用不上下次也不会再出现（window.name 已被清空）
+let examHandoff = null;
+
 function arrOf(x) { return Array.isArray(x) ? x : []; }
 function objOf(x) { return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
 function strOf(x, max = 4000) { return String(x ?? '').slice(0, max); }
@@ -1211,13 +1226,154 @@ function readPlanLinkParams(params) {
   };
 }
 
-// 旧链接（缺少联动上下文）：保持原有体验——定位/新建学科、预开 AI 出题弹窗
-function applyLegacyPlanLink(subjectName, topic, exam) {
+// ===== 考试级快照入站：把「这场考试的资料和真题」落到本地 =====
+// 通道是同一个标签页的 window.name：不经过服务器、不跨域读对方存储，
+// 只在用户自己点击「练这个考点」的那一次跳转里换一手数据，读到即清空。
+// 任何异常都当成「没有快照」，页面退回今天的样子（自己上传资料），绝不半份导入。
+function takeExamHandoff() {
+  let raw = '';
+  try { raw = String(window.name ?? ''); } catch (e) { return null; }
+  try { window.name = ''; } catch (e) { /* 清不掉也要继续：快照只在这一次跳转里有意义 */ }
+  if (!raw || raw.length > HANDOFF_LIMITS.maxJson) return null;
+  if (raw.indexOf(HANDOFF_PROTOCOL) < 0) return null;
+  let parsed = null;
+  try { parsed = JSON.parse(raw); } catch (e) { return null; }
+  return sanitizeExamHandoff(parsed);
+}
+
+function extOfName(name) {
+  const hit = String(name || '').match(/\.([A-Za-z0-9]{1,8})$/);
+  return hit ? hit[1].toLowerCase() : '';
+}
+
+function sanitizeExamHandoff(raw) {
+  const src = objOf(raw);
+  if (src.protocol !== HANDOFF_PROTOCOL || Number(src.version) !== HANDOFF_VERSION) return null;
+  const planId = strOf(src.planId, 64).trim();
+  if (!PLAN_ID_RE.test(planId)) return null;
+  const exam = strOf(src.exam, PLAN_PARAM_LIMITS.exam).trim();
+  const subject = strOf(src.subject, PLAN_PARAM_LIMITS.subject).trim();
+  if (!exam && !subject) return null;
+
+  const seen = new Set();
+  const pieces = [];
+  arrOf(src.materials).slice(0, HANDOFF_LIMITS.materials).forEach((item) => {
+    const piece = objOf(item);
+    const name = strOf(piece.name, HANDOFF_LIMITS.name).trim();
+    const text = cleanMaterialText(strOf(piece.text, HANDOFF_LIMITS.text));
+    if (!name) return;
+    const chars = aiVisibleChars(text);
+    if (chars < HANDOFF_LIMITS.minVisibleChars) return;
+    const key = `${norm(name)}|${chars}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    // 类型以 Exam Plan 的标签为准（真题/笔记是用户在 Plan 里选的），缺标签才本地猜一次
+    const kind = piece.kind === 'exam' || piece.kind === 'note' ? piece.kind : aiGuessFileKind(text, name);
+    pieces.push({ name, kind, text, chars, type: strOf(piece.type, 40).trim(), truncated: piece.truncated === true });
+  });
+  if (!pieces.length) return null;
+
+  const level = src.level === 'unit' || src.level === 'subtopic' ? String(src.level) : '';
+  return {
+    planId,
+    exam,
+    subject,
+    level,
+    unit: strOf(src.unit, PLAN_PARAM_LIMITS.unit).trim(),
+    topic: strOf(src.topic, PLAN_PARAM_LIMITS.topic).trim(),
+    date: PLAN_DATE_RE.test(String(src.date || '')) ? String(src.date) : '',
+    materials: pieces,
+    omitted: arrOf(src.omitted).map((name) => strOf(name, HANDOFF_LIMITS.name).trim()).filter(Boolean).slice(0, 20),
+  };
+}
+
+// 按「文件名 + 有效字数」去重：重复进入同一场考试不会把资料灌第二遍
+// （和 M2 回执「重复返回不重复记录」是同一条原则）。
+async function importExamHandoffMaterials(subject, expectedPlanId) {
+  const snap = examHandoff;
+  const result = { hasSnapshot: !!snap, added: [], skipped: 0, failed: 0, omitted: snap ? snap.omitted.length : 0, exam: snap ? snap.exam : '' };
+  if (!snap || !subject) return result;
+  // 快照和这条深链不是同一场考试（理论上只可能是标签页残留）：宁可不导入
+  if (expectedPlanId && snap.planId !== expectedPlanId) return result;
+  examHandoff = null;
+
+  const existing = new Set(subjectMaterials(subject.id).map((m) => `${norm(m.name)}|${m.chars}`));
+  let stamp = Date.now();
+  for (const piece of snap.materials) {
+    const key = `${norm(piece.name)}|${piece.chars}`;
+    if (existing.has(key)) { result.skipped++; continue; }
+    const record = {
+      id: 'mat-' + stamp.toString(36) + Math.random().toString(36).slice(2, 5),
+      subjectId: subject.id,
+      name: piece.name,
+      size: typeof Blob !== 'undefined' ? new Blob([piece.text]).size : piece.text.length,
+      ext: extOfName(piece.name),
+      kind: piece.kind,
+      pages: 0,
+      chars: piece.chars,
+      addedAt: stamp,
+      text: piece.text
+    };
+    stamp += 1;
+    try {
+      const saved = await saveMaterialRecord(record, null);
+      materials.unshift(saved);
+      existing.add(key);
+      result.added.push(saved);
+    } catch (e) {
+      console.warn('[StarQuiz] 考试快照的资料没有写入本地资料库', piece.name, e);
+      result.failed++;
+    }
+  }
+  materials.sort((a, b) => b.addedAt - a.addedAt);
+  return result;
+}
+
+// 出题弹窗直接带上这个文件夹里的全部资料：用户不用再手动选一遍
+function openPractice(subject) {
+  openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
+}
+
+// 一句话说明这次跳转带来了什么：句子形状固定，便于 i18n 的 EN_PATTERNS 精确匹配，
+// 失败/超量另起一条提示，不把它们拼进同一句里。
+function planHandoffToast(result, subject) {
+  const folder = `「${subject.name}」`;
+  const held = subjectMaterials(subject.id).length;
+  if (result.hasSnapshot && result.added.length) {
+    return `已同步考试${folder}的资料与真题：新增 ${result.added.length} 份，可以直接出题`;
+  }
+  if (result.hasSnapshot) {
+    return `考试${folder}的资料与真题都已在这里，可以直接出题`;
+  }
+  if (held) return `这次跳转没有带来新资料：已选入${folder}的 ${held} 份资料，可以直接出题`;
+  return `考试${folder}的资料夹里还没有资料：上传资料即可出题`;
+}
+
+function planHandoffWarnings(result) {
+  const notes = [];
+  if (result.failed) notes.push(`${result.failed} 份资料没能写入本地资料库，请手动重新上传`);
+  if (result.omitted) notes.push(`另有 ${result.omitted} 份资料超过单次携带上限，需要手动上传`);
+  return notes;
+}
+
+// 一场考试在 StarQuiz 里对应一个资料夹：名字优先用考试名，其次用学科名。
+// 已有联动记录绑定的资料夹永远优先复用，避免同一场考试在不同时间落到两个地方。
+function planFolderName(exam, subjectName) {
+  return String(exam || subjectName || '').trim().slice(0, PLAN_PARAM_LIMITS.subject);
+}
+
+function resolvePlanFolder({ boundSubjectId, exam, subjectName }) {
+  const bound = boundSubjectId ? subjectById(boundSubjectId) : null;
+  if (bound) return bound;
+  const name = planFolderName(exam, subjectName);
+  if (!name) return null;
+  return allSubjects().find((s) => norm(s.name) === norm(name)) || createSubject(name);
+}
+
+// 旧链接（缺少联动上下文）：定位/新建考试资料夹、导入随跳转带来的资料、预开 AI 出题弹窗
+async function applyLegacyPlanLink(subjectName, topic, exam, planId) {
   clearPlanLinkParams();
-  const wanted = subjectName || exam;
-  const key = norm(wanted);
-  const existing = wanted ? allSubjects().find((s) => norm(s.name) === key) : null;
-  const subject = existing || (wanted ? createSubject(wanted) : null);
+  const subject = resolvePlanFolder({ exam, subjectName });
 
   if (!subject) {
     planLink = { subjectId: null, subject: subjectName, topic, exam };
@@ -1227,10 +1383,11 @@ function applyLegacyPlanLink(subjectName, topic, exam) {
   }
 
   planLink = { subjectId: subject.id, subject: subject.name, topic, exam };
+  const imported = await importExamHandoffMaterials(subject, planId);
   openSubject(subject.id);
-  openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
-  const lead = existing ? `已定位学科「${subject.name}」` : `已为你新建学科「${subject.name}」`;
-  toast(topic ? `${lead}，围绕考点「${topic}」上传资料出题吧` : `${lead}，上传资料即可出题`, 'info', 6000);
+  openPractice(subject);
+  toast(planHandoffToast(imported, subject), 'info', 6000);
+  planHandoffWarnings(imported).forEach((note) => toast(note, 'info', 6000));
 }
 
 async function applyPlanDeepLink() {
@@ -1247,7 +1404,7 @@ async function applyPlanDeepLink() {
       topic: String(params.get('topic') || '').trim().slice(0, PLAN_PARAM_LIMITS.topic),
       exam: String(params.get('exam') || '').trim().slice(0, PLAN_PARAM_LIMITS.exam)
     };
-    applyLegacyPlanLink(loose.subjectName, loose.topic, loose.exam);
+    applyLegacyPlanLink(loose.subjectName, loose.topic, loose.exam, (parsed && parsed.planId) || '');
     return;
   }
 
@@ -1257,19 +1414,18 @@ async function applyPlanDeepLink() {
     topicKey = await keyApi.topicKey({ level, subject: subjectName, unit, topic });
   } catch (e) {
     console.warn('[StarQuiz] 考点钥匙计算失败，退化为普通跳转', e);
-    applyLegacyPlanLink(subjectName, topic, exam);
+    applyLegacyPlanLink(subjectName, topic, exam, planId);
     return;
   }
   const linkId = keyApi.composeLinkId(planId, topicKey);
   const existingLink = planLinkStore.links[linkId] || null;
 
-  // 已有联动记录就复用它绑定的学科；学科被删过则回落到名称匹配，最后才新建
-  let subject = existingLink && existingLink.subjectId ? subjectById(existingLink.subjectId) : null;
-  if (!subject) {
-    const key = norm(subjectName);
-    subject = allSubjects().find((s) => norm(s.name) === key) || null;
-    if (!subject) subject = createSubject(subjectName);
-  }
+  // 已有联动记录就复用它绑定的资料夹；资料夹被删过则回落到考试名（其次学科名）匹配，最后才新建
+  const subject = resolvePlanFolder({
+    boundSubjectId: existingLink && existingLink.subjectId ? existingLink.subjectId : '',
+    exam,
+    subjectName
+  });
   if (!subject) {
     planLink = { subjectId: null, subject: subjectName, topic, exam };
     navigateTo('sets');
@@ -1299,15 +1455,28 @@ async function applyPlanDeepLink() {
 
   planLink = transientPlanLink(link, subject);
   clearPlanLinkParams();
+  const imported = await importExamHandoffMaterials(subject, planId);
   openSubject(subject.id);
   if (existingLink) {
-    // 重复进入同一个考点：复用关系与学科，不重复建数据、不重复自动弹窗
-    toast(`继续「${subject.name}」的考点「${topic}」练习`, 'info', 5000);
+    // 重复进入同一个考点：复用关系与资料夹，不重复建数据、不重复自动弹窗
+    const extra = imported.added.length ? `，这次补入 ${imported.added.length} 份资料和真题` : '';
+    toast(`继续「${subject.name}」的考点「${topic}」练习${extra}`, 'info', 5000);
     return;
   }
-  openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
-  const lead = `已定位学科「${subject.name}」`;
-  toast(`${lead}，围绕考点「${topic}」上传资料出题吧`, 'info', 6000);
+  openPractice(subject);
+  toast(planHandoffToast(imported, subject), 'info', 6000);
+  planHandoffWarnings(imported).forEach((note) => toast(note, 'info', 6000));
+}
+
+// 资料夹里的内容按类型说一句「笔记 X 份、真题 Y 份」：与出题向导里的说法保持一致
+function planMaterialCountLine(subjectId) {
+  const mats = subjectMaterials(subjectId);
+  if (!mats.length) return '';
+  const papers = mats.filter((m) => m.kind === 'exam').length;
+  const notes = mats.length - papers;
+  if (!papers) return `${mats.length} 份资料`;
+  if (!notes) return `真题 ${papers} 份`;
+  return `笔记 ${notes} 份、真题 ${papers} 份`;
 }
 
 // 学科页顶部：备考规划上下文横幅 + 返回入口（仅当深链指向本学科时显示）
@@ -1317,13 +1486,17 @@ function renderPlanLinkBanner(subjectId) {
   const exam = planLink.exam ? esc(planLink.exam) : '';
   const ctx = topic ? `考点「${topic}」` : '这个学科';
   const examPart = exam ? ` · ${exam}` : '';
+  const held = planMaterialCountLine(subjectId);
+  const hint = held
+    ? `围绕${ctx}出题练习：这场考试的资料已在这个资料夹（${held}），可直接出题。`
+    : `围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本学科。`;
   // 横幅只负责带回原考点，不带任何成绩：这里没有「本次练习」可依附
   const back = planReturnHref(planLinkStore.links[planLink.linkId]);
   return `
     <div class="plan-link-banner" role="note">
       <div class="plan-link-main">
         <span class="plan-link-eyebrow">来自备考规划${examPart}</span>
-        <span class="plan-link-text">围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本学科。</span>
+        <span class="plan-link-text">${hint}</span>
       </div>
       <div class="plan-link-actions">
         <a class="btn btn-secondary btn-sm" href="${back}">返回备考规划 ↗</a>
@@ -1337,9 +1510,15 @@ function renderPlanLinkNote() {
   if (!planLink || planLink.subjectId !== aiSubjectId) return '';
   const topic = planLink.topic ? esc(planLink.topic) : '';
   const exam = planLink.exam ? esc(planLink.exam) : '';
+  const examPart = exam ? `（${exam}）` : '';
+  const held = planMaterialCountLine(aiSubjectId);
   const line = topic
-    ? `备考规划聚焦考点「${topic}」${exam ? `（${exam}）` : ''}：上传这个考点的资料，AI 会据此出题。`
-    : `来自备考规划${exam ? `（${exam}）` : ''}：上传资料即可为这个学科出题。`;
+    ? (held
+      ? `备考规划聚焦考点「${topic}」${examPart}：这场考试的资料已在这里（${held}），可直接出题。`
+      : `备考规划聚焦考点「${topic}」${examPart}：上传这个考点的资料，AI 会据此出题。`)
+    : (held
+      ? `来自备考规划${examPart}：这场考试的资料已在这里（${held}），可直接出题。`
+      : `来自备考规划${examPart}：上传资料即可为这个学科出题。`);
   return `
     <div class="ai-note plan-link-note">
       <span class="ai-note-dot"></span>
@@ -6056,6 +6235,8 @@ window.addEventListener('pagehide', () => {
 });
 
 (async function boot() {
+  // 标签页名字里的一次性快照要最早取走并清空：它只在「刚从 Exam Plan 点过来」这件事上有意义
+  examHandoff = takeExamHandoff();
   applySidebarPref();
   document.addEventListener('click', (e) => {
     const t = e.target;
