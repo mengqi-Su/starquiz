@@ -185,7 +185,10 @@ a { color: var(--brand); }
   padding: 0 10px 10px;
 }
 
-.nav-item, .ui-nav-item {
+/* 导航条目只有 .ui-nav-item 一个类（对齐 Exam Plan 的组件语义）。
+   桌面侧栏与移动端底栏渲染的是同一个组件，底栏只在媒体查询里换排布，
+   不再另有一套 .bn-item 基础规则。 */
+.ui-nav-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -206,16 +209,16 @@ a { color: var(--brand); }
   user-select: none;
 }
 
-.nav-item:hover { background: rgba(28, 27, 26, 0.05); color: var(--ink); }
+.ui-nav-item:hover { background: rgba(28, 27, 26, 0.05); color: var(--ink); }
 
-.nav-item.active {
+.ui-nav-item.active {
   background: var(--card);
   color: var(--ink);
   font-weight: 500;
   box-shadow: var(--shadow-raised);
 }
 
-.nav-item .nav-icon {
+.ui-nav-item .nav-icon {
   width: 16px;
   height: 16px;
   display: flex;
@@ -225,7 +228,7 @@ a { color: var(--brand); }
   color: currentColor;
 }
 
-.nav-item.active .nav-icon { color: var(--ink); }
+.ui-nav-item.active .nav-icon { color: var(--ink); }
 .nav-icon svg { width: 16px; height: 16px; }
 
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
@@ -271,7 +274,9 @@ a { color: var(--brand); }
   transform: none;
 }
 
-.header-actions { display: flex; align-items: center; gap: 9px; }
+/* 页头动作位只在移动端出现：桌面把「AI 出题 / 新建科目」放侧栏底部，
+   同一份 NAV_ACTIONS 不会在两个地方同时可见。 */
+.header-actions { display: none; align-items: center; gap: 9px; }
 
 .main-body {
   flex: 1;
@@ -2168,6 +2173,7 @@ input[type="file"].form-input:active::file-selector-button {
   .sidebar { display: none; }
   .menu-toggle { display: none; }
   .header-brand { display: flex; }
+  .header-actions { display: flex; }
   .main-header { padding: 0 16px; }
   .main-header h2 { font-size: 16px; }
   .main-body { padding: 18px 14px 104px; }
@@ -2212,41 +2218,30 @@ input[type="file"].form-input:active::file-selector-button {
     gap: 2px;
   }
 
-  .bn-item {
+  /* 移动端底栏：同一个 .ui-nav-item，只把它竖排并换成 Exam Plan 的墨色 + 字重高亮，
+     不再用色块药丸——那是「练习 App」时代的痕迹。 */
+  .bottom-nav .ui-nav-item {
     flex: 1;
-    display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
+    width: auto;
     padding: 4px 2px 5px;
-    border: none;
-    background: none;
-    font-family: inherit;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--ink-mute);
     border-radius: 12px;
-    cursor: pointer;
+    font-size: 10px;
+    line-height: 1.3;
+    font-weight: 500;
+    color: var(--ink-mute);
     transition: color 0.14s ease;
   }
 
-  .bn-item .nav-icon {
-    width: 34px;
-    height: 25px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
-  }
-  .bn-item .nav-icon svg { width: 19px; height: 19px; }
-
-  .bn-item.active { color: var(--ink); }
-  .bn-item.active .nav-icon {
-    background: var(--lime-soft);
-    border-color: transparent;
+  .bottom-nav .ui-nav-item .nav-icon { width: 34px; height: 22px; }
+  .bottom-nav .ui-nav-item .nav-icon svg { width: 19px; height: 19px; }
+  .bottom-nav .ui-nav-item.active {
+    background: none;
     box-shadow: none;
+    color: var(--ink);
+    font-weight: 600;
   }
 
   body.focus-mode .bottom-nav { display: none; }
@@ -3307,8 +3302,7 @@ body {
 .question-number { font-size: 12px; font-weight: 400; color: var(--ink-faint); letter-spacing: -0.012em; }
 .difficulty i { border-radius: 999px; border-width: 1px; }
 
-.modal-close,
-.bn-item .nav-icon { border-width: 1px; }
+.modal-close { border-width: 1px; }
 .ai-quality { border-left-width: 1px; }
 .material-preview { border-left-width: 1px; }
 

@@ -19,9 +19,9 @@ let _lang = 'zh';
  * 用户数据（科目名、题干、资料名）不会出现在这里，英文模式下原样保留。 */
 const EN = Object.assign({
   /* 文档头 */
-  '智题 StarQuiz - 高效刷题平台': 'StarQuiz - Focused practice for any subject',
-  '支持普通题目和编程题的在线刷题复习平台，学习模式与考试模式双模式切换':
-    'Online practice for regular and coding questions, with a study mode and an exam mode',
+  '智题 StarQuiz - 备考练习平台': 'StarQuiz - Focused practice for the exam you are preparing for',
+  '把备考规划里的考试、资料和真题变成练习：学习模式查漏补缺，考试模式自检掌握度':
+    'Turns the exam, materials and past papers from your study plan into practice: study mode closes gaps, exam mode checks mastery',
 
   /* 外壳：侧栏、导航、页头 */
   '智题 STARQUIZ': 'StarQuiz',
@@ -38,16 +38,11 @@ const EN = Object.assign({
   '展开侧栏': 'Expand sidebar',
   '我的科目': 'My subjects',
   '新建科目': 'New subject',
-  '＋ 新建科目': '＋ New subject',
   '＋ 新建': '＋ New',
   '还没有备考科目': 'No subject folders yet',
-  '全部科目': 'All subjects',
-  '全部科目 →': 'All subjects →',
-  '← 全部科目': '← All subjects',
   '未分类': 'Unfiled',
   '更多操作': 'More actions',
   'AI 生成': 'AI generate',
-  'AI 生成练习集': 'New set from AI',
   '练习集详情': 'Question set',
   '学习进度': 'Progress',
   '考试结果': 'Exam result',
@@ -91,7 +86,6 @@ const EN = Object.assign({
   '份': 'files',
   '个文件': 'files',
   '个字': 'characters',
-  '字可用': 'characters ready',
   '提取文字': 'extracted text',
   '页': 'pages',
   '段': 'segments',
@@ -153,13 +147,11 @@ const EN = Object.assign({
   '刷错题': 'Review mistakes',
   '备考科目': 'Subject folders',
   '进入备考科目': 'Open subject folder',
-  '按科目归档：上传的原始资料、提取的文字和生成的练习集都在同一个文件夹里。':
-    'Filed by subject: original files, extracted text and generated question sets live in the same folder.',
   '还没有资料，点进去上传': 'No materials yet — open it to upload',
   '未练习': 'Not started',
-  '挑一个科目': 'Pick a subject',
-  '建一个文件夹，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集':
-    'Create a folder, drop in PDF, Word, PPT or plain text, and let AI turn it into a question set',
+  '去建第一个备考科目': 'Create your first subject',
+  '用「新建科目」建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集':
+    'Use "New subject" to create a subject folder, drop in PDF, Word, PPT or plain text, and let AI turn it into question sets',
 
   /* 科目页 */
   'AI 出题': 'AI questions',
@@ -220,7 +212,6 @@ const EN = Object.assign({
   '答题卡': 'Question map',
   '收起答题卡': 'Collapse question map',
   '交卷': 'Submit exam',
-  '待提交': 'To submit',
   '开始考试': 'Start exam',
   '结束考试': 'End exam',
   '继续考试': 'Resume exam',
@@ -334,7 +325,6 @@ const EN = Object.assign({
   '保存到科目': 'Save into subject',
   '笔记出题': 'From notes',
   '真题整理': 'From past papers',
-  '笔记出题 + 真题整理': 'Notes to questions + past papers kept',
   '笔记出题 · 真题原样保留': 'Notes become questions · past papers stay untouched',
   '根据资料出题': 'Generate from materials',
   '笔记、教材 → 生成新题': 'Notes & textbooks → new questions',
@@ -344,7 +334,6 @@ const EN = Object.assign({
   '笔记资料': 'Note materials',
   '检测到试卷格式，点这里改为原样整理，题目全部保留 →':
     'Looks like an exam paper — click here to keep it as is and preserve every question →',
-  '点文件名右侧的标签可单独切换': 'Use the tag on each file to switch it individually',
   '将全部整理': 'Everything will be kept',
   '题干、选项和答案按原文保留，不改写、不删减；原文没有答案时会给出参考答案。':
     'Stems, options and answers stay exactly as written; missing answers get a reference answer.',
@@ -352,7 +341,6 @@ const EN = Object.assign({
     'Stems, options and answers stay exactly as written; long papers are split and cleaned in parallel.',
   '真题部分按原文逐题保留；笔记部分另出新题。较长试卷会自动分段并行整理。':
     'Past-paper questions are preserved one by one; notes generate new questions. Long papers are split and cleaned in parallel.',
-  '上传资料后，会按资料篇幅自动推荐题量': 'Once materials are uploaded, the count is sized to their length',
   '混合题型包含单选、多选、判断、填空；只有编程类资料才需要选择「含编程题」。':
     'Mixed covers single choice, multiple choice, true/false and fill-in. Pick With coding only for programming material.',
   '确认并生成': 'Confirm and generate',
@@ -380,10 +368,7 @@ const EN = Object.assign({
   '请先上传资料或粘贴文字（至少 50 字）': 'Upload a file or paste at least 50 characters first',
   '笔记和真题都需要至少 50 字才能一起整理': 'Notes and past papers each need at least 50 characters to be cleaned together',
   '勾选后直接参与出题': 'Checked items go straight into generation',
-  '先整理资料，稍后再出题': 'Clean the materials first, generate later',
   '直接 AI 出题': 'Generate with AI directly',
-  '先上传资料，或粘贴一段文字': 'Upload materials first, or paste a passage of text',
-  '笔记生成新题，真题原样整理': 'Notes become new questions, past papers stay verbatim',
   '生成成功': 'Generated',
   '整理完成': 'Cleaned up',
   '生成失败': 'Generation failed',
@@ -438,8 +423,6 @@ const EN = Object.assign({
   '删除失败：资料库读取异常，请刷新后重试': 'Delete failed: the material store could not be read, reload and retry',
   '当前浏览器无法保存资料，请更换浏览器或关闭无痕模式':
     'This browser cannot store materials — switch browsers or leave private mode',
-  '当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。':
-    'This browser has no local material store, so uploads will not persist. Switch browsers or leave private mode.',
   '当前浏览器无法打开本地资料库，上传的资料这次不会保留':
     'This browser could not open the local material store, so uploads are not kept this time',
   '检测到本地数据损坏，已保留一份原始副本并重新初始化':
@@ -504,7 +487,6 @@ const EN = Object.assign({
 
   /* 编程题运行态 */
   '正确答案': 'Correct answer',
-  '你的答案': 'Your answer',
   '运行中...': 'Running…',
   '运行中…': 'Running…',
   '正在运行测试用例...': 'Running the test cases…',
@@ -557,14 +539,10 @@ const EN = Object.assign({
   '练习记录': 'Practice history',
   '挑一个备考科目': 'Pick a subject',
   '新建备考科目': 'New subject',
-  '全部科目 →': 'All subjects →',
   '全部备考科目': 'All subjects',
-  '全部备考科目 →': 'All subjects →',
   '← 全部备考科目': '← All subjects',
   '返回备考科目': 'Back to subjects',
   '选一个备考科目': 'Choose a subject',
-  '建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集':
-    'Create a subject, drop in PDF, Word, PPT or text, and let AI turn it into question sets',
   '按备考科目归档：上传的原始资料、提取的文字和生成的练习集都在同一个科目里。':
     'Filed by subject: original files, extracted text and generated sets all live in one place.',
 

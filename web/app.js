@@ -59,7 +59,13 @@ const ICON = {
   play: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>`,
   card: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>`,
   arrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h15M13.5 6l6 6-6 6"/></svg>`,
-  trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4.5v2A3.5 3.5 0 0 0 8 10.5M16 5h3.5v2a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 13v4M8.5 21h7M10 17h4l.5 4h-5z"/></svg>`
+  trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4.5v2A3.5 3.5 0 0 0 8 10.5M16 5h3.5v2a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 13v4M8.5 21h7M10 17h4l.5 4h-5z"/></svg>`,
+  // 导航图标只在这里定义一次，桌面侧栏和移动端底栏共用
+  navHome: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7v9a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z"/></svg>`,
+  navFolder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
+  navChart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M8.5 16v-4.5M13 16V7.5M17.5 16v-6.5"/></svg>`,
+  navGear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h9M18 7h1M5 12h4M13 12h6M5 17h9M18 17h1"/><circle cx="16" cy="7" r="2"/><circle cx="11" cy="12" r="2"/><circle cx="16" cy="17" r="2"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`
 };
 
 // bar 用于科目/练习集卡左侧的 3px 色条：需要在白卡上可读，所以用实色而不是淡底。
@@ -1827,7 +1833,61 @@ function expandSidebar() {
   try { localStorage.setItem(SIDEBAR_PREF_KEY, '0'); } catch { /* 同上 */ }
 }
 
-// 侧栏中间那组科目列表：色点 + 名称 + 题数，点击直达文件夹，底下挂一个新建入口
+// 导航只有一个来源：这一份配置同时喂给桌面侧栏和移动端底栏。
+// 之前 index.html 里手写了两套（侧栏一套、bottom-nav 一套，连 SVG 图标都重抄一遍），
+// 加一个入口要改两处，active 还要 `.nav-item, .bn-item` 两套类名分别同步——现在都从这里生成。
+// pin: 'bottom' 的项目在侧栏沉底，移动端仍然只是底栏的一项。
+const NAV_VIEWS = [
+  { view: 'dashboard', label: '首页', icon: 'navHome' },
+  { view: 'sets', label: '科目', icon: 'navFolder' },
+  { view: 'records', label: '记录', icon: 'navChart' },
+  { view: 'settings', label: '设置', icon: 'navGear', pin: 'bottom' }
+];
+
+// 全局动作同理：一个功能一个入口，桌面挂侧栏、移动端挂页头，由同一份配置渲染。
+const NAV_ACTIONS = [
+  { id: 'ai', label: 'AI 出题', icon: 'spark', onclick: 'openAIModal()' },
+  { id: 'subject', label: '新建科目', icon: 'plus', onclick: 'newSubjectModal()' }
+];
+
+function activeNavView() {
+  // 科目详情仍然属于「科目」这条导航，高亮不能跟着页面名跑
+  return state.view === 'subject' ? 'sets' : state.view;
+}
+
+function navItemHTML(item) {
+  const active = activeNavView() === item.view;
+  return `<button type="button" class="ui-nav-item${active ? ' active' : ''}"
+    data-view="${item.view}" onclick="navigateTo('${item.view}')"${active ? ' aria-current="page"' : ''}>
+    <span class="nav-icon" aria-hidden="true">${ICON[item.icon] || ''}</span><span class="nav-label">${item.label}</span>
+  </button>`;
+}
+
+function navActionsHTML(slot) {
+  if (slot === 'sidebar') {
+    return NAV_ACTIONS.map((a) => `<button type="button" class="side-add" onclick="${a.onclick}">
+      <span class="side-add-plus" aria-hidden="true">＋</span>${a.label}</button>`).join('');
+  }
+  // 页头是移动端的动作位：主按钮只给第一个，其余降级成 ghost，避免两个实心并排
+  return NAV_ACTIONS.map((a, i) => `<button type="button" class="btn ${i === 0 ? 'btn-primary' : 'btn-ghost'} btn-sm"
+    onclick="${a.onclick}">${ICON[a.icon] || ''}${a.label}</button>`).join('');
+}
+
+function renderNav() {
+  const nav = document.getElementById('sidebarNav');
+  if (nav) nav.innerHTML = NAV_VIEWS.filter((i) => !i.pin).map((i) => navItemHTML(i)).join('');
+  const foot = document.getElementById('sidebarBottom');
+  if (foot) {
+    foot.innerHTML = NAV_VIEWS.filter((i) => i.pin === 'bottom').map((i) => navItemHTML(i)).join('')
+      + navActionsHTML('sidebar');
+  }
+  const bar = document.getElementById('bottomNav');
+  if (bar) bar.innerHTML = NAV_VIEWS.map((i) => navItemHTML(i)).join('');
+  const head = document.getElementById('headerActions');
+  if (head) head.innerHTML = navActionsHTML('header');
+}
+
+// 侧栏中间那组科目列表：色点 + 名称 + 题数，点击直达科目（纯导航，动作统一沉到底部）
 function renderSidebarSubjects() {
   const host = document.getElementById('sidebarSubjects');
   if (!host) return;
@@ -1847,8 +1907,7 @@ function renderSidebarSubjects() {
       <span>备考科目</span>
       <span class="sidebar-count">${subjects.length}</span>
     </div>
-    ${rows || '<p class="sidebar-empty">还没有备考科目</p>'}
-    <button type="button" class="side-add" onclick="newSubjectModal()"><span class="side-add-plus" aria-hidden="true">＋</span>新建科目</button>`;
+    ${rows || '<p class="sidebar-empty">还没有备考科目</p>'}`;
 }
 
 const PAGE_TITLES = {
@@ -1951,10 +2010,6 @@ function renderCore() {
     state.exam.timerId = null;
   }
 
-  document.querySelectorAll('.nav-item, .bn-item').forEach((el) => {
-    const target = state.view === 'subject' ? 'sets' : state.view;
-    el.classList.toggle('active', el.dataset.view === target);
-  });
   document.body.classList.toggle('focus-mode', state.view === 'learning' || state.view === 'exam');
   const pageTitle = state.view === 'subject'
     ? ((subjectById(state.subjectId) || {}).name || '科目')
@@ -1964,7 +2019,8 @@ function renderCore() {
   /* 科目视图的页头标题就是用户起的科目名，英文模式下不参与翻译 */
   if (state.view === 'subject') titleEl.setAttribute('data-no-i18n', '');
   else titleEl.removeAttribute('data-no-i18n');
-  document.getElementById('headerActions').innerHTML = renderHeaderActions();
+  // 导航与动作由同一份配置生成：侧栏、移动底栏、页头动作位都在 renderNav 里落地
+  renderNav();
   renderSidebarSubjects();
 
   const main = document.getElementById('mainContent');
@@ -1986,15 +2042,6 @@ function renderCore() {
 
   if (state.view === 'exam' && state.exam && !state.exam.grading) startExamTimer();
   syncQnav();
-}
-
-function renderHeaderActions() {
-  // 首页与科目列表的顶级动作；科目页内部的上传 / AI 出题都留在页面里，顶栏不再重复一遍
-  if (state.view === 'dashboard' || state.view === 'sets') {
-    return `
-      <button class="btn btn-primary btn-sm" onclick="openAIModal()">${ICON.spark} AI 生成</button>`;
-  }
-  return '';
 }
 
 function toggleSubjectMenu(event) {
@@ -2109,32 +2156,19 @@ function renderDashboard() {
       <div class="today-actions">
         ${lastSet
           ? `<button class="btn btn-primary" onclick="openSet('${lastSet.id}')">继续上次练习</button>`
-          : `<button class="btn btn-primary" onclick="navigateTo('sets')">${subjects.length ? '挑一个备考科目' : '新建备考科目'}</button>`}
-        <button class="btn btn-ghost" onclick="openAIModal()">${ICON.spark} AI 生成练习集</button>
-        <button class="btn btn-ghost" onclick="navigateTo('records')">练习记录</button>
+          : `<button class="btn btn-primary" onclick="navigateTo('sets')">${subjects.length ? '挑一个备考科目' : '去建第一个备考科目'}</button>`}
       </div>
-    </div>
-
-    <div class="section-title">
-      <span>备考科目<span class="section-count">${subjects.length}</span></span>
-      <button class="link-btn" onclick="navigateTo('sets')">全部备考科目 →</button>
-    </div>
-    <div class="lrow-list">
-      ${subjects.slice(0, 5).map((s) => renderSubjectRow(s)).join('') || renderEmptyFolders()}
     </div>
   `;
 }
 
+// 空状态只解释「这里为什么是空的」，不再放按钮：新建科目与 AI 出题全站各一个入口（侧栏 / 移动页头）
 function renderEmptyFolders() {
   return `
     <div class="empty-card">
       <div class="empty-card-icon">${ICON.book}</div>
       <div class="empty-card-title">还没有备考科目</div>
-      <div class="empty-card-desc">建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集</div>
-      <div class="btn-group" style="justify-content:center">
-        <button class="btn btn-primary" onclick="newSubjectModal()">新建科目</button>
-        <button class="btn btn-secondary" onclick="openAIModal()">${ICON.spark} AI 生成</button>
-      </div>
+      <div class="empty-card-desc">用「新建科目」建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集</div>
     </div>`;
 }
 
@@ -2198,7 +2232,6 @@ function renderSets() {
   return `
     <div class="section-title">
       <span>全部备考科目<span class="section-count">${subjects.length}</span></span>
-      <button type="button" class="link-btn" onclick="newSubjectModal()">＋ 新建科目</button>
     </div>
     <p class="page-lead">按备考科目归档：上传的原始资料、提取的文字和生成的练习集都在同一个科目里。</p>
     <div class="lrow-list">
@@ -4259,9 +4292,6 @@ function renderSettings() {
           <div class="text-sm text-muted">Qoder AI · 由站点后端安全调用，密钥不会进入浏览器</div>
         </div>
         <span class="badge badge-success">已内置</span>
-      </div>
-      <div style="margin-top:14px">
-        <button class="btn btn-primary" onclick="openAIModal()">用 AI 新建练习集</button>
       </div>
     </div>
 
