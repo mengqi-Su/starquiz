@@ -7,7 +7,7 @@
   <meta name="description" content="支持普通题目和编程题的在线刷题复习平台，学习模式与考试模式双模式切换">
   <meta name="theme-color" content="#f8f7f4">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231c1b1a'/><rect x='10' y='10' width='80' height='80' rx='16' fill='none' stroke='%23f8f7f4' stroke-width='2.5' stroke-opacity='0.5'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='%23f8f7f4' font-family='PingFang SC,Microsoft YaHei,sans-serif' font-weight='600'>智</text></svg>">
-  <link rel="stylesheet" href="style.css?v=90">
+  <link rel="stylesheet" href="style.css?v=93">
 </head>
 <body>
   <div class="app-layout">
@@ -35,10 +35,11 @@
         <button class="nav-item" data-view="sets" onclick="navigateTo('sets')">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2.2h7.4a2 2 0 0 1 2 2v8.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>
+              <path d="M4 5.5h5.5a2.5 2.5 0 0 1 2.5 2.5v10a2.5 2.5 0 0 0-2.5-2H4z"/>
+              <path d="M20 5.5h-5.5A2.5 2.5 0 0 0 12 8v10a2.5 2.5 0 0 1 2.5-2H20z"/>
             </svg>
           </span>
-          学科
+          科目
         </button>
         <button class="nav-item" data-view="records" onclick="navigateTo('records')">
           <span class="nav-icon" aria-hidden="true">
@@ -48,10 +49,10 @@
               <path d="M8.5 16v-4.5M13 16V7.5M17.5 16v-6.5"/>
             </svg>
           </span>
-          进度
+          记录
         </button>
       </nav>
-      <div class="sidebar-group" id="sidebarSubjects" aria-label="学科列表"></div>
+      <div class="sidebar-group" id="sidebarSubjects" aria-label="备考科目列表"></div>
       <div class="sidebar-bottom">
         <button class="nav-item" data-view="settings" onclick="navigateTo('settings')">
           <span class="nav-icon" aria-hidden="true">
@@ -105,10 +106,11 @@
     <button class="bn-item" data-view="sets" onclick="navigateTo('sets')">
       <span class="nav-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2.2h7.4a2 2 0 0 1 2 2v8.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>
+          <path d="M4 5.5h5.5a2.5 2.5 0 0 1 2.5 2.5v10a2.5 2.5 0 0 0-2.5-2H4z"/>
+          <path d="M20 5.5h-5.5A2.5 2.5 0 0 0 12 8v10a2.5 2.5 0 0 1 2.5-2H20z"/>
         </svg>
       </span>
-      学科
+      科目
     </button>
     <button class="bn-item" data-view="records" onclick="navigateTo('records')">
       <span class="nav-icon" aria-hidden="true">
@@ -118,7 +120,7 @@
           <path d="M8.5 16v-4.5M13 16V7.5M17.5 16v-6.5"/>
         </svg>
       </span>
-      进度
+      记录
     </button>
     <button class="bn-item" data-view="settings" onclick="navigateTo('settings')">
       <span class="nav-icon" aria-hidden="true">
@@ -141,7 +143,7 @@
 
   <script src="data.js?v=4"></script>
   <script src="topicKey.js?v=1"></script>
-  <script src="i18n.js?v=15"></script>
-  <script src="app.js?v=97"></script>
+  <script src="i18n.js?v=19"></script>
+  <script src="app.js?v=102"></script>
 </body>
 </html>

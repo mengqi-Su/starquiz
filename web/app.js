@@ -62,7 +62,7 @@ const ICON = {
   trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4.5v2A3.5 3.5 0 0 0 8 10.5M16 5h3.5v2a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 13v4M8.5 21h7M10 17h4l.5 4h-5z"/></svg>`
 };
 
-// bar 用于学科/题库卡左侧的 3px 色条：需要在白卡上可读，所以用实色而不是淡底。
+// bar 用于科目/练习集卡左侧的 3px 色条：需要在白卡上可读，所以用实色而不是淡底。
 const SET_ACCENTS = [
   { bg: 'var(--lime-soft)', fg: 'var(--ink)', bar: '#1c1b1a' },
   { bg: 'var(--coral-soft)', fg: 'var(--coral)', bar: '#b42318' },
@@ -108,7 +108,7 @@ const STORAGE = {
 };
 const SESSION_KEYS = { exam: 'sq_exam_v1', learning: 'sq_learning_v1' };
 
-// 起始不预置任何学科：科目由用户新建或在 AI 生成时自动创建；未归档的题库进入「未分类」
+// 起始不预置任何科目：科目由用户新建或在 AI 生成时自动创建；未归档的练习集进入「未分类」
 const BUILTIN_SUBJECTS = [];
 const INBOX_SUBJECT = { id: 'sub-inbox', name: '未分类', icon: '杂', builtin: true, inbox: true };
 // 备考规划伴侣应用：考点级深链互相跳转，数据各自保存在本地浏览器
@@ -273,6 +273,9 @@ function sanitizeStoredQuestion(raw, takenIds) {
   return q;
 }
 
+// 练习集出题来源：清洗链与详情页标签共用同一份白名单
+const SET_ORIGIN_KINDS = ['generate', 'exam', 'batch'];
+
 function sanitizeStoredSet(raw, takenSetIds) {
   if (!raw || typeof raw !== 'object') return null;
   const name = strOf(raw.name, 80).trim();
@@ -315,6 +318,12 @@ function sanitizeStoredSet(raw, takenSetIds) {
     questions,
     ...(/^sub-[A-Za-z0-9_-]{1,32}$/.test(String(raw.subjectId)) ? { subjectId: raw.subjectId } : {}),
     ...(source ? { source } : {}),
+    // 出题来源与聚焦考点要在刷新/备份导入后仍然可见，否则详情页的「练习来源」上下文会凭空消失
+    ...(SET_ORIGIN_KINDS.includes(String(raw.origin)) ? { origin: String(raw.origin) } : {}),
+    ...(() => {
+      const focus = strOf(raw.focusTopic, PLAN_PARAM_LIMITS.topic).trim();
+      return focus ? { focusTopic: focus } : {};
+    })(),
     ...(Number.isInteger(raw.accent) ? { accent: ((raw.accent % 6) + 6) % 6 } : {}),
     ...(quality ? { quality } : {}),
     ...(dropped ? { droppedQuestions: dropped } : {})
@@ -335,14 +344,20 @@ function sanitizeStoredSets(raw, existingIds = new Set()) {
   return { sets, droppedSets, droppedQuestions };
 }
 
-// 自建学科：名称是唯一标识，内置学科不允许重复
+// 自建科目 = 备考科目：除了名称，还带考试信息（目标考试 / 考试日期 / 开始日期 / 备考目标）
+// 和练习参数（默认题量 / 每日练习目标），首页与 AI 出题都读这些字段。
+function isoDateOf(v) {
+  const s = strOf(v, 10).trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+}
+
 function sanitizeSubjects(raw) {
   const builtinNames = new Set(BUILTIN_SUBJECTS.map((s) => s.name));
   const seen = new Set(BUILTIN_SUBJECTS.map((s) => s.id));
   const out = [];
   arrOf(raw).forEach((item) => {
     if (!item || typeof item !== 'object') return;
-    const name = strOf(item.name, 20).trim();
+    const name = strOf(item.name, 40).trim();
     if (!name || builtinNames.has(name)) return;
     const key = name.toLowerCase();
     if (out.some((s) => s.name.toLowerCase() === key)) return;
@@ -351,8 +366,14 @@ function sanitizeSubjects(raw) {
     seen.add(id);
     out.push({
       id,
-      name: name.slice(0, 20),
+      name: name.slice(0, 40),
       icon: (strOf(item.icon, 2) || name.slice(0, 1)).slice(0, 2),
+      examName: strOf(item.examName, 100).trim(),
+      examDate: isoDateOf(item.examDate),
+      startDate: isoDateOf(item.startDate),
+      goal: strOf(item.goal, 60).trim(),
+      defaultCount: intOf(item.defaultCount, 15, 5, 60),
+      dailyGoal: intOf(item.dailyGoal, 20, 5, 100),
       createdAt: Number(item.createdAt) || Date.now()
     });
   });
@@ -406,7 +427,7 @@ function repairHistory(raw) {
     out.push({
       id,
       setId,
-      setName: strOf(a.setName, 80) || '（未知题库）',
+      setName: strOf(a.setName, 80) || '（未知练习集）',
       mode: a.mode === 'exam' ? 'exam' : 'learning',
       startedAt: Number(a.startedAt) || finishedAt,
       finishedAt,
@@ -447,7 +468,7 @@ const settings = objOf(readStored(STORAGE.settings).value);
 const baseSetIds = new Set(
   (typeof SAMPLE_SETS !== 'undefined' ? arrOf(SAMPLE_SETS) : []).map((s) => s.id)
 );
-if (!bootSets.ok) bootNotes.push('浏览器当前禁止了本地存储，本次的题库和记录在刷新后可能丢失');
+if (!bootSets.ok) bootNotes.push('浏览器当前禁止了本地存储，本次的练习集和记录在刷新后可能丢失');
 const repairedSets = sanitizeStoredSets(bootSets.value, baseSetIds);
 let customSets = repairedSets.sets;
 let history = repairHistory(bootHistory.value);
@@ -456,8 +477,8 @@ let userSubjects = sanitizeSubjects(bootSubjects.value);
 let planLinkStore = sanitizePlanLinks(bootPlanLinks.value);
 let materials = [];
 
-// 早期版本会把内置的演示题库和学科写进本地存储。起始状态现在保持干净，
-// 这里一次性清掉那些遗留的演示内容；用户自己上传资料生成的题库不受影响。
+// 早期版本会把内置的演示练习集和科目写进本地存储。起始状态现在保持干净，
+// 这里一次性清掉那些遗留的演示内容；用户自己上传资料生成的练习集不受影响。
 const LEGACY_DEMO_SET_IDS = ['modern-history', 'biology-basics', 'js-basics', 'python-basics'];
 const LEGACY_DEMO_SUBJECT_IDS = ['sub-history', 'sub-bio', 'sub-code'];
 const legacyDemoSetIds = new Set(LEGACY_DEMO_SET_IDS);
@@ -471,7 +492,7 @@ if (legacyDemoRemovedSets.length) {
     return acc;
   }, {});
 }
-// 内置学科可能已经被用户自己的题库使用：只要还有题库挂在上面，就把它当普通学科保留。
+// 内置科目可能已经被用户自己的练习集使用：只要还有练习集挂在上面，就把它当普通科目保留。
 const legacyDemoSubjectIds = new Set(LEGACY_DEMO_SUBJECT_IDS);
 const referencedSubjectIds = new Set(
   customSets.map((s) => s.subjectId).filter((id) => typeof id === 'string' && id)
@@ -485,9 +506,9 @@ const removedDemoContent = legacyDemoRemovedSets.length > 0;
 let materialsReady = false;
 let materialsUnavailable = false;
 
-if (repairedSets.droppedSets) bootNotes.push(`已跳过 ${repairedSets.droppedSets} 个损坏的题库`);
+if (repairedSets.droppedSets) bootNotes.push(`已跳过 ${repairedSets.droppedSets} 个损坏的练习集`);
 if (repairedSets.droppedQuestions) bootNotes.push(`已修复 ${repairedSets.droppedQuestions} 道异常题目`);
-if (removedDemoContent) bootNotes.push('已移除早期内置的演示题库，题目现在只来自你上传的资料');
+if (removedDemoContent) bootNotes.push('已移除早期内置的演示练习集，题目现在只来自你上传的资料');
 if (!bootSets.missing && bootSets.ok && !bootSets.corrupt) {
   const rawCount = arrOf(bootSets.value).length;
   if (customSets.length !== rawCount || repairedSets.droppedQuestions) {
@@ -501,7 +522,7 @@ if (!bootWrong.missing && bootWrong.ok && !bootWrong.corrupt) saveJSONQuiet(STOR
 if (!bootSubjects.missing && bootSubjects.ok && !bootSubjects.corrupt) {
   if (userSubjects.length !== arrOf(bootSubjects.value).length) saveJSONQuiet(STORAGE.subjects, userSubjects);
 }
-if (bootSubjects.corrupt) bootNotes.push('学科文件夹数据损坏，已保留备份并重置为内置学科');
+if (bootSubjects.corrupt) bootNotes.push('备考科目数据损坏，已保留备份并重置为空列表');
 
 let resume = { exam: null, learning: null };
 let learningPersistTimer = null;
@@ -747,7 +768,7 @@ function resumeLearning() {
   if (!p) return;
   if (!getSet(p.setId)) {
     discardSession('learning', true);
-    toast('题库已被删除，无法继续学习', 'info');
+    toast('练习集已被删除，无法继续学习', 'info');
     return;
   }
   state.learning = { ...p };
@@ -774,6 +795,12 @@ const state = {
 const LANG_LABEL = { javascript: 'JavaScript', python: 'Python 3', cpp: 'C++', java: 'Java' };
 const TYPE_LABEL = { single: '单选', multi: '多选', tf: '判断', fill: '填空', code: '编程' };
 const TYPE_CLASS = { single: 'type-single', multi: 'type-multi', tf: 'type-tf', fill: 'type-fill', code: 'type-code' };
+// 练习来源：让练习集详情页一眼看出这套题是怎么来的
+const SET_ORIGIN_LABEL = {
+  generate: 'AI 根据资料出题',
+  exam: '真题原样整理',
+  batch: '笔记出题 + 真题整理'
+};
 
 function allSets() {
   const samples = typeof SAMPLE_SETS !== 'undefined' ? arrOf(SAMPLE_SETS) : [];
@@ -817,7 +844,7 @@ function hasInboxContent() {
     || materials.some((m) => m.subjectId === INBOX_SUBJECT.id);
 }
 
-// 文件夹列表：内置学科 + 自建学科，有未归档内容时补一个「未分类」
+// 文件夹列表：内置科目 + 自建科目，有未归档内容时补一个「未分类」
 function visibleSubjects() {
   return hasInboxContent() ? [...allSubjects(), INBOX_SUBJECT] : [...allSubjects()];
 }
@@ -827,37 +854,59 @@ function subjectNameTaken(name, exceptId) {
   return visibleSubjects().some((s) => s.id !== exceptId && norm(s.name) === key);
 }
 
-function createSubject(name) {
-  const clean = String(name || '').trim().slice(0, 20);
+function createSubject(name, extra) {
+  const e = extra && typeof extra === 'object' ? extra : {};
+  const clean = String(name || '').trim().slice(0, 40);
   if (!clean) {
-    toast('学科名称不能为空', 'info');
+    toast('科目名称不能为空', 'info');
     return null;
   }
   if (subjectNameTaken(clean)) {
-    toast('已经有同名学科了', 'info');
+    toast('已经有同名科目了', 'info');
     return null;
   }
   const subject = {
     id: 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: clean,
     icon: clean.slice(0, 1),
+    examName: strOf(e.examName, 100).trim(),
+    examDate: isoDateOf(e.examDate),
+    startDate: isoDateOf(e.startDate),
+    goal: strOf(e.goal, 60).trim(),
+    defaultCount: intOf(e.defaultCount, 15, 5, 60),
+    dailyGoal: intOf(e.dailyGoal, 20, 5, 100),
     createdAt: Date.now()
   };
   const next = [...userSubjects, subject];
   if (!saveJSON(STORAGE.subjects, next)) {
-    toast('学科没有保存成功，请检查本地存储空间', 'error');
+    toast('科目没有保存成功，请检查本地存储空间', 'error');
     return null;
   }
   userSubjects = next;
   return subject;
 }
 
+// 只更新考试信息与练习参数：id / 名称 / 图标 / 创建时间保持不变，写入前再过一遍 sanitize
+function updateSubject(id, patch) {
+  const current = userSubjects.find((s) => s.id === id);
+  if (!current) return null;
+  const merged = sanitizeSubjects([{ ...current, ...patch, id: current.id, name: current.name, icon: current.icon, createdAt: current.createdAt }])[0];
+  if (!merged) return null;
+  const next = userSubjects.map((s) => (s.id === id ? merged : s));
+  if (!saveJSON(STORAGE.subjects, next)) {
+    toast('考试信息没有保存成功', 'error');
+    return null;
+  }
+  userSubjects = next;
+  return merged;
+}
+
 function renameSubject(id, name) {
-  const clean = String(name || '').trim().slice(0, 20);
+  const clean = String(name || '').trim().slice(0, 40);
   const subject = userSubjects.find((s) => s.id === id);
   if (!subject) return false;
-  if (!clean) { toast('学科名称不能为空', 'info'); return false; }
-  if (subjectNameTaken(clean, id)) { toast('已经有同名学科了', 'info'); return false; }
+  if (!clean) { toast('科目名称不能为空', 'info'); return false; }
+  if (subjectNameTaken(clean, id)) { toast('已经有同名科目了', 'info'); return false; }
   const next = userSubjects.map((s) => (s.id === id ? { ...s, name: clean, icon: clean.slice(0, 1) } : s));
   if (!saveJSON(STORAGE.subjects, next)) { toast('重命名没有保存成功', 'error'); return false; }
   userSubjects = next;
@@ -866,8 +915,8 @@ function renameSubject(id, name) {
 
 // ===== Exam Plan AI 联动：考点级深链 =====
 // 入站解析 ?from=exam-plan[&v=1&plan=&level=&unit=&subject=&topic=&exam=&date=&task=]：
-// 用与 Exam Plan 完全一致的算法算出考点钥匙，持久化联动关系，再定位/新建学科。
-// 所有入站参数都按不可信输入处理；只保存联动上下文，不跨域读取对方的计划、题库或资料。
+// 用与 Exam Plan 完全一致的算法算出考点钥匙，持久化联动关系，再定位/新建科目。
+// 所有入站参数都按不可信输入处理；只保存联动上下文，不跨域读取对方的计划、练习集或资料。
 // 协议常量与长度闸门见文件顶部（启动阶段读取 planLinks 前就必须可用）。
 
 function planParam(params, name) {
@@ -875,7 +924,7 @@ function planParam(params, name) {
   return raw.length > PLAN_PARAM_LIMITS[name] ? null : raw;
 }
 
-// 完整内容路径才算有效联动上下文：层级参与身份，学科显示名被截到 20 字也不影响这里
+// 完整内容路径才算有效联动上下文：层级参与身份，科目显示名被截到 20 字也不影响这里
 function sanitizePlanPath(raw) {
   const src = objOf(raw);
   const level = src.level === 'unit' || src.level === 'subtopic' ? src.level : '';
@@ -959,8 +1008,8 @@ function transientPlanLink(link, subject) {
   };
 }
 
-// ===== 联动 → 出题：题库来源留痕与考点归属校验 =====
-// set.source 只回答「这份题库来自哪条联动关系」。
+// ===== 联动 → 出题：练习集来源留痕与考点归属校验 =====
+// set.source 只回答「这份练习集来自哪条联动关系」。
 // 能不能用它回流考点成绩，取决于生成结果里是否真的存在目标知识点、
 // 且确有题目归属到它（returnEnabled），不是「显示过横幅」就算数。
 
@@ -980,7 +1029,7 @@ function focusTitleMatches(a, b) {
   return left === right || left.includes(right) || right.includes(left);
 }
 
-// 学科名与计划科目名可能不同（本地学科被改名），以联动记录里的路径科目为准
+// 科目名与计划科目名可能不同（本地科目被改名），以联动记录里的路径科目为准
 function sanitizeSetSource(raw, kpIds) {
   const src = objOf(raw);
   if (strOf(src.from, 20).trim() !== 'exam-plan') return null;
@@ -1046,8 +1095,8 @@ function attachGeneratedSource(set, snapshot) {
 
 // ===== 联动 → 回程：考点成绩归因与回执 =====
 // 归因只在练习完成的那一刻算一次，并把结果作为快照写进历史。
-// 之后题库被编辑、移动或删除，回程用的仍是这次练习的真实统计，
-// 而不是拿新的题库结构去重算旧成绩。
+// 之后练习集被编辑、移动或删除，回程用的仍是这次练习的真实统计，
+// 而不是拿新的练习集结构去重算旧成绩。
 
 // 目标考点在本次作答里的计分情况；任何一环不可靠就返回 null，宁可不报也不虚报。
 function planResultForAttempt(set, answers) {
@@ -1136,7 +1185,7 @@ function planCompletedTimeLabel(finishedAt) {
 }
 
 // 回执卡片：只报本次归因到目标考点的计分情况，回程参数由这次 attempt 固定生成。
-// 题库被删或联动关系被清除时卡片不出现，页面退回普通行为。
+// 练习集被删或联动关系被清除时卡片不出现，页面退回普通行为。
 function renderPlanReceiptCard(receipt) {
   if (!receipt || !receipt.result || !receipt.link) return '';
   const { result, link, attempt } = receipt;
@@ -1170,7 +1219,7 @@ function receiptForAttempt(attempt) {
   return { attempt, link, result: attempt.planResult };
 }
 
-// 题库这次练习里最近一条带考点成绩的记录；优先本页刚完成的那次。
+// 练习集这次练习里最近一条带考点成绩的记录；优先本页刚完成的那次。
 function findPlanReceipt(setId) {
   const pageAttempt = state.lastPlanAttempt;
   const pool = arrOf(history).filter((a) => a && a.setId === setId && a.planResult);
@@ -1180,7 +1229,7 @@ function findPlanReceipt(setId) {
   return receipt ? Object.assign({}, receipt, { isCurrent: !!fresh }) : null;
 }
 
-// 出题开始时冻结联动快照：异步期间关闭横幅或切换学科都不会串到别的考点
+// 出题开始时冻结联动快照：异步期间关闭横幅或切换科目都不会串到别的考点
 function captureFocusLink() {
   if (!planLink || planLink.subjectId !== aiSubjectId) return null;
   if (!planLink.linkId || !planLink.topicKey || !planLink.planId || !planLink.topic) return null;
@@ -1356,7 +1405,7 @@ function planHandoffWarnings(result) {
   return notes;
 }
 
-// 一场考试在 StarQuiz 里对应一个资料夹：名字优先用考试名，其次用学科名。
+// 一场考试在 StarQuiz 里对应一个资料夹：名字优先用考试名，其次用科目名。
 // 已有联动记录绑定的资料夹永远优先复用，避免同一场考试在不同时间落到两个地方。
 function planFolderName(exam, subjectName) {
   return String(exam || subjectName || '').trim().slice(0, PLAN_PARAM_LIMITS.subject);
@@ -1367,7 +1416,10 @@ function resolvePlanFolder({ boundSubjectId, exam, subjectName }) {
   if (bound) return bound;
   const name = planFolderName(exam, subjectName);
   if (!name) return null;
-  return allSubjects().find((s) => norm(s.name) === norm(name)) || createSubject(name);
+  const existing = allSubjects().find((s) => norm(s.name) === norm(name));
+  if (existing) return existing;
+  // 新建的资料夹要把考试名同时写进 examName，否则科目页的「目标考试」备考上下文是空的
+  return createSubject(name, { examName: String(exam || '').trim() });
 }
 
 // 旧链接（缺少联动上下文）：定位/新建考试资料夹、导入随跳转带来的资料、预开 AI 出题弹窗
@@ -1378,7 +1430,7 @@ async function applyLegacyPlanLink(subjectName, topic, exam, planId) {
   if (!subject) {
     planLink = { subjectId: null, subject: subjectName, topic, exam };
     navigateTo('sets');
-    toast(topic ? `来自备考规划：练「${topic}」。请先选择或新建一个学科。` : '来自备考规划：请选择或新建一个学科开始出题。', 'info', 6000);
+    toast(topic ? `来自备考规划：练「${topic}」。请先选择或新建一个科目。` : '来自备考规划：请选择或新建一个科目开始出题。', 'info', 6000);
     return;
   }
 
@@ -1420,7 +1472,7 @@ async function applyPlanDeepLink() {
   const linkId = keyApi.composeLinkId(planId, topicKey);
   const existingLink = planLinkStore.links[linkId] || null;
 
-  // 已有联动记录就复用它绑定的资料夹；资料夹被删过则回落到考试名（其次学科名）匹配，最后才新建
+  // 已有联动记录就复用它绑定的资料夹；资料夹被删过则回落到考试名（其次科目名）匹配，最后才新建
   const subject = resolvePlanFolder({
     boundSubjectId: existingLink && existingLink.subjectId ? existingLink.subjectId : '',
     exam,
@@ -1429,7 +1481,7 @@ async function applyPlanDeepLink() {
   if (!subject) {
     planLink = { subjectId: null, subject: subjectName, topic, exam };
     navigateTo('sets');
-    toast(`来自备考规划：练「${topic}」。请先选择或新建一个学科。`, 'info', 6000);
+    toast(`来自备考规划：练「${topic}」。请先选择或新建一个科目。`, 'info', 6000);
     return;
   }
 
@@ -1479,17 +1531,17 @@ function planMaterialCountLine(subjectId) {
   return `笔记 ${notes} 份、真题 ${papers} 份`;
 }
 
-// 学科页顶部：备考规划上下文横幅 + 返回入口（仅当深链指向本学科时显示）
+// 科目页顶部：备考规划上下文横幅 + 返回入口（仅当深链指向本科目时显示）
 function renderPlanLinkBanner(subjectId) {
   if (!planLink || planLink.subjectId !== subjectId) return '';
   const topic = planLink.topic ? esc(planLink.topic) : '';
   const exam = planLink.exam ? esc(planLink.exam) : '';
-  const ctx = topic ? `考点「${topic}」` : '这个学科';
+  const ctx = topic ? `考点「${topic}」` : '这个科目';
   const examPart = exam ? ` · ${exam}` : '';
   const held = planMaterialCountLine(subjectId);
   const hint = held
     ? `围绕${ctx}出题练习：这场考试的资料已在这个资料夹（${held}），可直接出题。`
-    : `围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本学科。`;
+    : `围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本科目。`;
   // 横幅只负责带回原考点，不带任何成绩：这里没有「本次练习」可依附
   const back = planReturnHref(planLinkStore.links[planLink.linkId]);
   return `
@@ -1505,7 +1557,7 @@ function renderPlanLinkBanner(subjectId) {
     </div>`;
 }
 
-// AI 出题弹窗内：当深链指向当前学科时，提示聚焦的考点
+// AI 出题弹窗内：当深链指向当前科目时，提示聚焦的考点
 function renderPlanLinkNote() {
   if (!planLink || planLink.subjectId !== aiSubjectId) return '';
   const topic = planLink.topic ? esc(planLink.topic) : '';
@@ -1518,7 +1570,7 @@ function renderPlanLinkNote() {
       : `备考规划聚焦考点「${topic}」${examPart}：上传这个考点的资料，AI 会据此出题。`)
     : (held
       ? `来自备考规划${examPart}：这场考试的资料已在这里（${held}），可直接出题。`
-      : `来自备考规划${examPart}：上传资料即可为这个学科出题。`);
+      : `来自备考规划${examPart}：上传资料即可为这个科目出题。`);
   return `
     <div class="ai-note plan-link-note">
       <span class="ai-note-dot"></span>
@@ -1534,11 +1586,11 @@ function renderFocusAttribution(set, snapshot) {
     const n = (set.questions || []).filter((q) => q.knowledgePointId === set.source.knowledgePointId && q.kpUnmatched !== true).length;
     return `<div class="text-muted">联动考点：${topic} 已归入 ${n} 题，练习结果可回流</div>`;
   }
-  return `<div class="text-muted">联动考点：${topic} 没有可靠归属，本题库只记录来源</div>`;
+  return `<div class="text-muted">联动考点：${topic} 没有可靠归属，本练习集只记录来源</div>`;
 }
 
 function dismissPlanLink() {
-  // 只收起本页的临时提示；持久联动关系留在 sq_plan_links_v1，删除学科也不物理删除历史关系
+  // 只收起本页的临时提示；持久联动关系留在 sq_plan_links_v1，删除科目也不物理删除历史关系
   planLink = null;
   render();
 }
@@ -1603,6 +1655,28 @@ async function saveMaterialRecord(meta, blob) {
     tx.onabort = () => reject(tx.error || new Error('资料没有写入成功'));
   });
   return record;
+}
+
+// 把一份资料换到别的科目：只重写元数据，原始文件行保持不动（hasBlob 不变）
+async function moveMaterialMeta(materialId, subjectId) {
+  if (materialsUnavailable) return false;
+  const meta = materials.find((m) => m.id === materialId);
+  if (!meta || !subjectById(subjectId)) return false;
+  try {
+    const db = await openMaterialDb();
+    const tx = db.transaction(MATERIAL_STORE, 'readwrite');
+    tx.objectStore(MATERIAL_STORE).put({ ...meta, subjectId });
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('资料换科目失败'));
+      tx.onabort = () => reject(tx.error || new Error('资料换科目失败'));
+    });
+    meta.subjectId = subjectId;
+    return true;
+  } catch (e) {
+    console.warn('[StarQuiz] 资料换科目失败', e);
+    return false;
+  }
 }
 
 async function deleteMaterialRecord(id) {
@@ -1753,7 +1827,7 @@ function expandSidebar() {
   try { localStorage.setItem(SIDEBAR_PREF_KEY, '0'); } catch { /* 同上 */ }
 }
 
-// 侧栏中间那组学科列表：色点 + 名称 + 题数，点击直达文件夹，底下挂一个新建入口
+// 侧栏中间那组科目列表：色点 + 名称 + 题数，点击直达文件夹，底下挂一个新建入口
 function renderSidebarSubjects() {
   const host = document.getElementById('sidebarSubjects');
   if (!host) return;
@@ -1770,22 +1844,22 @@ function renderSidebarSubjects() {
   }).join('');
   host.innerHTML = `
     <div class="sidebar-group-head">
-      <span>我的学科</span>
+      <span>备考科目</span>
       <span class="sidebar-count">${subjects.length}</span>
     </div>
-    ${rows || '<p class="sidebar-empty">还没有学科文件夹</p>'}
-    <button type="button" class="side-add" onclick="newSubjectModal()"><span class="side-add-plus" aria-hidden="true">＋</span>新建学科</button>`;
+    ${rows || '<p class="sidebar-empty">还没有备考科目</p>'}
+    <button type="button" class="side-add" onclick="newSubjectModal()"><span class="side-add-plus" aria-hidden="true">＋</span>新建科目</button>`;
 }
 
 const PAGE_TITLES = {
   dashboard: '首页',
-  sets: '学科',
-  subject: '学科',
-  setDetail: '题库详情',
+  sets: '备考科目',
+  subject: '备考科目',
+  setDetail: '练习集',
   learning: '学习模式',
   exam: '考试模式',
   examResult: '考试结果',
-  records: '学习进度',
+  records: '练习记录',
   settings: '设置'
 };
 
@@ -1883,11 +1957,11 @@ function renderCore() {
   });
   document.body.classList.toggle('focus-mode', state.view === 'learning' || state.view === 'exam');
   const pageTitle = state.view === 'subject'
-    ? ((subjectById(state.subjectId) || {}).name || '学科')
+    ? ((subjectById(state.subjectId) || {}).name || '科目')
     : PAGE_TITLES[state.view];
   const titleEl = document.getElementById('pageTitle');
   titleEl.textContent = pageTitle || '';
-  /* 学科视图的页头标题就是用户起的学科名，英文模式下不参与翻译 */
+  /* 科目视图的页头标题就是用户起的科目名，英文模式下不参与翻译 */
   if (state.view === 'subject') titleEl.setAttribute('data-no-i18n', '');
   else titleEl.removeAttribute('data-no-i18n');
   document.getElementById('headerActions').innerHTML = renderHeaderActions();
@@ -1915,7 +1989,7 @@ function renderCore() {
 }
 
 function renderHeaderActions() {
-  // 首页与学科列表的顶级动作；学科页内部的上传 / AI 出题都留在页面里，顶栏不再重复一遍
+  // 首页与科目列表的顶级动作；科目页内部的上传 / AI 出题都留在页面里，顶栏不再重复一遍
   if (state.view === 'dashboard' || state.view === 'sets') {
     return `
       <button class="btn btn-primary btn-sm" onclick="openAIModal()">${ICON.spark} AI 生成</button>`;
@@ -1935,7 +2009,7 @@ function hideSubjectMenu() {
 }
 
 /* 卡片解剖（对齐 Exam Plan AI）：统计卡 = 标签 + 淡图标 / 大号数字 / 说明或进度；
-   学科与题库卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 6px 进度 + 分隔页脚。 */
+   科目与练习集卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 6px 进度 + 分隔页脚。 */
 function statCard(label, value, opts) {
   const o = opts || {};
   const pct = typeof o.pct === 'number' ? Math.max(0, Math.min(100, Math.round(o.pct))) : null;
@@ -1961,51 +2035,92 @@ function subjectStats(subjectId) {
   return { attempts: attempts.length, accuracy: graded ? Math.round((correct / graded) * 100) : null };
 }
 
+/* 首页是工作台，不是落地页：一张「今日练习」状态卡 + 备考科目清单，
+   没有装饰性纹理、大情绪文案和英雄区。字段顺序对齐 Exam Plan AI 的今日视图。 */
+function dailyGoalTotal() {
+  const subjects = visibleSubjects();
+  if (!subjects.length) return 20;
+  return subjects.reduce((n, s) => n + (s.dailyGoal || 20), 0);
+}
+
+function todayDateLabel() {
+  const d = new Date();
+  try {
+    return new Intl.DateTimeFormat(isEn() ? 'en-US' : 'zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(d);
+  } catch {
+    return fmtDay(d.getTime());
+  }
+}
+
+function daysToExam(subject) {
+  if (!subject || !subject.examDate) return null;
+  const target = new Date(`${subject.examDate}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
+}
+
+function dashboardRows(subjects, st, streak, lastAttempt, lastSet) {
+  const nearest = subjects
+    .map((s) => ({ s, left: daysToExam(s) }))
+    .filter((x) => x.left != null && x.left >= 0)
+    .sort((a, b) => a.left - b.left)[0];
+  const setCount = allSets().length;
+  const rows = [];
+  // 今日目标已经在状态卡的进度条上说出来，行里再重复一次会让首页失去主次
+  rows.push(['上次练习', lastAttempt
+    ? `${esc(lastSet ? lastSet.name : '已删除的练习集')} · ${fmtDay(lastAttempt.finishedAt)}`
+    : '还没有练习记录']);
+  rows.push(['连续记录', streak > 0 ? `<b>${streak} 天</b>` : '未开始']);
+  if (nearest) rows.push(['距考试', `<b>${nearest.left} 天</b> · ${esc(nearest.s.examName || nearest.s.name)}`]);
+  rows.push(['练习集', `${setCount} 个练习集 · ${st.totalQ} 道题`]);
+  rows.push(['累计正确率', st.accuracy == null
+    ? '未练习'
+    : `<b>${st.accuracy}%</b>${st.count ? ` · ${st.count} 次练习` : ''}`]);
+  return rows;
+}
+
 function renderDashboard() {
-  const sets = allSets();
+  const subjects = visibleSubjects();
   const st = overallStats();
   const streak = streakDays();
   const lastAttempt = history[0];
   const lastSet = lastAttempt ? getSet(lastAttempt.setId) : null;
   const today = todayAnswered();
-  const goal = 20;
+  const goal = dailyGoalTotal();
   const goalPct = Math.min(100, Math.round((today / goal) * 100));
-
-  const cards = visibleSubjects().slice(0, 5).map((s) => renderSubjectRow(s)).join('');
+  const rows = dashboardRows(subjects, st, streak, lastAttempt, lastSet);
 
   return `
-    <div class="dash-hero">
-      <div class="dash-hero-copy">
-        <span class="hero-pill">${ICON.spark} 今日练习</span>
-        <h2>今天，也来练两手。</h2>
-        <p>${streak > 0 ? `已连续 <b>${streak}</b> 天保持手感，别断了。` : '新的连续记录，从今天的第一题开始。'}</p>
-        <div class="hero-goal">
-          <div class="hero-goal-head"><span>今日目标</span><span>${today} / ${goal} 题</span></div>
-          <div class="hero-goal-track"><div style="width:${goalPct}%"></div></div>
-        </div>
-        <div class="hero-actions">
-          ${lastSet
-            ? `<button class="btn btn-lime" onclick="openSet('${lastSet.id}')">${ICON.play} 继续上次练习</button>`
-            : `<button class="btn btn-lime" onclick="navigateTo('sets')">挑一个学科 ${ICON.arrow}</button>`}
-          <button class="btn btn-ghost-light" onclick="navigateTo('records')">看看进度</button>
-        </div>
+    <div class="card today-card">
+      <div class="today-head">
+        <span class="ui-chip">今日</span>
+        <span class="today-date" data-no-i18n>${esc(todayDateLabel())}</span>
       </div>
-      <div class="hero-paper-corner" aria-hidden="true"></div>
-    </div>
-
-    <div class="dash-meta">
-      <span><b>${sets.length}</b> 套题库</span>
-      <span><b>${st.totalQ}</b> 道题目</span>
-      <span><b>${st.accuracy == null ? '--' : `${st.accuracy}%`}</b> 正确率${st.count ? ` · ${st.count} 次练习` : ''}</span>
-      <span><b>${today}</b> / ${goal} 今日目标</span>
+      <h2 class="today-title">今日练习</h2>
+      <div class="today-track">
+        <div class="today-track-head"><span>今日目标</span><b>${today} / ${goal} 题</b></div>
+        <div class="ui-progress"><div style="width:${goalPct}%"></div></div>
+      </div>
+      <dl class="today-rows">
+        ${rows.map(([k, v]) => `<div class="today-row"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}
+      </dl>
+      <div class="today-actions">
+        ${lastSet
+          ? `<button class="btn btn-primary" onclick="openSet('${lastSet.id}')">继续上次练习</button>`
+          : `<button class="btn btn-primary" onclick="navigateTo('sets')">${subjects.length ? '挑一个备考科目' : '新建备考科目'}</button>`}
+        <button class="btn btn-ghost" onclick="openAIModal()">${ICON.spark} AI 生成练习集</button>
+        <button class="btn btn-ghost" onclick="navigateTo('records')">练习记录</button>
+      </div>
     </div>
 
     <div class="section-title">
-      <span>学科文件夹<span class="section-count">${visibleSubjects().length}</span></span>
-      <button class="link-btn" onclick="navigateTo('sets')">全部学科 →</button>
+      <span>备考科目<span class="section-count">${subjects.length}</span></span>
+      <button class="link-btn" onclick="navigateTo('sets')">全部备考科目 →</button>
     </div>
     <div class="lrow-list">
-      ${cards || renderEmptyFolders()}
+      ${subjects.slice(0, 5).map((s) => renderSubjectRow(s)).join('') || renderEmptyFolders()}
     </div>
   `;
 }
@@ -2014,10 +2129,10 @@ function renderEmptyFolders() {
   return `
     <div class="empty-card">
       <div class="empty-card-icon">${ICON.book}</div>
-      <div class="empty-card-title">还没有学科文件夹</div>
-      <div class="empty-card-desc">建一个文件夹，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成题库</div>
+      <div class="empty-card-title">还没有备考科目</div>
+      <div class="empty-card-desc">建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集</div>
       <div class="btn-group" style="justify-content:center">
-        <button class="btn btn-primary" onclick="newSubjectModal()">新建学科</button>
+        <button class="btn btn-primary" onclick="newSubjectModal()">新建科目</button>
         <button class="btn btn-secondary" onclick="openAIModal()">${ICON.spark} AI 生成</button>
       </div>
     </div>`;
@@ -2061,14 +2176,19 @@ function renderSubjectRow(subject) {
   const sets = subjectSets(subject.id);
   const mats = subjectMaterials(subject.id);
   const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
+  const left = daysToExam(subject);
+  const facts = [];
+  if (subject.examName) facts.push(subject.examName);
+  if (left != null) facts.push(left >= 0 ? `距考试 ${left} 天` : '考试日期已过');
+  facts.push(mats.length
+    ? `${sets.length} 个练习集 · ${mats.length} 份资料`
+    : `${sets.length} 个练习集`);
   return lrow({
     onclick: `openSubject('${subject.id}')`,
     accent: setAccent({ id: subject.id }).bar,
     title: subject.name,
     chip: `${qCount} 题`,
-    sub: mats.length || sets.length
-      ? `${mats.length} 份资料 · ${sets.length} 套题库`
-      : '还没有资料，点进去上传',
+    sub: facts.join(' · '),
     tail: tailAccuracy(subjectStats(subject.id).accuracy)
   });
 }
@@ -2077,10 +2197,10 @@ function renderSets() {
   const subjects = visibleSubjects();
   return `
     <div class="section-title">
-      <span>全部学科<span class="section-count">${subjects.length}</span></span>
-      <button type="button" class="link-btn" onclick="newSubjectModal()">＋ 新建学科</button>
+      <span>全部备考科目<span class="section-count">${subjects.length}</span></span>
+      <button type="button" class="link-btn" onclick="newSubjectModal()">＋ 新建科目</button>
     </div>
-    <p class="page-lead">按学科归档：上传的原始资料、提取的文字和生成的题库都在同一个文件夹里。</p>
+    <p class="page-lead">按备考科目归档：上传的原始资料、提取的文字和生成的练习集都在同一个科目里。</p>
     <div class="lrow-list">
       ${subjects.length ? subjects.map((s) => renderSubjectRow(s)).join('') : renderEmptyFolders()}
     </div>`;
@@ -2130,7 +2250,7 @@ function renderMaterialRow(m) {
 function renderSubject() {
   const subject = subjectById(state.subjectId);
   if (!subject) {
-    return `<div class="empty-state"><div class="empty-state-title">学科不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+    return `<div class="empty-state"><div class="empty-state-title">科目不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
   }
   const sets = subjectSets(subject.id);
   const mats = subjectMaterials(subject.id);
@@ -2141,18 +2261,25 @@ function renderSubject() {
   const busy = !materialsReady;
   const chars = mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN');
   const kpTotal = sets.reduce((n, s) => n + (s.knowledgePoints || []).length, 0);
+  const left = daysToExam(subject);
+  const meta = [];
+  if (subject.examName) meta.push(esc(subject.examName));
+  if (subject.examDate) meta.push(left == null ? subject.examDate : (left >= 0 ? `${subject.examDate} · 距考试 ${left} 天` : '考试日期已过'));
+  if (subject.goal) meta.push(`目标：${esc(subject.goal)}`);
+  meta.push(`每日目标 ${subject.dailyGoal || 20} 题`);
 
   return `
-    <button class="back-link" onclick="navigateTo('sets')">← 全部学科</button>
+    <button class="back-link" onclick="navigateTo('sets')">← 全部备考科目</button>
     ${renderPlanLinkBanner(subject.id)}
 
     <div class="subject-head">
       <div class="subject-head-main">
         <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
         <div class="subject-head-copy">
-          <div class="hero-eyebrow">学科文件夹</div>
+          <div class="hero-eyebrow">备考科目</div>
           <h2 data-no-i18n>${esc(subject.name)}</h2>
-          <p>${mats.length} 份资料 · ${sets.length} 套题库 · ${qCount} 道题目 · ${chars} 字提取文字</p>
+          <p>${sets.length} 个练习集 · ${qCount} 道题 · ${mats.length} 份资料 · ${chars} 字可用</p>
+          ${meta.length ? `<div class="subject-meta">${meta.map((m) => `<span class="ui-chip">${m}</span>`).join('')}</div>` : ''}
         </div>
       </div>
       <div class="subject-head-actions">
@@ -2160,8 +2287,8 @@ function renderSubject() {
         ${own ? `<div class="pop-wrap">
           <button class="btn btn-ghost btn-sm icon-btn" onclick="toggleSubjectMenu(event)" aria-label="更多操作" title="更多操作">⋯</button>
           <div class="pop-menu" id="subjectMenu" hidden>
-            <button type="button" class="pop-item" onclick="hideSubjectMenu();renameSubjectModal('${subject.id}')">重命名</button>
-            <button type="button" class="pop-item pop-danger" onclick="hideSubjectMenu();deleteSubject('${subject.id}')">删除学科</button>
+            <button type="button" class="pop-item" onclick="hideSubjectMenu();examInfoModal('${subject.id}')">考试信息</button>
+            <button type="button" class="pop-item pop-danger" onclick="hideSubjectMenu();deleteSubject('${subject.id}')">删除科目</button>
           </div>
         </div>` : ''}
       </div>
@@ -2180,29 +2307,119 @@ function renderSubject() {
     <div class="material-list" id="materialList">
       ${mats.length
         ? mats.map((m) => renderMaterialRow(m)).join('')
-        : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个学科文件夹里。'}</div>`}
+        : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个科目下。'}</div>`}
     </div>
     ${materialsUnavailable
       ? `<div class="feedback feedback-incorrect" style="margin-top:12px">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
       : '<div class="upload-status" id="subjectUploadStatus" hidden></div>'}
 
     <div class="section-title">
-      <span>题库<span class="section-count">${sets.length} 套 · ${qCount} 题</span></span>
+      <span>练习集<span class="section-count">${sets.length} 个 · ${qCount} 题</span></span>
       <span class="text-sm text-muted">${kpTotal} 个知识点</span>
     </div>
     <div class="lrow-list">
       ${sets.length
         ? sets.map((s) => renderSetRow(s)).join('')
-        : `<div class="material-empty">还没有题库。用上面的资料让 AI 出一套，或从其他学科移动过来。</div>`}
+        : `<div class="material-empty">还没有练习集。用上面的资料让 AI 出一套，或从其他科目移动过来。</div>`}
     </div>`;
 }
 
-// 新建学科向导：一层一层（名称 → 资料 → 完成），参考 Exam Plan 的三步流程
-const NS_STEPS = ['学科名称', '上传资料', '完成'];
-let nsDraft = { step: 1, subjectId: null, name: '', parsing: false, added: 0, chars: 0, failed: [] };
+// 新建备考科目向导：考试信息 → 上传资料 → 完成（对齐 Exam Plan AI 的三步向导）
+const NS_STEPS = ['考试信息', '上传资料', '完成'];
+
+function nsBlank() {
+  return {
+    step: 1, subjectId: null, name: '', examName: '', examDate: '', startDate: '', goal: '',
+    defaultCount: 15, dailyGoal: 20, parsing: false, added: 0, chars: 0, failed: []
+  };
+}
+
+let nsDraft = nsBlank();
 
 function nsReset() {
-  nsDraft = { step: 1, subjectId: null, name: '', parsing: false, added: 0, chars: 0, failed: [] };
+  nsDraft = nsBlank();
+}
+
+function nsField(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+// 考试信息表单：新建向导第一步和科目页的「考试信息」弹窗共用同一套字段
+const EXAM_FORM_DEFAULTS = {
+  id: '', subjectKind: '', name: '', examName: '', goal: '', examDate: '', startDate: '',
+  defaultCount: 15, dailyGoal: 20
+};
+
+function examFormValues() {
+  return {
+    name: nsField('newSubjectName').trim(),
+    examName: nsField('nsExamName').trim(),
+    goal: nsField('nsGoal').trim(),
+    examDate: nsField('nsExamDate').trim(),
+    startDate: nsField('nsStartDate').trim(),
+    defaultCount: intOf(nsField('nsDefaultCount'), 15, 5, 60),
+    dailyGoal: intOf(nsField('nsDailyGoal'), 20, 5, 100)
+  };
+}
+
+function examFieldsHtml(raw) {
+  const v = { ...EXAM_FORM_DEFAULTS, ...(raw || {}) };
+  const advOpen = v.defaultCount !== 15 || v.dailyGoal !== 20;
+  return `
+    <div class="wiz-grid">
+      <div class="wiz-field wiz-span">
+        <label class="form-label" for="newSubjectName">备考科目</label>
+        <input class="form-input" id="newSubjectName" maxlength="40" placeholder="例如：导游业务、考研英语、高等数学" value="${esc(v.name)}" onkeydown="if(event.key==='Enter'){event.preventDefault();${v.subjectKind === 'edit' ? `submitExamInfo('${esc(v.id)}')` : 'nsNext()'}};">
+        <span class="wiz-help">之后上传的资料和生成的练习集都会归到这个科目下。</span>
+      </div>
+      <div class="wiz-field">
+        <label class="form-label" for="nsExamName">目标考试</label>
+        <input class="form-input" id="nsExamName" maxlength="100" placeholder="例如：2026 年导游资格考试" value="${esc(v.examName)}">
+      </div>
+      <div class="wiz-field">
+        <label class="form-label" for="nsGoal">备考目标</label>
+        <input class="form-input" id="nsGoal" maxlength="60" placeholder="例如：一次通过 / 90 分以上" value="${esc(v.goal)}">
+      </div>
+      <div class="wiz-field">
+        <label class="form-label" for="nsExamDate">考试日期</label>
+        <input class="form-input" type="date" id="nsExamDate" value="${esc(v.examDate)}">
+      </div>
+      <div class="wiz-field">
+        <label class="form-label" for="nsStartDate">开始练习日期</label>
+        <input class="form-input" type="date" id="nsStartDate" value="${esc(v.startDate || todayStr())}">
+      </div>
+      <details class="wiz-adv wiz-span"${advOpen ? ' open' : ''}>
+        <summary>高级设置</summary>
+        <div class="wiz-grid">
+          <div class="wiz-field">
+            <label class="form-label" for="nsDefaultCount">默认题量（道）</label>
+            <input class="form-input" type="number" id="nsDefaultCount" min="5" max="60" step="1" value="${v.defaultCount}">
+            <span class="wiz-help">AI 出题和开始练习时默认用这个题量。</span>
+          </div>
+          <div class="wiz-field">
+            <label class="form-label" for="nsDailyGoal">每日练习目标（道）</label>
+            <input class="form-input" type="number" id="nsDailyGoal" min="5" max="100" step="1" value="${v.dailyGoal}">
+            <span class="wiz-help">首页的今日目标按各科目目标累加。</span>
+          </div>
+        </div>
+      </details>
+    </div>`;
+}
+
+function nsCollectExamInfo() {
+  Object.assign(nsDraft, examFormValues());
+}
+
+function nsExamInfo() {
+  return {
+    examName: nsDraft.examName,
+    examDate: nsDraft.examDate,
+    startDate: nsDraft.startDate,
+    goal: nsDraft.goal,
+    defaultCount: nsDraft.defaultCount,
+    dailyGoal: nsDraft.dailyGoal
+  };
 }
 
 function nsRail() {
@@ -2227,21 +2444,18 @@ function nsLayerBody() {
   if (nsDraft.step === 1) {
     return `
       <div class="wiz-head">
-        <span class="wiz-title">学科名称</span>
-        <span class="wiz-hint">必填</span>
+        <span class="wiz-title">考试信息</span>
+        <span class="wiz-hint">只有备考科目必填</span>
       </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label" for="newSubjectName">这个文件夹叫什么</label>
-        <input class="form-input" id="newSubjectName" maxlength="20" placeholder="例如：高等数学、英语写作、导游实务" value="${esc(nsDraft.name)}" onkeydown="if(event.key==='Enter'){event.preventDefault();nsNext();}">
-        <p class="wiz-note">之后上传的资料和生成的题库都会放进这个文件夹。</p>
-      </div>`;
+      ${examFieldsHtml(nsDraft)}
+      <p class="wiz-note">考试日期和备考目标之后还能在科目页里改。</p>`;
   }
   if (nsDraft.step === 2) {
-    const subjectName = esc(nsDraft.name || (subjectById(nsDraft.subjectId) || {}).name || '新学科');
+    const subjectName = esc(nsDraft.name || (subjectById(nsDraft.subjectId) || {}).name || '新科目');
     return `
       <div class="wiz-head">
         <span class="wiz-title">上传资料</span>
-        <span class="wiz-hint">可跳过 · 之后在文件夹里也能传</span>
+        <span class="wiz-hint">可跳过 · 之后在科目里也能传</span>
       </div>
       <input type="file" id="nsFileInput" multiple hidden
         accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
@@ -2257,6 +2471,7 @@ function nsLayerBody() {
   }
   const subject = subjectById(nsDraft.subjectId) || {};
   const mats = subjectMaterials(subject.id || '');
+  const left = daysToExam(subject);
   return `
     <div class="wiz-head">
       <span class="wiz-title" data-no-i18n>${esc(subject.name || nsDraft.name)}</span>
@@ -2265,6 +2480,8 @@ function nsLayerBody() {
     <div class="wiz-summary">
       <span class="wiz-chip"><b>${mats.length}</b> 份资料</span>
       <span class="wiz-chip"><b>${mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')}</b> 字可用</span>
+      <span class="wiz-chip is-soft">每日目标 <b>${subject.dailyGoal || 20}</b> 题</span>
+      ${left != null ? `<span class="wiz-chip is-soft">${left >= 0 ? `距考试 ${left} 天` : '考试日期已过'}</span>` : ''}
       ${nsDraft.failed.length ? `<span class="wiz-chip is-soft">${nsDraft.failed.length} 份未成功</span>` : ''}
     </div>
     <div style="margin-top:14px">
@@ -2277,7 +2494,7 @@ function nsLayerBody() {
       </button>
       <button type="button" class="wiz-choice" style="margin-top:8px" onclick="nsFinish('folder')">
         <span class="wiz-choice-main">
-          <span class="wiz-choice-title">进入学科文件夹</span>
+          <span class="wiz-choice-title">进入备考科目</span>
           <span class="wiz-choice-desc">先整理资料，稍后再出题</span>
         </span>
         <span class="set-row-foot-go">打开 →</span>
@@ -2302,10 +2519,10 @@ function nsFooter() {
       <button class="btn btn-primary" onclick="nsNext()">下一步：上传资料 ${ICON.arrow}</button>`;
   }
   if (nsDraft.step === 2) {
-    return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 上一步</button>
+    return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 考试信息</button>
       <span style="flex:1"></span>
-      <button class="btn btn-secondary" onclick="nsSkip()">跳过</button>
-      <button class="btn btn-primary" id="nsNextBtn" onclick="nsNext()"${nsDraft.parsing ? ' disabled' : ''}>下一步：完成 ${ICON.arrow}</button>`;
+      <button class="btn btn-secondary" onclick="nsSkip()">跳过资料</button>
+      <button class="btn btn-primary" id="nsNextBtn" onclick="nsNext()"${nsDraft.parsing ? ' disabled' : ''}>完成 ${ICON.arrow}</button>`;
   }
   return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 上一步</button>
     <span style="flex:1"></span>
@@ -2327,14 +2544,14 @@ function newSubjectModal() {
   nsReset();
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">新建学科</div>
+      <div class="modal-title">新建备考科目</div>
       <button class="modal-close" onclick="nsCancel()">×</button>
     </div>
     <div class="modal-body">
       <div id="nsRail">${nsRail()}</div>
       <div id="nsBody" class="wiz-layer">${nsLayerBody()}</div>
     </div>
-    <div class="modal-footer" id="nsFooter">${nsFooter()}</div>`);
+    <div class="modal-footer" id="nsFooter">${nsFooter()}</div>`, 'modal-wide');
 }
 
 function nsCancel() {
@@ -2362,18 +2579,31 @@ function nsSkip() {
 
 function nsNext() {
   if (nsDraft.step === 1) {
-    const input = document.getElementById('newSubjectName');
-    const name = input ? input.value : '';
-    nsDraft.name = name.trim();
-    const subject = createSubject(name);
+    nsCollectExamInfo();
+    if (!nsDraft.name) {
+      toast('请填写备考科目', 'info');
+      document.getElementById('newSubjectName')?.focus();
+      return;
+    }
+    const info = nsExamInfo();
+    if (nsDraft.subjectId) {
+      // 从后面步骤退回来改考试信息：更新原科目，不再建一个
+      const updated = updateSubject(nsDraft.subjectId, info);
+      if (!updated) return;
+      nsDraft.name = updated.name;
+      nsDraft.step = 2;
+      nsRender();
+      return;
+    }
+    const subject = createSubject(nsDraft.name, info);
     if (!subject) {
-      if (input) input.focus();
+      document.getElementById('newSubjectName')?.focus();
       return;
     }
     nsDraft.subjectId = subject.id;
     nsDraft.name = subject.name;
     nsDraft.step = 2;
-    toast(`已建好「${subject.name}」文件夹`, 'success');
+    toast(`已建好「${subject.name}」`, 'success');
     nsRender();
     return;
   }
@@ -2494,35 +2724,39 @@ async function nsUpload(files) {
 }
 
 
-function renameSubjectModal(id) {
+// 科目页的「考试信息」：和新建向导第一步共用 examFieldsHtml / examFormValues
+function examInfoModal(id) {
   const subject = userSubjects.find((s) => s.id === id);
   if (!subject) return;
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">重命名学科</div>
+      <div class="modal-title">考试信息</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">学科名称</label>
-        <input class="form-input" id="renameSubjectName" maxlength="20" value="${esc(subject.name)}" onkeydown="if(event.key==='Enter')submitRenameSubject('${id}')">
-      </div>
+      <div class="wiz-layer">${examFieldsHtml({ ...subject, subjectKind: 'edit' })}</div>
+      <p class="wiz-note">改名不会动已经存好的练习集和资料。</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="submitRenameSubject('${id}')">保存</button>
-    </div>`);
-  setTimeout(() => {
-    const input = document.getElementById('renameSubjectName');
-    if (input) { input.focus(); input.select(); }
-  }, 40);
+      <button class="btn btn-primary" onclick="submitExamInfo('${id}')">保存</button>
+    </div>`, 'modal-wide');
+  setTimeout(() => document.getElementById('newSubjectName')?.focus(), 40);
 }
 
-function submitRenameSubject(id) {
-  const input = document.getElementById('renameSubjectName');
-  if (!renameSubject(id, input ? input.value : '')) return;
+function submitExamInfo(id) {
+  const subject = userSubjects.find((s) => s.id === id);
+  if (!subject) return;
+  const v = examFormValues();
+  if (!v.name) {
+    toast('请填写备考科目', 'info');
+    document.getElementById('newSubjectName')?.focus();
+    return;
+  }
+  if (v.name !== subject.name && !renameSubject(id, v.name)) return;
+  if (!updateSubject(id, v)) return;
   closeModal();
-  toast('学科已重命名', 'success');
+  toast('考试信息已保存', 'success');
   render();
 }
 
@@ -2532,9 +2766,9 @@ function deleteSubject(id) {
   const mats = subjectMaterials(id);
   const movable = subjectSets(id).filter((s) => !s.builtin);
   const detail = mats.length
-    ? `会删除 ${mats.length} 份资料${movable.length ? `，${movable.length} 套题库移到「未分类」` : ''}。`
-    : (movable.length ? `${movable.length} 套题库会移到「未分类」。` : '文件夹里没有内容。');
-  confirmModal('删除学科', `确定删除「${subject.name}」吗？${detail}`, '删除学科', async () => {
+    ? `会删除 ${mats.length} 份资料${movable.length ? `，${movable.length} 个练习集移到「未分类」` : ''}。`
+    : (movable.length ? `${movable.length} 个练习集会移到「未分类」。` : '这个科目还没有内容。');
+  confirmModal('删除科目', `确定删除「${subject.name}」吗？${detail}`, '删除科目', async () => {
     let failed = 0;
     for (const m of mats) {
       try { await deleteMaterialRecord(m.id); } catch { failed++; }
@@ -2549,7 +2783,7 @@ function deleteSubject(id) {
     userSubjects = nextSubjects;
     materials = materials.filter((m) => m.subjectId !== id);
     if (failed) toast(`${failed} 份资料未能从资料库删除，刷新后可能仍会显示`, 'info', 5000);
-    toast('学科已删除', 'success');
+    toast('科目已删除', 'success');
     if (state.subjectId === id) navigateTo('sets');
     else render();
   }, true);
@@ -2734,13 +2968,13 @@ function moveSetModal(id) {
     .join('');
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">更改题库学科</div>
+      <div class="modal-title">移动练习集</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
       <p class="text-sm text-muted" style="margin:0 0 12px">「${esc(set.name)}」当前在「${esc(subjectOfSet(set).name)}」。</p>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">目标学科</label>
+        <label class="form-label">目标科目</label>
         <select class="form-select" id="moveSetSubject">${options}</select>
       </div>
     </div>
@@ -2771,7 +3005,7 @@ function moveSetConfirm(id) {
 
 function renderSetDetail() {
   const set = getSet(state.setId);
-  if (!set) return `<div class="empty-state"><div class="empty-state-title">题库不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!set) return `<div class="empty-state"><div class="empty-state-title">练习集不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
 
   const st = setStats(set.id);
   const kps = set.knowledgePoints || [];
@@ -2779,6 +3013,15 @@ function renderSetDetail() {
   set.questions.forEach((q) => { types[q.type] = (types[q.type] || 0) + 1; });
   const accent = setAccent(set);
   const subject = subjectOfSet(set);
+  const path = (set.source && set.source.path) || null;
+  const ctx = [];
+  const examName = (path && path.exam) || subject.examName || '';
+  if (examName) ctx.push(`目标考试：${esc(examName)}`);
+  if (path && path.unit) ctx.push(`所属单元：${esc(path.unit)}`);
+  const originLabel = path
+    ? `备考规划考点「${esc(path.topic)}」`
+    : (SET_ORIGIN_LABEL[set.origin] || (set.focusTopic ? `聚焦${esc(set.focusTopic)}` : (set.builtin ? '内置示例' : '手动添加')));
+  ctx.push(`练习来源：${originLabel}`);
 
   return `
     <button class="back-link" onclick="openSubject('${subject.id}')">← 返回${esc(subject.name)}</button>
@@ -2787,11 +3030,12 @@ function renderSetDetail() {
       <div class="detail-head">
         <div class="detail-icon" style="background:${accent.bg};color:${accent.fg}">${esc(set.icon || '题')}</div>
         <div>
-          <div class="hero-eyebrow"><span data-no-i18n>${esc(subject.name)}</span> · 题库</div>
+          <div class="hero-eyebrow"><span data-no-i18n>${esc(subject.name)}</span> · 练习集</div>
           <h2 data-no-i18n>${esc(set.name)}</h2>
         </div>
       </div>
       <p>${esc(set.description || '')}</p>
+      <div class="subject-meta">${ctx.map((c) => `<span class="ui-chip">${c}</span>`).join('')}</div>
       <div class="set-detail-stats">
         <div class="set-detail-stat"><div class="set-detail-stat-value">${set.questions.length}</div><div class="set-detail-stat-label">题目</div></div>
         <div class="set-detail-stat"><div class="set-detail-stat-value">${kps.length}</div><div class="set-detail-stat-label">知识点</div></div>
@@ -2801,8 +3045,8 @@ function renderSetDetail() {
       <div class="set-detail-actions">
         <button class="btn btn-primary" onclick="startLearning('${set.id}')">${ICON.play} 进入学习模式</button>
         <button class="btn" onclick="startExamModal('${set.id}')">${ICON.clock} 模拟考试</button>
-        ${set.builtin ? '' : `<button class="btn btn-secondary" onclick="moveSetModal('${set.id}')">更改学科</button>
-        <button class="btn btn-danger" onclick="deleteSet('${set.id}')">删除题库</button>`}
+        ${set.builtin ? '' : `<button class="btn btn-secondary" onclick="moveSetModal('${set.id}')">更改科目</button>
+        <button class="btn btn-danger" onclick="deleteSet('${set.id}')">删除练习集</button>`}
       </div>
       ${renderQuality(set)}
     </div>
@@ -2834,10 +3078,10 @@ function renderSetDetail() {
 function deleteSet(id) {
   const set = getSet(id);
   if (!set || set.builtin) return;
-  confirmModal('删除题库', `确定删除「${set.name}」吗？该操作不可恢复，历史练习记录会保留。`, '删除', () => {
+  confirmModal('删除练习集', `确定删除「${set.name}」吗？该操作不可恢复，历史练习记录会保留。`, '删除', () => {
     const next = customSets.filter((s) => s.id !== id);
     if (!saveJSON(STORAGE.sets, next)) {
-      toast('删除失败：本地存储写入出错，题库仍然保留', 'error', 5000);
+      toast('删除失败：本地存储写入出错，练习集仍然保留', 'error', 5000);
       return;
     }
     customSets = next;
@@ -2845,7 +3089,7 @@ function deleteSet(id) {
     if (!saveJSON(STORAGE.wrong, wrongBank)) toast('错题本清理未能写入，下次打开可能恢复', 'info', 4000);
     if (resume.exam && resume.exam.setId === id) clearSession('exam');
     if (resume.learning && resume.learning.setId === id) clearSession('learning');
-    toast('题库已删除', 'success');
+    toast('练习集已删除', 'success');
     navigateTo('sets');
   }, true);
 }
@@ -2926,7 +3170,7 @@ function startLearning(setId, onlyWrong = false) {
     const ids = new Set(Object.keys(wb));
     const filtered = list.filter((q) => ids.has(q.id));
     if (filtered.length) list = filtered;
-    else { toast('该题库暂无错题，已切换为全部题目', 'info'); }
+    else { toast('这个练习集暂无错题，已切换为全部题目', 'info'); }
   }
   state.learning = {
     setId,
@@ -2960,12 +3204,12 @@ function currentLearningQuestion() {
 
 function renderLearning() {
   const l = state.learning;
-  if (!l) return `<div class="empty-state"><div class="empty-state-title">未开始学习</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!l) return `<div class="empty-state"><div class="empty-state-title">未开始学习</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
   const set = getSet(l.setId);
-  if (!set) return `<div class="empty-state"><div class="empty-state-title">题库不存在</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!set) return `<div class="empty-state"><div class="empty-state-title">练习集不存在</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
 
   const q = currentLearningQuestion();
-  if (!q) return `<div class="empty-state"><div class="empty-state-title">没有题目</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!q) return `<div class="empty-state"><div class="empty-state-title">没有题目</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
 
   const total = l.qids.length;
   const res = l.results[q.id];
@@ -3287,7 +3531,7 @@ function finishLearning(silent) {
   const attempt = {
     id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     setId: l.setId,
-    setName: set ? set.name : '（已删除题库）',
+    setName: set ? set.name : '（已删除的练习集）',
     mode: 'learning',
     startedAt: l.startedAt,
     finishedAt: Date.now(),
@@ -3300,7 +3544,7 @@ function finishLearning(silent) {
     answers: attempts
   };
 
-  // 完成时立刻按目标考点算一次统计并落快照：之后题库怎么变都不影响这次成绩
+  // 完成时立刻按目标考点算一次统计并落快照：之后练习集怎么变都不影响这次成绩
   const planResult = planResultForAttempt(set, attempts);
   if (planResult) {
     attempt.planResult = planResult;
@@ -3437,7 +3681,7 @@ function startExamModal(setId) {
   const set = getSet(setId);
   if (!set) return;
   const n = arrOf(set.questions).length;
-  if (!n) { toast('这个题库还没有题目，先添加题目再考试', 'info'); return; }
+  if (!n) { toast('这个练习集还没有题目，先添加题目再考试', 'info'); return; }
   const countOptions = [`<option value="all">全部（${n} 题）</option>`];
   if (n > 10) countOptions.push('<option value="10">随机 10 题</option>');
   if (n > 20) countOptions.push('<option value="20">随机 20 题</option>');
@@ -3470,7 +3714,7 @@ function startExamModal(setId) {
 function beginExam(setId) {
   const set = getSet(setId);
   if (!set) return;
-  if (!arrOf(set.questions).length) { closeModal(); toast('这个题库还没有题目', 'info'); return; }
+  if (!arrOf(set.questions).length) { closeModal(); toast('这个练习集还没有题目', 'info'); return; }
   const minutesEl = document.getElementById('examMinutes');
   const countEl = document.getElementById('examCount');
   const minutes = Math.min(600, Math.max(1, parseInt(minutesEl && minutesEl.value, 10) || 30));
@@ -3503,7 +3747,7 @@ function beginExam(setId) {
 
 function renderExam() {
   const ex = state.exam;
-  if (!ex) return `<div class="empty-state"><div class="empty-state-title">没有进行中的考试</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!ex) return `<div class="empty-state"><div class="empty-state-title">没有进行中的考试</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
   const set = getSet(ex.setId);
   const examName = set ? set.name : (ex.name || '考试');
 
@@ -3511,7 +3755,7 @@ function renderExam() {
   if (!q) {
     return `<div class="empty-state">
       <div class="empty-state-title">这场考试没有可答的题目</div>
-      <div class="empty-state-desc">可能是题库被删除或数据异常，答题记录不受影响。</div>
+      <div class="empty-state-desc">可能是练习集被删除或数据异常，答题记录不受影响。</div>
       <button class="btn btn-primary" onclick="abandonExam()">结束考试</button>
     </div>`;
   }
@@ -3778,7 +4022,7 @@ async function confirmSubmitExam() {
   const attempt = {
     id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     setId: ex.setId,
-    setName: set ? set.name : '（已删除题库）',
+    setName: set ? set.name : '（已删除的练习集）',
     mode: 'exam',
     startedAt: ex.startedAt,
     finishedAt: Date.now(),
@@ -3827,7 +4071,7 @@ function renderGrading() {
 
 function renderExamResult() {
   const a = state.examResult;
-  if (!a) return `<div class="empty-state"><div class="empty-state-title">没有结果</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!a) return `<div class="empty-state"><div class="empty-state-title">没有结果</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
   const set = getSet(a.setId);
   const level = a.score >= 85 ? 'high' : a.score >= 60 ? 'medium' : 'low';
   const label = a.score >= 85 ? '优秀' : a.score >= 60 ? '合格' : '需要加强';
@@ -3853,7 +4097,7 @@ function renderExamResult() {
 
       <div class="btn-group" style="justify-content:center;margin-bottom:28px;flex-wrap:wrap">
         ${set ? `<button class="btn btn-primary" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
-        ${set ? `<button class="btn btn-secondary" onclick="openSet('${set.id}')">返回题库</button>` : ''}
+        ${set ? `<button class="btn btn-secondary" onclick="openSet('${set.id}')">返回练习集</button>` : ''}
         <button class="btn btn-secondary" onclick="navigateTo('records')">查看记录</button>
       </div>
 
@@ -3900,12 +4144,12 @@ function renderRecords() {
       ${statCard('平均得分', st.avg == null ? '--' : st.avg, { icon: ICON.trophy, note: '每次练习的得分均值' })}
       ${statCard('错题数', wrongTotal, {
         icon: ICON.flask,
-        note: wrongTotal ? `分布在 ${Object.keys(wrongBank).length} 套题库` : '暂时没有待复习的错题'
+        note: wrongTotal ? `分布在 ${Object.keys(wrongBank).length} 个练习集` : '暂时没有待复习的错题'
       })}
     </div>
 
     ${perSet.length ? `
-      <div class="section-title">分题库表现</div>
+      <div class="section-title">按练习集表现</div>
       <div class="card mb-6">
         ${perSet.map((x) => {
           const a = setAccent(x.set);
@@ -4017,7 +4261,7 @@ function renderSettings() {
         <span class="badge badge-success">已内置</span>
       </div>
       <div style="margin-top:14px">
-        <button class="btn btn-primary" onclick="openAIModal()">用 AI 新建题库</button>
+        <button class="btn btn-primary" onclick="openAIModal()">用 AI 新建练习集</button>
       </div>
     </div>
 
@@ -4031,35 +4275,35 @@ function renderSettings() {
       <div class="settings-row">
         <div>
           <div class="settings-row-title">导出全部数据</div>
-          <div class="text-sm text-muted">题库、学科、资料文字、练习记录与错题本（不含原始文件）</div>
+          <div class="text-sm text-muted">练习集、科目、资料文字、练习记录与错题本（不含原始文件）</div>
         </div>
         <button class="btn btn-secondary" onclick="exportData()">导出 JSON</button>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">导入数据备份</div>
-          <div class="text-sm text-muted">从导出的 JSON 恢复，已存在的题库、资料与记录会自动跳过</div>
+          <div class="text-sm text-muted">从导出的 JSON 恢复，已存在的练习集、资料与记录会自动跳过</div>
         </div>
         <button class="btn btn-secondary" onclick="importData()">选择文件</button>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">本地存储</div>
-          <div class="text-sm text-muted">题库与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份，原始文件单独存放` : ''}</div>
+          <div class="text-sm text-muted">练习集与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份，原始文件单独存放` : ''}</div>
         </div>
         <span class="badge ${usage.pct >= 80 ? 'badge-danger' : 'badge-muted'}">${usage.pct}%</span>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">清空练习记录</div>
-          <div class="text-sm text-muted">清除所有历史成绩与错题本，保留题库</div>
+          <div class="text-sm text-muted">清除所有历史成绩与错题本，保留练习集</div>
         </div>
         <button class="btn btn-secondary" onclick="clearRecords()">清空</button>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">恢复初始状态</div>
-          <div class="text-sm text-muted">删除所有自建题库、学科、资料、记录与设置</div>
+          <div class="text-sm text-muted">删除所有自建练习集、科目、资料、记录与设置</div>
         </div>
         <button class="btn btn-danger" onclick="resetAll()">重置</button>
       </div>
@@ -4218,11 +4462,11 @@ async function importBackupFileCore(file) {
     customSets.length = snapshotSets;
     history.length = snapshotHistory;
     wrongBank = JSON.parse(snapshotWrong);
-    toast('导入失败：本地存储空间不足。请先导出并清理不用的题库', 'error', 6000);
+    toast('导入失败：本地存储空间不足。请先导出并清理不用的练习集', 'error', 6000);
     return;
   }
 
-  // 学科与资料（资料只恢复提取的文字，原始文件不包含在 JSON 备份里）
+  // 科目与资料（资料只恢复提取的文字，原始文件不包含在 JSON 备份里）
   let addedSubjects = 0;
   if (rawSubjects.length) {
     const before = new Set(userSubjects.map((s) => s.id));
@@ -4233,7 +4477,7 @@ async function importBackupFileCore(file) {
         userSubjects = merged;
         addedSubjects = additions.length;
       } else {
-        bootNotes.push('学科文件夹导入失败：本地存储空间不足');
+        bootNotes.push('备考科目导入失败：本地存储空间不足');
       }
     }
   }
@@ -4267,21 +4511,21 @@ async function importBackupFileCore(file) {
   const skippedQuestions = sanitized.droppedQuestions || 0;
   const invalidSets = sanitized.droppedSets || 0;
   const parts = [];
-  if (addedSets) parts.push(`${addedSets} 个题库（${addedQuestions} 题）`);
+  if (addedSets) parts.push(`${addedSets} 个练习集（${addedQuestions} 题）`);
   if (addedHistory) parts.push(`${addedHistory} 条记录`);
   if (addedWrong) parts.push(`${addedWrong} 道错题`);
-  if (addedSubjects) parts.push(`${addedSubjects} 个学科`);
+  if (addedSubjects) parts.push(`${addedSubjects} 个科目`);
   if (addedMaterials) parts.push(`${addedMaterials} 份资料`);
-  if (skippedSets) parts.push(`跳过 ${skippedSets} 个已存在的题库`);
+  if (skippedSets) parts.push(`跳过 ${skippedSets} 个已存在的练习集`);
   if (skippedMaterials) parts.push(`跳过 ${skippedMaterials} 份已存在的资料`);
-  if (invalidSets) parts.push(`忽略 ${invalidSets} 个没有有效题目的题库`);
+  if (invalidSets) parts.push(`忽略 ${invalidSets} 个没有有效题目的练习集`);
   if (skippedQuestions) parts.push(`忽略 ${skippedQuestions} 道异常题目`);
   toast(parts.length ? `导入完成：${parts.join('，')}` : '没有可新增的数据，备份内容已全部存在', parts.length ? 'success' : 'info', 5000);
   render();
 }
 
 function clearRecords() {
-  confirmModal('清空记录', '将清除所有练习历史和错题本，题库不受影响。确定继续吗？', '清空', () => {
+  confirmModal('清空记录', '将清除所有练习历史和错题本，练习集不受影响。确定继续吗？', '清空', () => {
     history = [];
     wrongBank = {};
     saveJSON(STORAGE.history, history);
@@ -4292,7 +4536,7 @@ function clearRecords() {
 }
 
 function resetAll() {
-  confirmModal('恢复初始状态', '将删除所有自建题库、学科文件夹、上传的资料、练习记录、错题本、考点联动关系和本地设置。确定继续吗？', '重置全部', async () => {
+  confirmModal('恢复初始状态', '将删除所有自建练习集、备考科目、上传的资料、练习记录、错题本、考点联动关系和本地设置。确定继续吗？', '重置全部', async () => {
     Object.values(STORAGE).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
     Object.values(SESSION_KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
     try {
@@ -4325,9 +4569,9 @@ function resetAll() {
 }
 
 function normalizeSet(raw) {
-  if (!raw || typeof raw !== 'object') throw new Error('题库数据不是对象');
+  if (!raw || typeof raw !== 'object') throw new Error('练习集数据不是对象');
   const name = String(raw.name || '').trim();
-  if (!name) throw new Error('缺少题库名称 name');
+  if (!name) throw new Error('缺少练习集名称 name');
   const description = String(raw.description || '').trim();
   const icon = String(raw.icon || '题').slice(0, 8);
   const tags = Array.isArray(raw.tags) ? raw.tags.map((t) => String(t).slice(0, 20)).slice(0, 6) : [];
@@ -4345,7 +4589,7 @@ function normalizeSet(raw) {
     if (from) kpIdMap.set(from, 'kp' + (i + 1));
   });
   const rawQs = Array.isArray(raw.questions) ? raw.questions : [];
-  if (!rawQs.length) throw new Error('题库中没有题目');
+  if (!rawQs.length) throw new Error('练习集中没有题目');
 
   let quality = raw.quality && typeof raw.quality === 'object' ? {
     parsed: Number(raw.quality.parsed) || 0,
@@ -4426,7 +4670,7 @@ function normalizeSet(raw) {
     }
   });
 
-  if (!questions.length) throw new Error('题库中没有可用的题目');
+  if (!questions.length) throw new Error('练习集中没有可用的题目');
 
   if (localIssues.length) {
     if (!quality) quality = { parsed: rawQs.length, kept: 0, duplicates: 0, removed: 0, repaired: 0, issues: [] };
@@ -4437,6 +4681,9 @@ function normalizeSet(raw) {
 
   // 两条清洗链都显式放行 source，联动来源才不会在刷新或备份导入后消失
   const source = sanitizeSetSource(raw.source, knowledgePoints.map((kp) => kp.id));
+  // 出题来源与聚焦考点：详情页的「练习来源」备考上下文靠这两个字段
+  const origin = SET_ORIGIN_KINDS.includes(String(raw.origin || '')) ? String(raw.origin) : '';
+  const focusTopic = strOf(raw.focusTopic, PLAN_PARAM_LIMITS.topic).trim();
 
   return {
     id: 'custom-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
@@ -4447,6 +4694,8 @@ function normalizeSet(raw) {
     knowledgePoints,
     questions,
     ...(source ? { source } : {}),
+    ...(origin ? { origin } : {}),
+    ...(focusTopic ? { focusTopic } : {}),
     ...(quality ? { quality } : {})
   };
 }
@@ -4482,7 +4731,7 @@ function aiSimilar(a, b) {
   return small.length / large.length >= 0.85 && large.includes(small);
 }
 
-// 真题分段并行整理后，把各段题库按顺序拼成一份：知识点按标题去重，题目跨段去重
+// 真题分段并行整理后，把各段练习集按顺序拼成一份：知识点按标题去重，题目跨段去重
 function mergeGeneratedSets(rawSets, partsMeta = []) {
   const list = rawSets.filter(Boolean);
   if (!list.length) throw new Error('AI 没有返回题目');
@@ -4620,6 +4869,9 @@ let aiParseBusy = false;
 let aiLastRecommended = 0;
 let aiMode = 'generate';
 let aiSubjectId = null;
+// 保存位置：existing = 已有科目，new = 当场新建；aiFocus = 是否只围绕一个考点出题
+let aiDest = 'existing';
+let aiFocus = false;
 
 // 出题任务有两条通道：
 //   同步批次（站点配了 DeepSeek Key）：一次请求只出一小批，浏览器并发编排；
@@ -4811,7 +5063,7 @@ function collectAIGroups() {
   };
 }
 
-const AI_STEPS = ['上传资料', '处理方式', '生成题库'];
+const AI_STEPS = ['资料来源', '保存位置', '处理方式'];
 let aiStep = 1;
 
 function aiRailHTML() {
@@ -4832,7 +5084,12 @@ function aiRailHTML() {
   </div>`;
 }
 
-// 每一层是否已经可以往下走：资料层要求解析完成且字数够，方式层要求题量有效
+// 每一层是否已经可以往下走：资料层要求解析完成且字数够，保存位置层要求目标科目确定
+function aiDestReady() {
+  if (aiDest === 'new') return !!nsField('aiNewSubjectName').trim();
+  return !!subjectById(aiSubjectId);
+}
+
 function aiStepReady(n) {
   if (aiParseBusy) return false;
   const groups = collectAIGroups();
@@ -4843,9 +5100,9 @@ function aiStepReady(n) {
   if (n === 2) {
     if (!hasMaterial) return false;
     if (groups.noteText.length > 24000 || groups.examText.length > 48000) return false;
-    return true;
+    return aiDestReady();
   }
-  return hasMaterial;
+  return hasMaterial && aiDestReady();
 }
 
 function renderAIRail() {
@@ -4866,16 +5123,16 @@ function renderAIFooter() {
   if (aiStep === 1) {
     foot.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">取消</button>
       <span style="flex:1"></span>
-      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(2)"${aiStepReady(1) ? '' : ' disabled'}>下一步：处理方式 ${ICON.arrow}</button>`;
+      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(2)"${aiStepReady(1) ? '' : ' disabled'}>下一步：保存位置 ${ICON.arrow}</button>`;
     return;
   }
   if (aiStep === 2) {
-    foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(1)">← 上一步</button>
+    foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(1)">← 资料来源</button>
       <span style="flex:1"></span>
-      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(3)"${aiStepReady(2) ? '' : ' disabled'}>下一步：确认生成 ${ICON.arrow}</button>`;
+      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(3)"${aiStepReady(2) ? '' : ' disabled'}>下一步：处理方式 ${ICON.arrow}</button>`;
     return;
   }
-  foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(2)">← 上一步</button>
+  foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(2)">← 保存位置</button>
     <span style="flex:1"></span>
     <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">生成题目</button>`;
 }
@@ -4890,12 +5147,41 @@ function showAILayer() {
   if (aiStep === 3) renderAIReview();
 }
 
+// 保存位置这一步在往下走时才真正落地：选「新建科目」就先建好，
+// 并把这一轮刚上传、还挂在旧科目下的资料挪过来。
+function commitAISubject() {
+  if (aiDest !== 'new') return true;
+  const input = document.getElementById('aiNewSubjectName');
+  const name = (input ? input.value : '').trim();
+  if (!name) {
+    toast('先填上备考科目名称', 'info');
+    input?.focus();
+    return false;
+  }
+  const subject = createSubject(name, {
+    examName: nsField('aiNewExamName').trim(),
+    examDate: nsField('aiNewExamDate').trim()
+  });
+  if (!subject) { input?.focus(); return false; }
+  aiSubjectId = subject.id;
+  aiDest = 'existing';
+  const moved = aiPieces.filter((p) => p.sessionStored && p.materialId);
+  moved.forEach((p) => moveMaterialMeta(p.materialId, subject.id));
+  const select = document.getElementById('aiSubjectSelect');
+  if (select) select.innerHTML = renderAISubjectOptions();
+  if (input) input.value = '';
+  renderAILibrary();
+  renderAIFileList();
+  return true;
+}
+
 function goAIStep(target) {
   if (aiParseBusy) { toast('资料还在解析中，请稍候', 'info'); return; }
   if (target > aiStep && !aiStepReady(aiStep)) {
-    toast(aiStep === 1 ? '先上传或粘贴至少 50 字的资料' : '资料还不能用，请检查上面的提示', 'info');
+    toast(aiStep === 1 ? '先上传或粘贴至少 50 字的资料' : '目标科目还没定，请选一个科目或填新科目名称', 'info');
     return;
   }
+  if (target > 2 && aiStep === 2 && !commitAISubject()) return;
   aiStep = Math.max(1, Math.min(3, target));
   showAILayer();
   refreshAIState();
@@ -4911,11 +5197,15 @@ function renderAIReview() {
   const range = document.getElementById('aiCount');
   const count = groups.hasNotes ? (parseInt(range?.value, 10) || 0) : 0;
   const examEst = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
-  const bits = [`<span class="wiz-chip">学科 <b data-no-i18n>${esc(subject.name)}</b></span>`];
+  const bits = [`<span class="wiz-chip">保存到 <b data-no-i18n>${esc(subject.name)}</b></span>`];
   if (groups.hasNotes) bits.push(`<span class="wiz-chip">笔记 <b>${groups.noteDocs.length}</b> 份 · ${noteChars.toLocaleString('zh-CN')} 字</span>`);
   if (groups.hasExams) bits.push(`<span class="wiz-chip">真题 <b>${groups.examDocs.length}</b> 份 · ${examChars.toLocaleString('zh-CN')} 字</span>`);
   if (groups.hasNotes) bits.push(`<span class="wiz-chip is-soft">将生成 <b>${count}</b> 题</span>`);
   if (groups.hasExams) bits.push(`<span class="wiz-chip is-soft">真题<b>原样保留</b>${examEst ? ` 约 ${examEst} 题` : ''}</span>`);
+  if (aiFocus && aiMode !== 'exam') {
+    const focus = aiFocusText();
+    if (focus) bits.push(`<span class="wiz-chip is-soft">聚焦考点 <b>${esc(focus)}</b></span>`);
+  }
   const pasteOnly = !groups.hasFiles && (groups.hasNotes || groups.hasExams);
   if (pasteOnly) bits.push('<span class="wiz-chip is-soft">来源：粘贴文字</span>');
   box.innerHTML = bits.join('');
@@ -4923,7 +5213,7 @@ function renderAIReview() {
   if (title) {
     title.textContent = groups.mixed
       ? '笔记出题 + 真题整理'
-      : (groups.hasExams ? '原样整理真题' : '根据资料出题');
+      : (groups.hasExams ? '原样整理真题' : (aiFocus ? '围绕一个考点出题' : '根据资料出题'));
   }
 }
 
@@ -4936,10 +5226,13 @@ function openAIModal(subjectId, materialIds) {
     aiPieces = [];
     aiLastRecommended = 0;
   }
+  aiDest = 'existing';
+  // 从备考规划带考点跳过来时，默认就聚焦这个考点
+  aiFocus = !!captureFocusLink();
   aiStep = 1;
   if (Array.isArray(materialIds) && materialIds.length) {
     addMaterialsToAI(materialIds);
-    aiStep = 2;
+    aiStep = 3;
   }
   openModal(`
     <div class="modal-header">
@@ -4954,20 +5247,11 @@ function openAIModal(subjectId, materialIds) {
 
         <section class="wiz-layer" id="aiLayer1"${aiStep === 1 ? '' : ' hidden'}>
           <div class="wiz-head">
-            <span class="wiz-title">资料从哪来</span>
-            <span class="wiz-hint">PDF · Word · PPT · TXT · 粘贴</span>
+            <span class="wiz-title">资料来源</span>
+            <span class="wiz-hint">上传文件 · 已有资料 · 粘贴文字</span>
           </div>
-          <div class="ai-subject-bar">
-            <label class="ai-subject-label" for="aiSubjectSelect">保存到学科</label>
-            <select class="form-select ai-subject-select" id="aiSubjectSelect" onchange="onAISubjectChange(this.value)">${renderAISubjectOptions()}</select>
-            <button type="button" class="link-btn" onclick="toggleNewSubjectInline()">＋ 新建</button>
-            <span class="ai-new-subject" id="aiNewSubjectWrap" hidden>
-              <input class="form-input" id="aiNewSubjectName" maxlength="20" placeholder="学科名称" onkeydown="if(event.key==='Enter')createSubjectInline()">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="createSubjectInline()">建立</button>
-            </span>
-          </div>
-
-          <div class="ai-library" id="aiLibrary" hidden></div>
+          <p class="wiz-note wiz-note-first">PDF / Word / PPT / TXT 都可以，笔记和真题能一起传。</p>
+          <div class="ai-library" id="aiLibrary"></div>
 
           <label class="ai-dropzone" id="aiDropzone" for="aiFileInput" style="margin-top:12px">
             <input type="file" id="aiFileInput" multiple hidden
@@ -4995,21 +5279,75 @@ function openAIModal(subjectId, materialIds) {
 
         <section class="wiz-layer" id="aiLayer2"${aiStep === 2 ? '' : ' hidden'}>
           <div class="wiz-head">
-            <span class="wiz-title">怎么处理这些资料</span>
-            <span class="wiz-hint">笔记出题 · 真题原样保留</span>
+            <span class="wiz-title">保存位置</span>
+            <span class="wiz-hint">练习集和这一轮的资料都归到这里</span>
           </div>
-          <div class="ai-mode" id="aiModeGroup" role="group" aria-label="处理方式">
+          <div class="ai-mode" role="group" aria-label="保存位置">
+            <button type="button" class="ai-mode-btn${aiDest === 'existing' ? ' active' : ''}" data-dest="existing" onclick="setAIDest('existing')">
+              <span class="ai-mode-title">已有科目</span>
+              <span class="ai-mode-desc">选一个备考科目</span>
+            </button>
+            <button type="button" class="ai-mode-btn${aiDest === 'new' ? ' active' : ''}" data-dest="new" onclick="setAIDest('new')">
+              <span class="ai-mode-title">新建科目</span>
+              <span class="ai-mode-desc">建一个新的备考科目</span>
+            </button>
+          </div>
+
+          <div id="aiDestExisting"${aiDest === 'new' ? ' hidden' : ''}>
+            <div class="wiz-field" style="margin-top:16px">
+              <label class="form-label" for="aiSubjectSelect">保存到</label>
+              <select class="form-select" id="aiSubjectSelect" onchange="onAISubjectChange(this.value)">${renderAISubjectOptions()}</select>
+              <span class="wiz-help" id="aiDestHelp">—</span>
+            </div>
+          </div>
+
+          <div id="aiDestNew"${aiDest === 'new' ? '' : ' hidden'}>
+            <div class="wiz-grid" style="margin-top:16px">
+              <div class="wiz-field wiz-span">
+                <label class="form-label" for="aiNewSubjectName">备考科目</label>
+                <input class="form-input" id="aiNewSubjectName" maxlength="40" placeholder="例如：导游业务、考研英语" oninput="syncAILayerState()">
+                <span class="wiz-help">点「下一步」时创建，不会重复建同名科目。</span>
+              </div>
+              <div class="wiz-field">
+                <label class="form-label" for="aiNewExamName">目标考试</label>
+                <input class="form-input" id="aiNewExamName" maxlength="100" placeholder="选填">
+              </div>
+              <div class="wiz-field">
+                <label class="form-label" for="aiNewExamDate">考试日期</label>
+                <input class="form-input" type="date" id="aiNewExamDate">
+              </div>
+            </div>
+            <p class="wiz-note">备考目标、每日题量可以在科目页的「考试信息」里补全。</p>
+          </div>
+        </section>
+
+        <section class="wiz-layer" id="aiLayer3"${aiStep === 3 ? '' : ' hidden'}>
+          <div class="wiz-head">
+            <span class="wiz-title">处理方式</span>
+            <span class="wiz-hint">出题 · 原样整理 · 聚焦考点</span>
+          </div>
+          <div class="ai-mode" id="aiModeGroup" role="group" aria-label="出题方式">
             <button type="button" class="ai-mode-btn active" data-mode="generate" onclick="setAIMode('generate')">
               <span class="ai-mode-title">根据资料出题</span>
               <span class="ai-mode-desc">笔记、教材 → 生成新题</span>
             </button>
             <button type="button" class="ai-mode-btn" data-mode="exam" onclick="setAIMode('exam')">
               <span class="ai-mode-title">原样整理真题</span>
-              <span class="ai-mode-desc">试卷、题库 → 全部保留</span>
+              <span class="ai-mode-desc">试卷、练习集 → 全部保留</span>
             </button>
           </div>
           <div class="ai-group-summary" id="aiGroupSummary" hidden></div>
           <button type="button" class="ai-mode-hint" id="aiModeHint" hidden onclick="setAIMode('exam')">检测到试卷格式，点这里改为原样整理，题目全部保留 →</button>
+
+          <div class="ai-focus-card" id="aiFocusCard">
+            <label class="ai-focus-toggle">
+              <input type="checkbox" id="aiFocusOn" onchange="toggleAIFocus(this.checked)">
+              <span class="ai-focus-title">聚焦考点</span>
+            </label>
+            <span class="ai-mode-desc" id="aiFocusDesc">只围绕一个考点出题，其它内容少出或不出题。</span>
+            <input class="form-input" id="aiFocusTopic" maxlength="400" placeholder="例如：导游语言技巧、定语从句" oninput="refreshAIState()" hidden>
+          </div>
+
           <div class="ai-count-card" id="aiCountCard">
             <div class="ai-count-head">
               <span class="ai-count-label">题目数量</span>
@@ -5040,18 +5378,14 @@ function openAIModal(subjectId, materialIds) {
             <b id="aiExamEstimate">将全部整理</b>
             <span id="aiExamNoteText">题干、选项和答案按原文保留，不改写、不删减；原文没有答案时会给出参考答案。</span>
           </div>
-        </section>
 
-        <section class="wiz-layer" id="aiLayer3"${aiStep === 3 ? '' : ' hidden'}>
-          <div class="wiz-head">
-            <span class="wiz-title">确认并生成</span>
-            <span class="wiz-hint">保存前会先给你看结果</span>
+          <div class="ai-review">
+            <div class="ai-note">
+              <span class="ai-note-dot"></span>
+              <span id="aiReviewTitle">根据资料出题</span>
+            </div>
+            <div class="wiz-summary" id="aiReviewSummary"></div>
           </div>
-          <div class="ai-note">
-            <span class="ai-note-dot"></span>
-            <span id="aiReviewTitle">根据资料出题</span>
-          </div>
-          <div class="wiz-summary" id="aiReviewSummary"></div>
           <details class="ai-preview" id="aiPreview" hidden>
             <summary>查看提取的文字<span id="aiPreviewCount"></span></summary>
             <pre id="aiPreviewText"></pre>
@@ -5138,35 +5472,50 @@ function onAISubjectChange(value) {
   const subject = subjectById(value);
   if (!subject) return;
   aiSubjectId = subject.id;
-  // 换学科时只移除来自旧学科资料库的条目，本次上传的文件保留
+  // 换科目时只移除来自旧科目资料库的条目，本次上传的文件保留
   aiPieces = aiPieces.filter((p) => !p.fromMaterial);
   renderAILibrary();
   renderAIFileList();
   refreshAIState();
 }
 
-function toggleNewSubjectInline() {
-  const wrap = document.getElementById('aiNewSubjectWrap');
-  if (!wrap) return;
-  wrap.hidden = !wrap.hidden;
-  if (!wrap.hidden) document.getElementById('aiNewSubjectName')?.focus();
+function setAIDest(kind) {
+  aiDest = kind === 'new' ? 'new' : 'existing';
+  document.querySelectorAll('[data-dest]').forEach((b) => {
+    const on = b.dataset.dest === aiDest;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const existing = document.getElementById('aiDestExisting');
+  const fresh = document.getElementById('aiDestNew');
+  if (existing) existing.hidden = aiDest !== 'existing';
+  if (fresh) {
+    fresh.hidden = aiDest !== 'new';
+    if (aiDest === 'new') document.getElementById('aiNewSubjectName')?.focus();
+  }
+  syncAILayerState();
 }
 
-function createSubjectInline() {
-  const input = document.getElementById('aiNewSubjectName');
-  const subject = createSubject(input ? input.value : '');
-  if (!subject) { if (input) input.focus(); return; }
-  aiSubjectId = subject.id;
-  const select = document.getElementById('aiSubjectSelect');
-  if (select) select.innerHTML = renderAISubjectOptions();
-  const wrap = document.getElementById('aiNewSubjectWrap');
-  if (wrap) wrap.hidden = true;
-  if (input) input.value = '';
-  renderAILibrary();
-  toast(`已切换到「${subject.name}」`, 'success');
+function toggleAIFocus(on) {
+  aiFocus = !!on && aiMode !== 'exam';
+  const box = document.getElementById('aiFocusOn');
+  if (box) box.checked = aiFocus;
+  refreshAIState();
 }
 
-// 上传解析成功后自动归档到当前学科：同名同大小视为已有
+// 去掉控制字符，考点名最长按联动协议的 topic 上限处理
+function cleanFocusText(v) {
+  return String(v || '').replace(/[\x00-\x1f\x7f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, PLAN_PARAM_LIMITS.topic);
+}
+
+// 聚焦考点的文字：备考规划带过来的考点优先，其次才是手填的
+function aiFocusText() {
+  const link = captureFocusLink();
+  if (link) return link.topic;
+  return cleanFocusText(nsField('aiFocusTopic'));
+}
+
+// 上传解析成功后自动归档到当前科目：同名同大小视为已有
 async function autoStoreAIPiece(piece) {
   if (!piece || piece.fromMaterial || !piece.text || materialsUnavailable) return;
   const subjectId = aiSubjectId || 'sub-inbox';
@@ -5194,6 +5543,8 @@ async function autoStoreAIPiece(piece) {
     materials.unshift(saved);
     piece.materialId = saved.id;
     piece.savedTo = subjectId;
+    // 这一轮新建的资料：之后如果「保存位置」改成新科目，就把它挪过去
+    piece.sessionStored = true;
   } catch (e) {
     // 资料库写入失败不阻断出题，只是这次文件不会留档
     piece.saveFailed = true;
@@ -5245,7 +5596,8 @@ function onAICountInput() {
 
 function setAIMode(mode) {
   aiMode = mode === 'exam' ? 'exam' : 'generate';
-  document.querySelectorAll('.ai-mode-btn').forEach((b) => {
+  if (aiMode === 'exam') aiFocus = false;
+  document.querySelectorAll('.ai-mode-btn[data-mode]').forEach((b) => {
     const on = b.dataset.mode === aiMode;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -5274,6 +5626,45 @@ function refreshAIState() {
   const pasteKindWrap = document.getElementById('aiPasteKindWrap');
   if (pasteKindWrap) pasteKindWrap.hidden = !hasFiles;
 
+  // 保存位置这一层的上下文：目标科目现在有什么
+  const destSubject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const destHelp = document.getElementById('aiDestHelp');
+  if (destHelp) {
+    const destSets = subjectSets(destSubject.id).length;
+    const destMats = subjectMaterials(destSubject.id).length;
+    destHelp.textContent = destSets || destMats
+      ? `「${destSubject.name}」已有 ${destSets} 个练习集 · ${destMats} 份资料`
+      : `「${destSubject.name}」还是空的，出题后会出现在这里`;
+  }
+
+  // 聚焦考点：真题整理是原样保留，不能同时只练一个考点
+  const focusCard = document.getElementById('aiFocusCard');
+  const focusBox = document.getElementById('aiFocusOn');
+  const focusInput = document.getElementById('aiFocusTopic');
+  const focusDesc = document.getElementById('aiFocusDesc');
+  const link = captureFocusLink();
+  if (focusCard) focusCard.classList.toggle('is-off', hasExams && !hasNotes);
+  if (focusBox) {
+    const focusOff = aiParseBusy || (hasExams && !hasNotes);
+    if (focusOff) aiFocus = false;
+    focusBox.disabled = focusOff;
+    focusBox.checked = aiFocus;
+  }
+  if (focusInput) {
+    focusInput.hidden = !aiFocus;
+    if (link) {
+      focusInput.value = link.topic;
+      focusInput.disabled = true;
+    } else {
+      focusInput.disabled = false;
+    }
+  }
+  if (focusDesc) {
+    focusDesc.textContent = link
+      ? '这个练习集会标上备考规划的考点，练完可以把结果带回计划。'
+      : '只围绕一个考点出题，其它内容少出或不出题。';
+  }
+
   const countCard = document.getElementById('aiCountCard');
   const typesWrap = document.getElementById('aiTypesWrap');
   const examNote = document.getElementById('aiExamNote');
@@ -5283,13 +5674,16 @@ function refreshAIState() {
 
   if (hasNotes) {
     const { min, max, rec } = aiCountRange(noteChars);
+    // 科目的「默认题量」优先于按篇幅推荐，但仍在资料能支撑的区间内
+    const subj = subjectById(aiSubjectId);
+    const pref = subj && subj.defaultCount ? Math.max(min, Math.min(max, subj.defaultCount)) : rec;
     range.min = String(min);
     range.max = String(max);
     range.disabled = !ready || noteOversize;
     if (noteChars >= 50) {
       const current = Number(range.value) || 0;
       if (!range.dataset.touched || current < min || current > max || current === aiLastRecommended) {
-        range.value = String(rec);
+        range.value = String(pref);
       }
       aiLastRecommended = rec;
     } else {
@@ -5306,7 +5700,8 @@ function refreshAIState() {
       hintEl.textContent = '上传资料后，会按资料篇幅自动推荐题量';
     } else {
       const examTail = hasExams ? '；真题部分全部保留，不计入此数量' : '';
-      hintEl.textContent = `${noteChars.toLocaleString()} 字笔记 · 建议 ${rec} 题，可调 ${min}–${max}${examTail}`;
+      const from = pref === rec ? `按篇幅建议 ${rec} 题` : `用科目默认 ${pref} 题（按篇幅建议 ${rec}）`;
+      hintEl.textContent = `${noteChars.toLocaleString()} 字资料 · ${from}，可调 ${min}–${max}${examTail}`;
     }
   } else {
     range.disabled = true;
@@ -5881,6 +6276,7 @@ async function parseAIQueue() {
 
 async function generateQuestions() {
   if (aiParseBusy) { toast('资料还在解析中，请稍候', 'info'); return; }
+  if (!commitAISubject()) return;
   const groups = collectAIGroups();
   const mixed = groups.mixed;
   const runMode = mixed ? 'batch' : (groups.hasExams ? 'exam' : 'generate');
@@ -5921,10 +6317,9 @@ async function generateQuestions() {
   const codeLanguage = groups.hasNotes && types === 'with-code' ? document.getElementById('aiCodeLang').value : null;
   const estimate = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
   // 冻结联动快照：真题整理模式绝不为了联动改写或强行归类原题，所以只有出题/笔记段带 focusTopic
-  const focusLink = captureFocusLink();
-  const focusTopic = focusLink && runMode !== 'exam'
-    ? String(focusLink.topic).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, PLAN_PARAM_LIMITS.topic)
-    : '';
+  const wantFocus = aiFocus && runMode !== 'exam';
+  const focusLink = wantFocus ? captureFocusLink() : null;
+  const focusTopic = wantFocus ? cleanFocusText(aiFocusText()) : '';
 
   state.genPreview = null;
   aiStep = 3;
@@ -5989,6 +6384,8 @@ async function generateQuestions() {
       const doneParts = parts.filter((part) => part.set);
       const merged = mergeGeneratedSets(doneParts.map((part) => part.set), doneParts);
       merged.subjectId = subjectById(aiSubjectId) ? aiSubjectId : 'sub-inbox';
+      merged.origin = runMode;
+      merged.focusTopic = focusTopic || '';
       attachCoverage(merged, doneParts);
       attachGeneratedSource(merged, focusLink);
       return merged;
@@ -6108,7 +6505,7 @@ async function generateQuestions() {
     }
     if (footer) footer.innerHTML = `
       <button class="btn btn-secondary" onclick="closeModal()">放弃</button>
-      <button class="btn btn-primary" onclick="importGenerated()">保存题库</button>`;
+      <button class="btn btn-primary" onclick="importGenerated()">保存练习集</button>`;
   } catch (e) {
     const message = e && e.name === 'AbortError'
       ? (runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量、缩短资料' : '整理超时了，请拆分资料后重试')
@@ -6139,12 +6536,12 @@ let genSaving = false;
 function importGenerated() {
   if (!state.genPreview || genSaving) return;
   genSaving = true;
-  // 题库与联动关系的关联只由 set.source.linkId 派生，不在 link 上另存一份 setIds
+  // 练习集与联动关系的关联只由 set.source.linkId 派生，不在 link 上另存一份 setIds
   customSets.push(state.genPreview);
   if (!saveJSON(STORAGE.sets, customSets)) {
     customSets.pop();
     genSaving = false;
-    toast('空间不足，题库没有保存。请先导出备份并清理不用的题库', 'error', 5000);
+    toast('空间不足，练习集没有保存。请先导出备份并清理不用的练习集', 'error', 5000);
     return;
   }
   const id = state.genPreview.id;
@@ -6152,7 +6549,7 @@ function importGenerated() {
   genSaving = false;
   state.genPreview = null;
   closeModal();
-  toast(`题库已保存到「${(subjectById(subjectId) || INBOX_SUBJECT).name}」`, 'success');
+  toast(`练习集已保存到「${(subjectById(subjectId) || INBOX_SUBJECT).name}」`, 'success');
   state.view = 'setDetail';
   state.setId = id;
   state.subjectId = subjectId;
