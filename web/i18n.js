@@ -136,13 +136,7 @@ const EN = Object.assign({
 
   /* 首页 */
   '今日练习': "Today's practice",
-  '今天，也来练两手。': 'Keep today warm.',
-  '已连续': 'You are on a',
-  '天保持手感，别断了。': '-day streak — do not break it.',
-  '新的连续记录，从今天的第一题开始。': "A fresh streak starts with today's first question.",
   '今日目标': 'Daily goal',
-  '继续上次练习': 'Resume last session',
-  '看看进度': 'See progress',
   '去练习': 'Practice',
   '刷错题': 'Review mistakes',
   '备考科目': 'Subject folders',
@@ -187,8 +181,8 @@ const EN = Object.assign({
   '提交答案': 'Submit answer',
   '请先输入答案': 'Enter an answer first',
   '你的答案': 'Your answer',
-  '你的答案：': 'Your answer:',
-  '正确答案：': 'Correct answer:',
+  '你的答案：': 'Your answer: ',
+  '正确答案：': 'Correct answer: ',
   '参考答案': 'Reference answer',
   '查看参考答案': 'View reference answer',
   '见参考答案': 'See reference answer',
@@ -218,6 +212,7 @@ const EN = Object.assign({
   '继续学习': 'Resume study',
   '再考一次': 'Try again',
   '返回练习集': 'Back to set',
+  '练下一套': 'Next set',
   '查看记录': 'View history',
   '答题回顾': 'Answer review',
   '正在评分...': 'Grading…',
@@ -237,16 +232,20 @@ const EN = Object.assign({
   '— 未评分': '— Ungraded',
   '部分编程题因判题服务不可用而未评分': 'Some coding questions were left ungraded because the judge service was unavailable',
 
-  /* 进度页 */
+  /* 记录页 */
   '平均正确率': 'Average accuracy',
   '平均得分': 'Average score',
   '每次练习的得分均值': 'Mean score per session',
-  '错题数': 'Mistakes',
   '按练习集表现': 'Performance by set',
-  '错题本': 'Mistake book',
   '历史记录': 'History',
   '还没有练习记录，从学习模式开始吧': 'No practice records yet — start with study mode',
-  '太棒了，暂无错题': 'Nothing wrong so far',
+
+  /* 错题本：一级入口，答错自动进账 */
+  '错题本': 'Mistake book',
+  '暂无错题': 'No mistakes to review',
+  '学习和考试模式里答错的题会自动记到这里，答对后自动移出':
+    'Questions you get wrong in study or exam mode land here automatically and leave as soon as you get one right',
+  '按练习集分组': 'Grouped by question set',
 
   /* 设置页 */
   '界面语言': 'Language',
@@ -528,12 +527,10 @@ const EN = Object.assign({
   '资料归档失败': 'The material could not be archived',
   '[StarQuiz] 资料归档失败': '[StarQuiz] material archiving failed',
 
-  /* ---------- 备考化信息架构（本轮）：今日状态卡 / 考试信息 / AI 三段弹窗 ---------- */
+  /* ---------- 备考化信息架构：今日状态卡 / 考试信息 / AI 三段弹窗 ---------- */
   '今日': 'Today',
-  '上次练习': 'Last session',
-  '连续记录': 'Streak',
   '累计正确率': 'Overall accuracy',
-  '距考试': 'Exam countdown',
+  '还没有练习成绩': 'No scores yet',
   '未开始': 'Not started',
   '还没有练习记录': 'No practice records yet',
   '练习记录': 'Practice history',
@@ -545,6 +542,20 @@ const EN = Object.assign({
   '选一个备考科目': 'Choose a subject',
   '按备考科目归档：上传的原始资料、提取的文字和生成的练习集都在同一个科目里。':
     'Filed by subject: original files, extracted text and generated sets all live in one place.',
+
+  /* 首页调度台：主按钮状态 + 四种练法 */
+  '开始练习': 'Start',
+  '继续': 'Continue',
+  '再过一遍': 'Run it again',
+  '顺序练习': 'In order',
+  '错题重练': 'Redo mistakes',
+  '考点聚焦': 'Topic focus',
+  '自检掌握度': 'Check your mastery',
+  '还没有考过': 'No exam yet',
+  '题待复习': 'to review',
+  '分（上次）': 'pts (last)',
+  '个考点待练': 'to practise',
+  '查看练习记录': 'See practice history',
 
   /* 科目页的备考上下文 */
   '考试信息': 'Exam info',
@@ -698,7 +709,24 @@ const EN = Object.assign({
 });
 
 /* 含数字、名称或语序变化的句子：正则 + 替换（替换里可以继续调用 t）。 */
+// 英文的「1 questions」是硬伤：所有带计数的短语统一走 pl()
+const pl = (n, one, many) => `${n} ${n === '1' ? one : many}`;
+
 const EN_PATTERNS = [
+  /* 首页调度台与进度口径 */
+  [/^连续 (\d+) 天$/, (m) => `${m[1]}-day streak`],
+  [/^待练 (\d+) 套$/, (m) => `${pl(m[1], 'set', 'sets')} to practise`],
+  [/^距考试 (\d+) 天$/, (m) => `${m[1]} day${m[1] === '1' ? '' : 's'} to the exam`],
+  [/^距考试 (\d+) 天 · (.+)$/, (m) => `${m[1]} day${m[1] === '1' ? '' : 's'} to the exam · ${m[2]}`],
+  [/^累计正确率 (\d+)%$/, 'Overall accuracy $1%'],
+  [/^已做 (\d+)\/(\d+) 题$/, (m) => `Done ${m[1]} of ${m[2]}`],
+  [/^最佳 (\d+)%$/, 'Best $1%'],
+  [/^共 (\d+) 题$/, (m) => `${pl(m[1], 'question', 'questions')} in total`],
+  [/^共 (\d+) 道题待复习，分布在 (\d+) 个练习集。答对一次就会自动移出。$/,
+    (m) => `${pl(m[1], 'question', 'questions')} to review across ${pl(m[2], 'set', 'sets')} — get one right and it leaves`],
+  [/^重做错题 (\d+) 题$/, (m) => `Redo ${pl(m[1], 'mistake', 'mistakes')}`],
+  [/^错 (\d+) 次$/, (m) => `${pl(m[1], 'miss', 'misses')}`],
+  [/^\/ (\d+) 题$/, (m) => `/ ${pl(m[1], 'question', 'questions')}`],
   [/^难度 ([123])$/, 'Difficulty $1'],
   [/^第 (\d+) 题 · 共 (\d+) 题$/, 'Question $1 of $2'],
   [/^第 (\d+) 步 \/ 共 (\d+) 步$/, 'Step $1 of $2'],
@@ -711,53 +739,55 @@ const EN_PATTERNS = [
   [/^· 已答 (\d+)\/(\d+) · 剩余 (.+)$/, (m) => `· ${m[1]}/${m[2]} answered · ${m[3]} left`],
   [/^· 第 (\d+)\/(\d+) 题 · 已答 (\d+)$/, (m) => `· Question ${m[1]}/${m[2]} · ${m[3]} answered`],
   [/^· (考试模式|学习模式)$/, (m) => `· ${t(m[1])}`],
-  [/^(\d+) 个练习集 · (\d+) 份资料$/, (m) => `${m[1]} question sets · ${m[2]} materials`],
-  [/^(\d+) 个练习集 · (\d+) 道题$/, (m) => `${m[1]} sets · ${m[2]} questions`],
-  [/^(\d+) 份资料 · (\d+) 个练习集$/, (m) => `${m[1]} materials · ${m[2]} question sets`],
-  [/^(\d+) 份资料 · (\d+) 道题目$/, (m) => `${m[1]} materials · ${m[2]} questions`],
+  [/^(\d+) 个练习集 · (\d+) 份资料$/, (m) => `${pl(m[1], 'question set', 'question sets')} · ${pl(m[2], 'material', 'materials')}`],
+  [/^(\d+) 个练习集 · (\d+) 道题$/, (m) => `${pl(m[1], 'set', 'sets')} · ${pl(m[2], 'question', 'questions')}`],
+  [/^(\d+) 份资料 · (\d+) 个练习集$/, (m) => `${pl(m[1], 'material', 'materials')} · ${pl(m[2], 'question set', 'question sets')}`],
+  [/^(\d+) 份资料 · (\d+) 道题目$/, (m) => `${pl(m[1], 'material', 'materials')} · ${pl(m[2], 'question', 'questions')}`],
   [/^练习集与记录已用 (.+)（上限约 5 MB）(?: · 资料库 (\d+) 份，原始文件单独存放)?$/,
     (m) => `Sets and records use ${m[1]} (about 5 MB available)${m[2] ? ` · ${m[2]} material file(s) stored separately` : ''}`],
   [/^已答 (\d+) \/ (\d+) 题$/, (m) => `Answered ${m[1]} / ${m[2]}`],
   [/^(学习模式|考试模式) · 已答 (\d+) \/ (\d+)$/, (m) => `${t(m[1])} · ${m[2]} / ${m[3]} answered`],
-  [/^(\d+)\s*\/\s*(\d+) 题$/, (m) => `${m[1]} / ${m[2]} questions`],
+  [/^(\d+)\s*\/\s*(\d+) 题$/, (m) => `${m[1]} / ${pl(m[2], 'question', 'questions')}`],
   [/^\/ (\d+) 今日目标$/, 'of $1 daily goal'],
   [/^今日 (\d+) 题$/, 'Today $1'],
-  [/^(\d+) 道题目?$/, '$1 questions'],
-  [/^(\d+) 个练习集$/, '$1 question sets'],
-  [/^(\d+) 份资料已存入$/, '$1 materials saved'],
+  [/^(\d+) 道题目?$/, (m) => pl(m[1], 'question', 'questions')],
+  [/^(\d+) 个练习集$/, (m) => pl(m[1], 'question set', 'question sets')],
+  [/^(\d+) 份资料已存入$/, (m) => `${pl(m[1], 'material', 'materials')} saved`],
   [/^(\d+) 份未成功$/, '$1 failed'],
   [/^另有 (\d+) 份失败$/, '$1 more failed'],
-  [/^(\d+) 个文件解析失败$/, '$1 files failed to parse'],
-  [/^(\d+) 个知识点$/, '$1 key points'],
+  [/^(\d+) 个文件解析失败$/, (m) => `${pl(m[1], 'file', 'files')} failed to parse`],
+  [/^(\d+) 个知识点$/, (m) => pl(m[1], 'key point', 'key points')],
   [/^(\d+) 知识点 · 已练 (\d+) 次$/, (m) => `${m[1]} key points · ${m[2]} attempts`],
-  [/^(\d+) 次练习 · 最佳 (\d+)%$/, (m) => `${m[1]} attempts · best ${m[2]}%`],
-  [/^正确率 · (\d+) 次练习$/, 'Accuracy · $1 attempts'],
+  [/^(\d+) 次练习 · 已做 (\d+)\/(\d+) 题 · 最佳 (\d+)%$/,
+    (m) => `${m[1]} attempt${m[1] === '1' ? '' : 's'} · done ${m[2]} of ${m[3]} · best ${m[4]}%`],
+  [/^(\d+) 次练习 · 最佳 (\d+)%$/, (m) => `${m[1]} attempt${m[1] === '1' ? '' : 's'} · best ${m[2]}%`],
+  [/^正确率 · (\d+) 次练习$/, (m) => `Accuracy · ${m[1]} attempt${m[1] === '1' ? '' : 's'}`],
   // 悬空的「· 」会先被 lookup 摘掉，所以这里不能把 · 写进正则开头
-  [/^(\d+) 次练习$/, '$1 attempts'],
+  [/^(\d+) 次练习$/, (m) => `${m[1]} attempt${m[1] === '1' ? '' : 's'}`],
   [/^(\d+) 天 · (.+)$/, (m) => `${m[1]} day${m[1] === '1' ? '' : 's'} · ${t(m[2])}`],
-  [/^共批改 (\d+) 题$/, '$1 answers graded'],
-  [/^分布在 (\d+) 个练习集$/, 'Across $1 question sets'],
-  [/^(\d+) 套 · (\d+) 题$/, (m) => `${m[1]} sets · ${m[2]} questions`],
+  [/^共批改 (\d+) 题$/, (m) => `${pl(m[1], 'answer', 'answers')} graded`],
+  [/^分布在 (\d+) 个练习集$/, (m) => `Across ${pl(m[1], 'question set', 'question sets')}`],
+  [/^(\d+) 套 · (\d+) 题$/, (m) => `${pl(m[1], 'set', 'sets')} · ${pl(m[2], 'question', 'questions')}`],
   [/^(\d+) 个练习集 · (\d+) 道题 · (\d+) 份资料 · ([\d,]+) 字可用$/,
     (m) => `${m[1]} sets · ${m[2]} questions · ${m[3]} materials · ${Number(m[4].replace(/,/g, '')).toLocaleString('en-US')} chars extracted`],
   [/^(\d+) 份资料 · (\d+) 个练习集 · (\d+) 道题目 · (\d+) 字提取文字$/,
     (m) => `${m[1]} materials · ${m[2]} sets · ${m[3]} questions · ${Number(m[4]).toLocaleString('en-US')} chars`],
   [/^(单选|多选|判断|填空|编程) × (\d+)$/, (m) => `${t(m[1])} × ${m[2]}`],
   [/^(\d+) 字$/, (m) => `${Number(m[1]).toLocaleString('en-US')} chars`],
-  [/^约 (\d+) 题$/, 'about $1 questions'],
-  [/^识别到约 (\d+) 道题，$/, 'About $1 questions detected, '],
-  [/^将生成 (\d+) 题$/, 'Will generate $1 questions'],
+  [/^约 (\d+) 题$/, (m) => `about ${pl(m[1], 'question', 'questions')}`],
+  [/^识别到约 (\d+) 道题，$/, (m) => `About ${pl(m[1], 'question', 'questions')} detected, `],
+  [/^将生成 (\d+) 题$/, (m) => `Will generate ${pl(m[1], 'question', 'questions')}`],
   [/^全部（(\d+) 题）$/, 'All ($1)'],
   [/^随机 (\d+) 题$/, 'Random $1'],
   [/^(\d+) 分钟$/, '$1 min'],
-  [/^（错 (\d+) 次）$/, '$1 misses'],
-  [/^另有 (\d+) 题未作答或未评分，不计入得分$/, '$1 questions left blank or ungraded are not scored'],
-  [/^(\d+) 题$/, '$1 questions'],
+  [/^（错 (\d+) 次）$/, (m) => `(${pl(m[1], 'miss', 'misses')})`],
+  [/^另有 (\d+) 题未作答或未评分，不计入得分$/, (m) => `${pl(m[1], 'question', 'questions')} left blank or ungraded are not scored`],
+  [/^(\d+) 题$/, (m) => pl(m[1], 'question', 'questions')],
   [/^(\d+) 分$/, '$1 pts'],
   [/^(\d+)分(?:(\d+)秒)?$/, (m) => `${m[1]}m${m[2] ? ` ${m[2]}s` : ''}`],
   [/^(.+) · (\d+)分(?:(\d+)秒)?$/, (m) => `${m[1]} · ${m[2]}m${m[3] ? ` ${m[3]}s` : ''}`],
   [/^(\d+) 天$/, (m) => `${m[1]} day${m[1] === '1' ? '' : 's'}`],
-  [/^(\d+) 页$/, '$1 pages'],
+  [/^(\d+) 页$/, (m) => pl(m[1], 'page', 'pages')],
   [/^(笔记|真题|其他) · (.+) · ([\d,]+) 字 · (.+)$/, (m) => `${t(m[1])} · ${m[2]} · ${Number(m[3].replace(/,/g, ''))} chars · ${m[4]}`],
   [/^知识点 · (.+)$/, 'Key point · $1'],
   [/^模拟考试 · (.+)$/, 'Mock exam · $1'],
@@ -786,7 +816,7 @@ const EN_PATTERNS = [
   [/^另有 (\d+) 份资料超过单次携带上限，需要手动上传$/, '$1 more file(s) exceeded the per-jump limit — upload them manually'],
   [/^继续「(.+?)」的考点「(.+?)」练习$/, (m) => `Back to "${m[2]}" in "${m[1]}"`],
   [/^继续「(.+?)」的考点「(.+?)」练习，这次补入 (\d+) 份资料和真题$/, (m) => `Back to "${m[2]}" in "${m[1]}" — ${m[3]} material/paper file(s) added this time`],
-  [/^(\d+) 份资料$/, '$1 materials'],
+  [/^(\d+) 份资料$/, (m) => pl(m[1], 'material', 'materials')],
   [/^把资料放进「(.+)」$/, 'Put materials into "$1"'],
   [/^直接 AI 出题（用这 (\d+) 份资料）$/, 'Generate with AI from these $1 materials'],
   [/^学习完成：答对 (\d+)\/(\d+)，正确率 (\d+)%$/, (m) => `Session done: ${m[1]}/${m[2]} correct, ${m[3]}% accuracy`],
@@ -829,7 +859,6 @@ const EN_PATTERNS = [
   /* 资料解析进度与文件条目 */
   [/^正在解析 (\d+) 个文件…$/, 'Parsing $1 files…'],
   [/^正在解析 (\d+) 个文件\.\.\.$/, 'Parsing $1 files…'],
-  [/^(\d+) 页$/, (m) => `${m[1]} pages`],
   [/^([\d,]+) 字$/, (m) => `${m[1]} chars`],
   [/^（([\d,]+) 字）$/, '($1 chars)'],
   [/^已存入([^·]+)$/, 'saved to "$1"'],
@@ -885,19 +914,19 @@ const EN_PATTERNS = [
   [/^该操作不可恢复，历史练习记录会保留。$/, 'This cannot be undone; your practice history is kept.'],
 
   /* ---------- 备考化信息架构（本轮）：状态行 / 考试上下文 / 向导与 AI 三段 ---------- */
-  [/^距考试 (\d+) 天$/, '$1 days to the exam'],
-  [/^每日目标 (\d+) 题$/, 'Daily goal: $1 questions'],
+  // 「距考试 N 天」由上面首页调度台那段负责，这里不再重复一条永远走不到的正则
+  [/^每日目标 (\d+) 题$/, (m) => `Daily goal: ${pl(m[1], 'question', 'questions')}`],
   [/^每日目标 (\d+)$/, 'Daily goal: $1'],
   [/^目标：(.+)$/, 'Goal: $1'],
   [/^知识点：(.+)$/, 'Key point: $1'],
   [/^题型：(.+)$/, 'Type: $1'],
   [/^备注：(.+)$/, 'Note: $1'],
   [/^题目数：(.+)$/, 'Questions: $1'],
-  [/^(\d+) 个科目$/, '$1 subjects'],
-  [/^(\d+) 个练习集（(\d+) 题）$/, '$1 sets ($2 questions)'],
-  [/^(\d+) 条记录$/, '$1 records'],
-  [/^(\d+) 道错题$/, '$1 mistakes'],
-  [/^已练 (\d+) 次$/, '$1 attempts done'],
+  [/^(\d+) 个科目$/, (m) => pl(m[1], 'subject', 'subjects')],
+  [/^(\d+) 个练习集（(\d+) 题）$/, (m) => `${pl(m[1], 'set', 'sets')} (${pl(m[2], 'question', 'questions')})`],
+  [/^(\d+) 条记录$/, (m) => pl(m[1], 'record', 'records')],
+  [/^(\d+) 道错题$/, (m) => pl(m[1], 'mistake', 'mistakes')],
+  [/^已练 (\d+) 次$/, (m) => `${pl(m[1], 'attempt', 'attempts')} done`],
   [/^已跳过 (\d+) 个损坏的练习集$/, 'Skipped $1 damaged question sets'],
   [/^已修复 (\d+) 道异常题目$/, 'Repaired $1 invalid questions'],
   [/^剔除 (\d+) 题异常数据$/, 'Removed $1 invalid entries'],
@@ -1157,11 +1186,13 @@ function ensureLangObserver() {
   });
 }
 
-/* 采集模式：__i18nDump() 输出当前页面所有含中文的可见文本，用于补齐词典。 */
+/* 采集模式：__i18nDump() 输出当前页面所有含中文的可见文本，用于补齐词典。
+   data-no-i18n 是用户数据（科目名、题目标题、品牌字），不算词典缺口，跳过。 */
 window.__i18nDump = function __i18nDump() {
   const found = new Set();
   walkText(document.body, (node) => found.add(node.nodeValue.replace(/\s+/g, ' ').trim()), true);
   for (const el of document.body.querySelectorAll(LANG_ATTRS.map((a) => `[${a}]`).join(','))) {
+    if (el.closest && el.closest('[data-no-i18n]')) continue;
     for (const name of LANG_ATTRS) {
       const raw = el.getAttribute && el.getAttribute(name);
       if (raw && HAN.test(raw)) found.add(`@${name} ${raw.replace(/\s+/g, ' ').trim()}`);

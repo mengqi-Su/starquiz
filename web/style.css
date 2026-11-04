@@ -231,6 +231,24 @@ a { color: var(--brand); }
 .ui-nav-item.active .nav-icon { color: var(--ink); }
 .nav-icon svg { width: 16px; height: 16px; }
 
+/* 待复习题数：只有错题本这一项带数字，为 0 时不渲染 */
+.nav-count {
+  margin-left: auto;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 17px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-nav-item.active .nav-count { background: var(--ink); color: #ffffff; }
+
 .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
 .main-header {
@@ -512,39 +530,88 @@ a { color: var(--brand); }
   letter-spacing: -0.015em;
 }
 
-.today-rows { margin-top: 14px; }
-
-.today-row {
+.today-chips {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 9px 2px;
-  border-top: 1px solid var(--divider);
-  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
 }
 
-.today-row dt { color: var(--ink-mute); font-weight: 400; }
-
-.today-row dd {
-  margin: 0;
-  color: var(--ink);
-  text-align: right;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.today-chip {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.today-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+
+/* 练法宫格：一格一种练法、一个数字、一行说明，点击直接进对应模式 */
+.dispatch-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.dispatch-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+
+.dispatch-cell:hover { border-color: var(--ink-faint); background: var(--card-alt); }
+.dispatch-cell:active { transform: translateY(1px); }
+.dispatch-cell:disabled { opacity: 0.5; cursor: default; }
+
+.dispatch-label { font-size: 11.5px; letter-spacing: 0.01em; color: var(--ink-mute); }
+
+.dispatch-value {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
-.today-row dd b { font-weight: 600; }
+.dispatch-denom {
+  font-family: var(--body);
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ink-mute);
+}
 
-.today-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.dispatch-note {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
 
 @media (max-width: 640px) {
   .today-card { padding: 14px 14px 15px; }
   .today-title { font-size: 21px; }
   .today-actions .btn { flex: 1 1 auto; }
+  .dispatch-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .form-group { margin-bottom: 16px; }
@@ -2223,6 +2290,7 @@ input[type="file"].form-input:active::file-selector-button {
   .bottom-nav .ui-nav-item {
     flex: 1;
     flex-direction: column;
+    position: relative;
     align-items: center;
     gap: 3px;
     width: auto;
@@ -2233,6 +2301,18 @@ input[type="file"].form-input:active::file-selector-button {
     font-weight: 500;
     color: var(--ink-mute);
     transition: color 0.14s ease;
+  }
+
+  /* 底栏是竖排：数字改成挂在图标右上角，不再占第三行 */
+  .bottom-nav .nav-count {
+    position: absolute;
+    top: 0;
+    right: calc(50% - 21px);
+    margin-left: 0;
+    min-width: 15px;
+    line-height: 14px;
+    font-size: 9.5px;
+    padding: 0 4px;
   }
 
   .bottom-nav .ui-nav-item .nav-icon { width: 34px; height: 22px; }
@@ -4035,6 +4115,69 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 @media (min-width: 861px) {
   .sidebar-expand { top: 18px; left: 14px; }
   body.sidebar-collapsed .main-header { padding-left: 58px; }
+}
+
+/* ── 错题本：一个练习集一张卡，卡内按题分细线行 ─────────────────── */
+
+.wrong-group-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.wrong-group-name {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wrong-group-head .btn { margin-left: auto; }
+
+.wrong-list { margin-top: 8px; }
+
+.wrong-item {
+  padding: 11px 0;
+  border-top: 1px solid var(--divider);
+}
+
+.wrong-item:first-child { border-top: 0; padding-top: 4px; }
+
+.wrong-question {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.wrong-times {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+
+.wrong-answer {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.wrong-explain {
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-mute);
 }
 
 /* ── 列表：一行一项的细线清单，替掉整屏平铺的大卡 ───────────────── */

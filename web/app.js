@@ -65,6 +65,7 @@ const ICON = {
   navFolder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
   navChart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M8.5 16v-4.5M13 16V7.5M17.5 16v-6.5"/></svg>`,
   navGear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h9M18 7h1M5 12h4M13 12h6M5 17h9M18 17h1"/><circle cx="16" cy="7" r="2"/><circle cx="11" cy="12" r="2"/><circle cx="16" cy="17" r="2"/></svg>`,
+  navWrong: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12.5a8 8 0 1 1-2.6-5.9"/><path d="M20 4.5V9h-4.5"/><path d="M9.5 11.5l5 5M14.5 11.5l-5 5"/></svg>`,
   plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`
 };
 
@@ -1729,6 +1730,90 @@ function overallStats() {
   return { count, graded, correct, answered, avg, accuracy: graded ? Math.round((correct / graded) * 100) : null, totalQ };
 }
 
+/* 进度口径全站只用这一个：历史 attempt 的 answers[].qid 是唯一来源，
+   学习模式和考试的随机抽题都会写它，所以首页宫格、列表行、结果页说的是同一件事。 */
+function setProgress(setId) {
+  const set = getSet(setId);
+  if (!set) return { done: 0, total: 0 };
+  const seen = new Set();
+  history.forEach((a) => {
+    if (a.setId !== setId) return;
+    (Array.isArray(a.answers) ? a.answers : []).forEach((ans) => {
+      if (ans && ans.qid) seen.add(ans.qid);
+    });
+  });
+  return { done: Math.min(seen.size, set.questions.length), total: set.questions.length };
+}
+
+function subjectProgress(subjectId) {
+  return subjectSets(subjectId).reduce((acc, s) => {
+    const p = setProgress(s.id);
+    acc.done += p.done;
+    acc.total += p.total;
+    return acc;
+  }, { done: 0, total: 0 });
+}
+
+// 待答完的题数：首页所有「还剩多少」都从这里算，不在渲染函数里各算各的
+function pendingQuestionCount(setIds) {
+  return setIds.reduce((n, id) => {
+    const p = setProgress(id);
+    return n + Math.max(0, p.total - p.done);
+  }, 0);
+}
+
+function hasPendingQuestions(setId) {
+  return pendingQuestionCount([setId]) > 0;
+}
+
+function wrongCountOfSet(setId) {
+  const set = getSet(setId);
+  const wb = wrongBank[setId];
+  if (!set || !wb) return 0;
+  return Object.keys(wb).filter((qid) => getQuestion(set, qid)).length;
+}
+
+function wrongTotalCount() {
+  return allSets().reduce((n, s) => n + wrongCountOfSet(s.id), 0);
+}
+
+// 从备考规划联动进来、但还没生成过练习集的考点：首页把它们当成一格待办
+function pendingFocusLinks() {
+  const links = Object.values((planLinkStore && planLinkStore.links) || {});
+  if (!links.length) return [];
+  const covered = new Set(allSets().map((s) => (s.source || {}).linkId).filter(Boolean));
+  return links
+    .filter((l) => l && l.linkId && !covered.has(l.linkId))
+    .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+}
+
+/* 首页只推一套「现在该练的」：上次那套还没做完就继续它；
+   都做完了就推还剩题最多的新套；一套都没做过时按列表顺序推第一套。 */
+function focusSet() {
+  const usable = allSets().filter((s) => s.questions.length);
+  if (!usable.length) return null;
+  const last = history[0] ? getSet(history[0].setId) : null;
+  if (last && last.questions.length && hasPendingQuestions(last.id)) return last;
+  const pending = usable
+    .filter((s) => hasPendingQuestions(s.id))
+    .map((s) => ({ s, left: pendingQuestionCount([s.id]) }))
+    .sort((a, b) => b.left - a.left)[0];
+  if (pending) return pending.s;
+  return last && last.questions.length ? last : usable[0];
+}
+
+// 交卷后的「练下一套」：顺着列表找第一套还没答完的，全答完就取下一套
+function nextSetAfter(setId) {
+  const usable = allSets().filter((s) => s.questions.length);
+  if (!usable.length) return null;
+  const i = usable.findIndex((s) => s.id === setId);
+  for (let k = 1; k < usable.length; k++) {
+    const cand = usable[((i < 0 ? -1 : i) + k) % usable.length];
+    if (cand.id !== setId && hasPendingQuestions(cand.id)) return cand;
+  }
+  return usable[((i < 0 ? 0 : i) + 1) % usable.length] || null;
+}
+
 function streakDays() {
   const days = new Set(history.map((a) => todayStrOf(a.finishedAt)));
   let streak = 0;
@@ -1840,6 +1925,7 @@ function expandSidebar() {
 const NAV_VIEWS = [
   { view: 'dashboard', label: '首页', icon: 'navHome' },
   { view: 'sets', label: '科目', icon: 'navFolder' },
+  { view: 'wrong', label: '错题本', icon: 'navWrong' },
   { view: 'records', label: '记录', icon: 'navChart' },
   { view: 'settings', label: '设置', icon: 'navGear', pin: 'bottom' }
 ];
@@ -1851,15 +1937,19 @@ const NAV_ACTIONS = [
 ];
 
 function activeNavView() {
-  // 科目详情仍然属于「科目」这条导航，高亮不能跟着页面名跑
-  return state.view === 'subject' ? 'sets' : state.view;
+  // 科目详情和练习集详情仍然属于「科目」这条导航，高亮不能跟着页面名跑
+  if (state.view === 'subject' || state.view === 'setDetail') return 'sets';
+  return state.view;
 }
 
 function navItemHTML(item) {
   const active = activeNavView() === item.view;
+  // 错题本带待复习题数：这一项的价值就是「有东西在等你」，数字为 0 时不占位
+  const count = item.view === 'wrong' ? wrongTotalCount() : 0;
   return `<button type="button" class="ui-nav-item${active ? ' active' : ''}"
     data-view="${item.view}" onclick="navigateTo('${item.view}')"${active ? ' aria-current="page"' : ''}>
     <span class="nav-icon" aria-hidden="true">${ICON[item.icon] || ''}</span><span class="nav-label">${item.label}</span>
+    ${count ? `<span class="nav-count">${count}</span>` : ''}
   </button>`;
 }
 
@@ -1918,6 +2008,7 @@ const PAGE_TITLES = {
   learning: '学习模式',
   exam: '考试模式',
   examResult: '考试结果',
+  wrong: '错题本',
   records: '练习记录',
   settings: '设置'
 };
@@ -2032,6 +2123,7 @@ function renderCore() {
     case 'learning': main.innerHTML = renderLearning(); break;
     case 'exam': main.innerHTML = state.exam && state.exam.grading ? renderGrading() : renderExam(); break;
     case 'examResult': main.innerHTML = renderExamResult(); break;
+    case 'wrong': main.innerHTML = renderWrongBook(); break;
     case 'records': main.innerHTML = renderRecords(); break;
     case 'settings': main.innerHTML = renderSettings(); break;
     default: main.innerHTML = renderDashboard();
@@ -2082,8 +2174,9 @@ function subjectStats(subjectId) {
   return { attempts: attempts.length, accuracy: graded ? Math.round((correct / graded) * 100) : null };
 }
 
-/* 首页是工作台，不是落地页：一张「今日练习」状态卡 + 备考科目清单，
-   没有装饰性纹理、大情绪文案和英雄区。字段顺序对齐 Exam Plan AI 的今日视图。 */
+/* 首页是练习调度台，不是落地页也不是仪表盘：一张「今日练习」状态卡，
+   主按钮带当前进度，四个格子对应四种练法，统计压成进度条下面一行胶囊。
+   没有装饰性纹理、大情绪文案和英雄区，字段顺序对齐 Exam Plan AI 的今日视图。 */
 function dailyGoalTotal() {
   const subjects = visibleSubjects();
   if (!subjects.length) return 20;
@@ -2108,36 +2201,80 @@ function daysToExam(subject) {
   return Math.round((target - today) / 86400000);
 }
 
-function dashboardRows(subjects, st, streak, lastAttempt, lastSet) {
-  const nearest = subjects
-    .map((s) => ({ s, left: daysToExam(s) }))
-    .filter((x) => x.left != null && x.left >= 0)
-    .sort((a, b) => a.left - b.left)[0];
-  const setCount = allSets().length;
-  const rows = [];
-  // 今日目标已经在状态卡的进度条上说出来，行里再重复一次会让首页失去主次
-  rows.push(['上次练习', lastAttempt
-    ? `${esc(lastSet ? lastSet.name : '已删除的练习集')} · ${fmtDay(lastAttempt.finishedAt)}`
-    : '还没有练习记录']);
-  rows.push(['连续记录', streak > 0 ? `<b>${streak} 天</b>` : '未开始']);
-  if (nearest) rows.push(['距考试', `<b>${nearest.left} 天</b> · ${esc(nearest.s.examName || nearest.s.name)}`]);
-  rows.push(['练习集', `${setCount} 个练习集 · ${st.totalQ} 道题`]);
-  rows.push(['累计正确率', st.accuracy == null
-    ? '未练习'
-    : `<b>${st.accuracy}%</b>${st.count ? ` · ${st.count} 次练习` : ''}`]);
-  return rows;
+// 首页只推一套「现在该练的」，主按钮的文案直接带上它的状态
+function mainPracticeAction(focus, progress, hasSubjects) {
+  if (!focus) {
+    return { label: hasSubjects ? '挑一个备考科目' : '去建第一个备考科目', onclick: "navigateTo('sets')" };
+  }
+  const name = `<span data-no-i18n>${esc(focus.name)}</span>`;
+  if (!progress.done) {
+    return { label: `开始练习 · ${name} 共 ${progress.total} 题`, onclick: `startLearning('${focus.id}')` };
+  }
+  if (progress.done < progress.total) {
+    return { label: `继续 · ${name} ${progress.done}/${progress.total} 题`, onclick: `startLearning('${focus.id}')` };
+  }
+  return { label: `再过一遍 · ${name} ${progress.total} 题`, onclick: `startLearning('${focus.id}')` };
+}
+
+// 考点聚焦格：把待练的联动考点装回临时上下文，再打开出题弹窗（默认已勾上聚焦这个考点）
+function startFocusLink(linkId) {
+  const link = planLinkStore.links[linkId];
+  if (!link) {
+    toast('这条联动关系已经不存在了', 'info');
+    navigateTo('sets');
+    return;
+  }
+  const topic = (link.path || {}).topic || '';
+  const subject = resolvePlanFolder({
+    boundSubjectId: link.subjectId || '',
+    exam: (link.path || {}).exam || '',
+    subjectName: (link.path || {}).subject || ''
+  });
+  if (!subject) {
+    planLink = { subjectId: null, subject: (link.path || {}).subject || '', topic, exam: (link.path || {}).exam || '' };
+    navigateTo('sets');
+    toast(`先选一个科目，再练考点「${topic}」`, 'info', 6000);
+    return;
+  }
+  planLink = transientPlanLink(link, subject);
+  openAIModal(subject.id);
 }
 
 function renderDashboard() {
   const subjects = visibleSubjects();
   const st = overallStats();
   const streak = streakDays();
-  const lastAttempt = history[0];
-  const lastSet = lastAttempt ? getSet(lastAttempt.setId) : null;
   const today = todayAnswered();
   const goal = dailyGoalTotal();
   const goalPct = Math.min(100, Math.round((today / goal) * 100));
-  const rows = dashboardRows(subjects, st, streak, lastAttempt, lastSet);
+  const focus = focusSet();
+  const progress = focus ? setProgress(focus.id) : { done: 0, total: 0 };
+  const cta = mainPracticeAction(focus, progress, subjects.length);
+  const wrongTotal = wrongTotalCount();
+  const focusLinks = pendingFocusLinks();
+  const lastExam = history.find((a) => a.mode === 'exam');
+  // 「待练」按还没答完的练习集数算，和主按钮说的是同一件事
+  const pendingSets = allSets().filter((s) => s.questions.length && pendingQuestionCount([s.id]) > 0).length;
+  const nearest = subjects
+    .map((s) => ({ s, left: daysToExam(s) }))
+    .filter((x) => x.left != null && x.left >= 0)
+    .sort((a, b) => a.left - b.left)[0];
+
+  const cell = (o) => `
+    <button type="button" class="dispatch-cell" onclick="${o.onclick}">
+      <span class="dispatch-label">${o.label}</span>
+      <span class="dispatch-value">${o.value}</span>
+      <span class="dispatch-note">${o.note}</span>
+    </button>`;
+
+  const chips = [];
+  if (streak > 0) chips.push(`连续 ${streak} 天`);
+  if (pendingSets) chips.push(`待练 ${pendingSets} 套`);
+  if (nearest) {
+    chips.push(`<span data-no-i18n>${esc(nearest.s.examName || nearest.s.name)}</span>`);
+    chips.push(`距考试 ${nearest.left} 天`);
+  }
+  chips.push(st.accuracy == null ? '还没有练习成绩' : `累计正确率 ${st.accuracy}%`);
 
   return `
     <div class="card today-card">
@@ -2149,15 +2286,38 @@ function renderDashboard() {
       <div class="today-track">
         <div class="today-track-head"><span>今日目标</span><b>${today} / ${goal} 题</b></div>
         <div class="ui-progress"><div style="width:${goalPct}%"></div></div>
+        <div class="today-chips">${chips.map((c) => `<span class="today-chip">${c}</span>`).join('')}</div>
       </div>
-      <dl class="today-rows">
-        ${rows.map(([k, v]) => `<div class="today-row"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}
-      </dl>
       <div class="today-actions">
-        ${lastSet
-          ? `<button class="btn btn-primary" onclick="openSet('${lastSet.id}')">继续上次练习</button>`
-          : `<button class="btn btn-primary" onclick="navigateTo('sets')">${subjects.length ? '挑一个备考科目' : '去建第一个备考科目'}</button>`}
+        <button class="btn btn-primary" onclick="${cta.onclick}">${cta.label}</button>
       </div>
+      ${focus ? `
+        <div class="dispatch-grid">
+          ${cell({
+            label: '顺序练习',
+            value: `${progress.done}<span class="dispatch-denom"> / ${progress.total} 题</span>`,
+            note: `<span data-no-i18n>${esc(focus.name)}</span>`,
+            onclick: `startLearning('${focus.id}')`
+          })}
+          ${cell({
+            label: '错题重练',
+            value: `${wrongTotal}<span class="dispatch-denom"> 题待复习</span>`,
+            note: wrongTotal ? '按练习集分组' : '暂无错题',
+            onclick: "navigateTo('wrong')"
+          })}
+          ${cell({
+            label: '模拟考试',
+            value: `${lastExam ? lastExam.score : '--'}<span class="dispatch-denom"> 分（上次）</span>`,
+            note: lastExam ? '自检掌握度' : '还没有考过',
+            onclick: `startExamModal('${focus.id}')`
+          })}
+          ${focusLinks.length ? cell({
+            label: '考点聚焦',
+            value: `${focusLinks.length}<span class="dispatch-denom"> 个考点待练</span>`,
+            note: `<span data-no-i18n>${esc((focusLinks[0].path || {}).topic || '')}</span>`,
+            onclick: `startFocusLink('${focusLinks[0].linkId}')`
+          }) : ''}
+        </div>` : ''}
     </div>
   `;
 }
@@ -2195,12 +2355,13 @@ function tailAccuracy(acc) {
 
 function renderSetRow(s) {
   const st = setStats(s.id);
+  const p = setProgress(s.id);
   const kpCount = (s.knowledgePoints || []).length;
   return lrow({
     onclick: `openSet('${s.id}')`,
     accent: setAccent(s).bar,
     title: s.name,
-    chip: `${s.questions.length} 题`,
+    chip: `已做 ${p.done}/${p.total} 题`,
     sub: s.description || `${kpCount} 知识点 · ${st.attempts ? `已练 ${st.attempts} 次` : '还没有练过'}`,
     tail: tailAccuracy(st.accuracy)
   });
@@ -2209,7 +2370,7 @@ function renderSetRow(s) {
 function renderSubjectRow(subject) {
   const sets = subjectSets(subject.id);
   const mats = subjectMaterials(subject.id);
-  const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
+  const pr = subjectProgress(subject.id);
   const left = daysToExam(subject);
   const facts = [];
   if (subject.examName) facts.push(subject.examName);
@@ -2221,7 +2382,7 @@ function renderSubjectRow(subject) {
     onclick: `openSubject('${subject.id}')`,
     accent: setAccent({ id: subject.id }).bar,
     title: subject.name,
-    chip: `${qCount} 题`,
+    chip: `已做 ${pr.done}/${pr.total} 题`,
     sub: facts.join(' · '),
     tail: tailAccuracy(subjectStats(subject.id).accuracy)
   });
@@ -4106,6 +4267,9 @@ function renderExamResult() {
   const a = state.examResult;
   if (!a) return `<div class="empty-state"><div class="empty-state-title">没有结果</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回备考科目</button></div>`;
   const set = getSet(a.setId);
+  // 交卷不是终点：这一页要立刻给出下一步——重做刚错的题，或直接练下一套
+  const wrongOfThisSet = wrongCountOfSet(a.setId);
+  const next = nextSetAfter(a.setId);
   const level = a.score >= 85 ? 'high' : a.score >= 60 ? 'medium' : 'low';
   const label = a.score >= 85 ? '优秀' : a.score >= 60 ? '合格' : '需要加强';
 
@@ -4128,10 +4292,14 @@ function renderExamResult() {
 
       ${renderPlanReceiptCard(receiptForAttempt(a))}
 
+      <div class="btn-group" style="justify-content:center;margin-bottom:14px;flex-wrap:wrap">
+        ${wrongOfThisSet ? `<button class="btn btn-primary" onclick="startLearning('${a.setId}', true)">重做错题 ${wrongOfThisSet} 题</button>` : ''}
+        ${next ? `<button class="btn ${wrongOfThisSet ? 'btn-secondary' : 'btn-primary'}" onclick="openSet('${next.id}')">练下一套 · <span data-no-i18n>${esc(next.name)}</span></button>` : ''}
+      </div>
       <div class="btn-group" style="justify-content:center;margin-bottom:28px;flex-wrap:wrap">
-        ${set ? `<button class="btn btn-primary" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
-        ${set ? `<button class="btn btn-secondary" onclick="openSet('${set.id}')">返回练习集</button>` : ''}
-        <button class="btn btn-secondary" onclick="navigateTo('records')">查看记录</button>
+        ${set ? `<button class="btn btn-ghost" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
+        ${set ? `<button class="btn btn-ghost" onclick="openSet('${set.id}')">返回练习集</button>` : ''}
+        <button class="btn btn-ghost" onclick="navigateTo('records')">查看记录</button>
       </div>
 
       ${set ? `
@@ -4148,8 +4316,8 @@ function renderExamResult() {
               <span class="badge ${statusCls}">${status}</span>
             </div>
             <div class="review-question">${i + 1}. <span data-no-i18n>${esc(q.content)}</span></div>
-            <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}">${esc(userAnswerText(q, ans.userAnswer))}</span></div>
-            ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text">${esc(answerText(q))}</span></div>` : ''}
+            <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}" data-no-i18n>${esc(userAnswerText(q, ans.userAnswer))}</span></div>
+            ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text" data-no-i18n>${esc(answerText(q))}</span></div>` : ''}
             ${q.explanation ? `<div class="review-answer" data-no-i18n style="margin-top:8px;color:var(--text-secondary)">${esc(q.explanation)}</div>` : ''}
             ${q.type === 'code' && q.answer ? `<div class="code-output" style="margin-top:12px"><div class="output-label">参考答案</div><span data-no-i18n>${esc(q.answer)}</span></div>` : ''}
           </div>`;
@@ -4157,10 +4325,63 @@ function renderExamResult() {
     </div>`;
 }
 
+/* 错题本：答错自动进账（addWrong/removeWrong 由两种模式在评分时维护），
+   这里只负责按练习集分组呈现和一键重练，复用 startLearning(setId, true)。 */
+function renderWrongBook() {
+  const wrongTotal = wrongTotalCount();
+  const groups = allSets()
+    .map((set) => {
+      const wb = wrongBank[set.id] || {};
+      const qids = Object.keys(wb).filter((qid) => getQuestion(set, qid));
+      return { set, wb, qids };
+    })
+    .filter((g) => g.qids.length)
+    .sort((a, b) => b.qids.length - a.qids.length);
+
+  if (!wrongTotal) {
+    return `
+      <div class="empty-card">
+        <div class="empty-card-icon">${ICON.target}</div>
+        <div class="empty-card-title">暂无错题</div>
+        <div class="empty-card-desc">学习和考试模式里答错的题会自动记到这里，答对后自动移出</div>
+      </div>
+      <div class="btn-group" style="justify-content:center;margin-top:18px">
+        <button class="btn btn-primary" onclick="navigateTo('sets')">挑一个备考科目</button>
+        <button class="btn btn-secondary" onclick="navigateTo('records')">查看练习记录</button>
+      </div>`;
+  }
+
+  return `
+    <p class="page-lead">共 ${wrongTotal} 道题待复习，分布在 ${groups.length} 个练习集。答对一次就会自动移出。</p>
+    <div class="wrong-groups">
+      ${groups.map(({ set, wb, qids }) => {
+        const a = setAccent(set);
+        return `
+          <div class="card mb-6">
+            <div class="wrong-group-head">
+              <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(set.icon || '题')}</span>
+              <span class="wrong-group-name" data-no-i18n>${esc(set.name)}</span>
+              <span class="badge badge-danger">${qids.length} 题</span>
+              <button class="btn btn-primary btn-sm" onclick="startLearning('${set.id}', true)">刷错题</button>
+            </div>
+            <div class="wrong-list">
+              ${qids.map((qid) => {
+                const q = getQuestion(set, qid);
+                return `<div class="wrong-item">
+                  <div class="wrong-question"><span data-no-i18n>${esc((q.content || '').split('\n')[0])}</span><span class="wrong-times">错 ${wb[qid]} 次</span></div>
+                  <div class="wrong-answer">正确答案：<span class="correct-text" data-no-i18n>${esc(answerText(q))}</span></div>
+                  ${q.explanation ? `<div class="wrong-explain" data-no-i18n>${esc(q.explanation)}</div>` : ''}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
 function renderRecords() {
   const st = overallStats();
   const sets = allSets();
-  const wrongTotal = Object.values(wrongBank).reduce((n, m) => n + Object.keys(m).length, 0);
 
   const perSet = sets.map((s) => {
     const rs = setStats(s.id);
@@ -4175,10 +4396,6 @@ function renderRecords() {
         note: st.count ? `共批改 ${st.graded} 题` : '还没有练习记录'
       })}
       ${statCard('平均得分', st.avg == null ? '--' : st.avg, { icon: ICON.trophy, note: '每次练习的得分均值' })}
-      ${statCard('错题数', wrongTotal, {
-        icon: ICON.flask,
-        note: wrongTotal ? `分布在 ${Object.keys(wrongBank).length} 个练习集` : '暂时没有待复习的错题'
-      })}
     </div>
 
     ${perSet.length ? `
@@ -4188,12 +4405,13 @@ function renderRecords() {
           const a = setAccent(x.set);
           const acc = x.accuracy;
           const fillCls = acc == null ? '' : acc >= 80 ? 'success' : acc < 60 ? 'warning' : '';
+          const p = setProgress(x.set.id);
           return `
           <div class="perf-row">
             <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(x.set.icon || '题')}</span>
             <div style="flex:1;min-width:0">
               <div class="perf-name" data-no-i18n>${esc(x.set.name)}</div>
-              <div class="perf-sub">${x.attempts} 次练习 · 最佳 ${x.best}%</div>
+              <div class="perf-sub">${x.attempts} 次练习 · 已做 ${p.done}/${p.total} 题 · 最佳 ${x.best}%</div>
             </div>
             <div class="perf-bar">
               <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${acc || 0}%"></div></div>
@@ -4204,37 +4422,6 @@ function renderRecords() {
         }).join('')}
       </div>` : ''}
 
-    <div class="section-title"><span>错题本 ${wrongTotal ? `<span class="badge badge-danger">${wrongTotal}</span>` : ''}</span></div>
-    ${wrongTotal === 0 ? `<div class="card mb-6"><div class="text-sm text-muted text-center" style="padding:20px">太棒了，暂无错题</div></div>` : ''}
-    ${Object.keys(wrongBank).map((setId) => {
-      const set = getSet(setId);
-      const wb = wrongBank[setId] || {};
-      const ids = Object.keys(wb).filter((qid) => getQuestion(set, qid));
-      if (!set || !ids.length) return '';
-      const a = setAccent(set);
-      return `
-        <div class="card mb-4">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-            <div style="display:flex;align-items:center;gap:9px">
-              <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(set.icon || '题')}</span>
-              <b data-no-i18n>${esc(set.name)}</b>
-              <span class="badge badge-danger">${ids.length} 题</span>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="startLearning('${set.id}', true)">刷错题</button>
-          </div>
-          <div style="margin-top:12px">
-            ${ids.map((qid) => {
-              const q = getQuestion(set, qid);
-              return `<div style="padding:10px 0;border-top:1px solid var(--line-soft)">
-                <div style="font-size:14px;margin-bottom:4px">${esc((q.content || '').split('\n')[0])} <span class="text-sm text-muted">（错 ${wb[qid]} 次）</span></div>
-                <div class="text-sm" style="color:var(--text-secondary)">正确答案：<span style="color:var(--success);font-weight:600">${esc(answerText(q))}</span></div>
-                ${q.explanation ? `<div class="text-sm text-muted" data-no-i18n style="margin-top:2px">${esc(q.explanation)}</div>` : ''}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`;
-    }).join('')}
-
     <div class="section-title">历史记录</div>
     ${history.length === 0 ? `<div class="card"><div class="text-sm text-muted text-center" style="padding:20px">还没有练习记录，从学习模式开始吧</div></div>` : `
       <div class="card">
@@ -4242,7 +4429,7 @@ function renderRecords() {
           <div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < Math.min(history.length, 50) - 1 ? 'border-bottom:1px solid var(--line-soft)' : ''}">
             <span class="badge ${a.mode === 'exam' ? 'badge-primary' : 'badge-success'}">${a.mode === 'exam' ? '考试' : '学习'}</span>
             <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.setName)}</div>
+              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-no-i18n>${esc(a.setName)}</div>
               <div class="text-sm text-muted">${fmtDate(a.finishedAt)} · ${fmtDuration(a.durationSec)}</div>
             </div>
             <div class="history-score" style="color:${a.score >= 85 ? 'var(--success)' : a.score >= 60 ? 'var(--warning)' : 'var(--danger)'}">${a.score}%</div>
