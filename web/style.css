@@ -2164,6 +2164,9 @@ input[type="file"].form-input:active::file-selector-button {
 .review-answer .correct-text { color: var(--green); }
 .review-answer .wrong-text { color: var(--red); }
 
+/* 结果页「下一步」按钮组下面那行复习口径：居中、贴紧上面的按钮 */
+.follow-up { text-align: center; margin: -4px 0 18px; }
+
 .perf-row {
   display: flex;
   align-items: center;
@@ -3611,11 +3614,15 @@ b, strong { font-weight: 600; }
 .stat-note {
   margin-top: 5px;
   font-size: 12px;
+  line-height: 16px;
   letter-spacing: -0.01em;
   color: var(--ink-faint);
+  /* 说明文字压到两行：单行省略号在窄屏会把「可重新列入」这类关键尾巴吃掉，英文更长更撑不住 */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .stat-track {
   margin-top: 11px;
@@ -4130,67 +4137,70 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   body.sidebar-collapsed .main-header { padding-left: 58px; }
 }
 
-/* ── 错题本：一个练习集一张卡，卡内按题分细线行 ─────────────────── */
+/* ── 错题本：复习台顶栏（筛选 chip + 排序 + 组卷）。
+   分组本身沿用科目详情页的 .fold / .lrow，这里只补这一页特有的控件行。 ─── */
 
-.wrong-group-head {
+.wrong-bar {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
   flex-wrap: wrap;
+  margin: 0 0 20px;
 }
 
-.wrong-group-name {
-  font-family: var(--display);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: var(--ink);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wrong-group-head .btn { margin-left: auto; }
-
-.wrong-list { margin-top: 8px; }
-
-.wrong-item {
-  padding: 11px 0;
-  border-top: 1px solid var(--divider);
-}
-
-.wrong-item:first-child { border-top: 0; padding-top: 4px; }
-
-.wrong-question {
+.wrong-bar-tail {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 10px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--ink);
+  margin-left: auto;
 }
 
-.wrong-times {
-  flex-shrink: 0;
-  font-size: 11.5px;
-  color: var(--danger);
-  font-variant-numeric: tabular-nums;
-}
+.wrong-bar-tail > label { font-size: 12px; }
 
-.wrong-answer {
-  margin-top: 4px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--ink-soft);
-}
-
-.wrong-explain {
-  margin-top: 3px;
+.wrong-bar-tail .form-select {
+  width: auto;
+  min-width: 132px;
+  padding: 7px 30px 7px 11px;
+  min-height: 32px;
   font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--ink-mute);
+}
+
+/* 筛选 chip：扁平、无边框，选中态换成墨底白字（与 .lang-seg 同一套语言） */
+.filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink-soft);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.filter-chip:hover { background: var(--paper-2); color: var(--ink); }
+.filter-chip b {
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+.filter-chip.is-on { background: var(--ink); color: #ffffff; }
+.filter-chip.is-on b { color: rgba(255, 255, 255, 0.7); }
+
+@media (max-width: 720px) {
+  .wrong-bar { align-items: stretch; flex-direction: column; }
+  .wrong-bar-tail { margin-left: 0; justify-content: space-between; }
+  .wrong-bar-tail .form-select { flex: 1; }
 }
 
 /* ── 列表：一行一项的细线清单，收纳段（.fold）展开后的正文就是这个列表 ─── */
@@ -4258,6 +4268,12 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 .lrow-go { font-size: 13px; color: var(--ink-mute); opacity: 0; transition: opacity 0.14s ease, transform 0.14s ease; }
 .lrow:hover .lrow-go { opacity: 1; transform: translateX(2px); }
 
+/* 行内还要挂一个次要动作时用这版：整行可点（键盘可达），动作按钮各自 stopPropagation */
+.lrow-tap { grid-template-columns: 8px minmax(0, 1fr) auto auto 14px; }
+.lrow-tap:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.lrow-acts { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.lrow-acts .btn { padding: 5px 10px; font-size: 12px; }
+
 .pop-wrap { position: relative; display: inline-flex; }
 
 .icon-btn { width: 30px; padding: 0; justify-content: center; font-size: 16px; line-height: 1; letter-spacing: 1px; }
@@ -4301,6 +4317,7 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 
 @media (max-width: 640px) {
   .lrow { grid-template-columns: 8px minmax(0, 1fr) auto; gap: 10px; padding: 12px 4px; }
+  .lrow-tap { grid-template-columns: 8px minmax(0, 1fr) auto auto; }
   .lrow-go { display: none; }
   .lrow-title { font-size: 14px; }
   .subject-head { padding: 14px 14px; }
