@@ -2913,12 +2913,33 @@ function renderMaterialRow(m) {
     </div>`;
 }
 
+/* 段内列表的溢出收纳：和练习记录、错题本同一个 .hist-more 机制——
+   前 6 行直接可见，剩下的收进「展开其余 N 套」，页面高度不会被长列表撑走。 */
+const SET_PREVIEW = 6;
+
+function setListHTML(sets) {
+  if (!sets.length) {
+    return `<div class="material-empty">还没有练习集。让 AI 用资料出一套，或从其他练习科目移动过来。</div>`;
+  }
+  const rest = sets.slice(SET_PREVIEW);
+  return `
+    <div class="lrow-list">
+      ${sets.slice(0, SET_PREVIEW).map((s) => renderSetRow(s)).join('')}
+      ${rest.length ? `
+        <details class="hist-more">
+          <summary>展开其余 ${rest.length} 套</summary>
+          ${rest.map((s) => renderSetRow(s)).join('')}
+        </details>` : ''}
+    </div>`;
+}
+
 function renderSubject() {
   const subject = subjectById(state.subjectId);
   if (!subject) {
     return `<div class="empty-state"><div class="empty-state-title">练习科目不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回练习科目</button></div>`;
   }
-  const sets = subjectSets(subject.id);
+  // 练习集没有 createdAt，插入顺序就是生成顺序，所以倒序展示：AI 刚出的那套永远在最上面。
+  const sets = subjectSets(subject.id).slice().reverse();
   const mats = subjectMaterials(subject.id);
   const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
   const accent = setAccent({ id: subject.id });
@@ -2945,7 +2966,6 @@ function renderSubject() {
         <div class="subject-head-copy">
           <div class="hero-eyebrow">练习科目</div>
           <h2 data-no-i18n>${esc(subject.name)}</h2>
-          <p>${sets.length} 个练习集 · ${qCount} 道题 · ${mats.length} 份资料 · ${chars} 字可用</p>
           ${meta.length ? `<div class="subject-meta">${meta.map((m) => `<span class="ui-chip">${m}</span>`).join('')}</div>` : ''}
         </div>
       </div>
@@ -2961,6 +2981,13 @@ function renderSubject() {
       onchange="handleSubjectFileInput(this)">
 
     ${foldSection({
+      open: true,
+      title: '练习集',
+      chip: `${sets.length} 个 · ${qCount} 题 · ${kpTotal} 个知识点`,
+      body: setListHTML(sets)
+    })}
+
+    ${foldSection({
       title: '资料',
       chip: mats.length ? `${mats.length} 份 · ${chars} 字` : '还没有资料',
       actions: `<button type="button" class="link-btn" onclick="event.preventDefault();pickSubjectFiles()">＋ 上传资料</button>`,
@@ -2973,18 +3000,6 @@ function renderSubject() {
         ${materialsUnavailable
           ? `<div class="feedback feedback-incorrect">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
           : '<div class="upload-status" id="subjectUploadStatus" hidden></div>'}`
-    })}
-
-    ${foldSection({
-      open: true,
-      title: '练习集',
-      chip: `${sets.length} 个 · ${qCount} 题 · ${kpTotal} 个知识点`,
-      body: `
-        <div class="lrow-list">
-          ${sets.length
-            ? sets.map((s) => renderSetRow(s)).join('')
-            : `<div class="material-empty">还没有练习集。用上面的资料让 AI 出一套，或从其他练习科目移动过来。</div>`}
-        </div>`
     })}`;
 }
 
@@ -5281,7 +5296,8 @@ function renderWrongBook() {
       ${statCard('已掌握', `${stats.mastered}`, { icon: ICON.archive, note: stats.mastered ? '答对一次即归档，可重新列入' : '还没有归档的错题' })}
       ${statCard('最弱考点', `${stats.weakest ? stats.weakest.items.length : 0}`, {
         icon: ICON.bulb,
-        noteHTML: stats.weakest ? `<span data-no-i18n>${esc(stats.weakest.title || '未归类考点')}</span>` : '先答错题才会形成考点画像'
+        // 有考点名时它是用户数据（保留原文）；没有考点名时「未归类考点」是界面兜底文案，得让词典翻它
+        noteHTML: stats.weakest ? (stats.weakest.title ? `<span data-no-i18n>${esc(stats.weakest.title)}</span>` : '未归类考点') : '先答错题才会形成考点画像'
       })}
     </div>
 

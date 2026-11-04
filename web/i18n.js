@@ -153,8 +153,8 @@ const EN = Object.assign({
   '目标练习科目': 'Target subject',
   '（未知练习集）': '(unknown set)',
   '删除练习集': 'Delete question set',
-  '还没有练习集。用上面的资料让 AI 出一套，或从其他练习科目移动过来。':
-    'No question sets yet. Use the materials above to generate one with AI, or move a set in from another subject.',
+  '还没有练习集。让 AI 用资料出一套，或从其他练习科目移动过来。':
+    'No question sets yet. Let AI build one from your materials, or move a set in from another subject.',
 
   /* 练习集详情 */
   '练习次数': 'Attempts',
@@ -626,7 +626,6 @@ const EN = Object.assign({
   '练习集中没有题目': 'This set has no questions',
   '练习集中没有可用的题目': 'No usable questions in this set',
   '份资料已存入': 'materials saved',
-  '字可用': 'chars ready',
   '次练习': 'attempts',
 
   /* 新增练习科目向导 */
@@ -796,6 +795,7 @@ const EN_PATTERNS = [
   [/^共 (\d+) 次练习 · 平均 (\d+) 分 · 已批改 (\d+) 题$/,
     (m) => `${pl(m[1], 'attempt', 'attempts')} · avg ${m[2]}% · ${pl(m[3], 'question', 'questions')} graded`],
   [/^展开全部 (\d+) 条$/, (m) => `Show all ${pl(m[1], 'entry', 'entries')}`],
+  [/^展开其余 (\d+) 套$/, (m) => `Show ${pl(m[1], 'more set', 'more sets')}`],
   [/^(\d+) 个练习集 · (\d+) 道题 · (\d+) 份资料$/,
     (m) => `${pl(m[1], 'set', 'sets')} · ${pl(m[2], 'question', 'questions')} · ${pl(m[3], 'material', 'materials')}`],
   [/^(\d+) 份 · ([\d,.]+) 字$/, (m) => `${pl(m[1], 'file', 'files')} · ${m[2]} characters`],
@@ -857,8 +857,6 @@ const EN_PATTERNS = [
   [/^(\d+) 天 · (.+)$/, (m) => `${m[1]} day${m[1] === '1' ? '' : 's'} · ${t(m[2])}`],
   [/^共批改 (\d+) 题$/, (m) => `${pl(m[1], 'answer', 'answers')} graded`],
   [/^(\d+) 套 · (\d+) 题$/, (m) => `${pl(m[1], 'set', 'sets')} · ${pl(m[2], 'question', 'questions')}`],
-  [/^(\d+) 个练习集 · (\d+) 道题 · (\d+) 份资料 · ([\d,]+) 字可用$/,
-    (m) => `${m[1]} sets · ${m[2]} questions · ${m[3]} materials · ${Number(m[4].replace(/,/g, '')).toLocaleString('en-US')} chars extracted`],
   [/^(\d+) 份资料 · (\d+) 个练习集 · (\d+) 道题目 · (\d+) 字提取文字$/,
     (m) => `${m[1]} materials · ${m[2]} sets · ${m[3]} questions · ${Number(m[4]).toLocaleString('en-US')} chars`],
   [/^(单选|多选|判断|填空|编程) × (\d+)$/, (m) => `${t(m[1])} × ${m[2]}`],
@@ -876,7 +874,9 @@ const EN_PATTERNS = [
   [/^(.+) · (\d+)分(?:(\d+)秒)?$/, (m) => `${m[1]} · ${m[2]}m${m[3] ? ` ${m[3]}s` : ''}`],
   [/^(\d+) 天$/, (m) => `${m[1]} day${m[1] === '1' ? '' : 's'}`],
   [/^(\d+) 页$/, (m) => pl(m[1], 'page', 'pages')],
-  [/^(笔记|真题|其他) · (.+) · ([\d,]+) 字 · (.+)$/, (m) => `${t(m[1])} · ${m[2]} · ${Number(m[3].replace(/,/g, ''))} chars · ${m[4]}`],
+  /* 资料行那串「笔记 · 891 KB · 31,210 字 · 11-04 · 仅文字」：整句命中后剩下的两段仍要各自过一遍词典，
+     否则尾巴上的「仅文字」「原始文件未保存」会跟着原样留在英文里；数字也按英文习惯补回千分位。 */
+  [/^(笔记|真题|其他) · (.+) · ([\d,]+) 字 · (.+)$/, (m) => `${t(m[1])} · ${t(m[2])} · ${Number(m[3].replace(/,/g, '')).toLocaleString('en-US')} chars · ${t(m[4])}`],
   [/^知识点 · (.+)$/, 'Key point · $1'],
   [/^模拟考试 · (.+)$/, 'Mock exam · $1'],
   [/^← 返回(.+)$/, '← Back to $1'],

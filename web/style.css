@@ -2204,12 +2204,12 @@ input[type="file"].form-input:active::file-selector-button {
 }
 
 .perf-copy { flex: 1; min-width: 0; }
-.perf-name { font-size: 14px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.perf-name { font-family: var(--display); font-size: 13.5px; font-weight: 500; letter-spacing: -0.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .perf-sub { font-size: 11.5px; color: var(--ink-mute); }
 
 .history-score {
   font-family: var(--display);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   min-width: 50px;
   text-align: right;
@@ -3127,12 +3127,6 @@ body {
   color: var(--ink);
 }
 
-.subject-head-copy p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--ink-mute);
-}
-
 /* 备考上下文：目标考试 / 考试日期 / 每日目标 */
 .subject-meta {
   display: flex;
@@ -3182,9 +3176,12 @@ body {
 
 .material-main { min-width: 0; }
 
+/* 资料行与 .lrow 是同一级内容，字号跟着行标题走（13.5/500），不再自立一套 14/600 */
 .material-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4243,13 +4240,15 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 
 .lrow-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 
+/* 行标题比段标题低一级：靠「小一档 + 轻一档」退到内容位，字号差才是层级的第一依据，
+   缩进只做辅助——行已经由色点往后让出 21px，再压深就把列表推到偏右。 */
 .lrow-title {
   display: flex;
   align-items: center;
   gap: 9px;
   font-family: var(--display);
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
   letter-spacing: -0.01em;
   min-width: 0;
 }
@@ -4264,16 +4263,18 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   white-space: nowrap;
 }
 
+/* 尾列是这一行的第二手信息：数字保留一档对比，标签压到副行同级，
+   否则 13/600 的数字会和行标题抢视线。 */
 .lrow-tail {
   font-family: var(--display);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-soft);
   text-align: right;
   white-space: nowrap;
 }
 
-.lrow-tail b { font-size: 14px; font-weight: 600; margin-right: 4px; }
+.lrow-tail b { font-size: 13px; font-weight: 600; color: var(--ink); margin-right: 4px; }
 
 .lrow-tail-idle { font-family: var(--body); font-size: 12px; font-weight: 400; color: var(--ink-mute); }
 
@@ -4282,6 +4283,8 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 
 /* 行内还要挂一个次要动作时用这版：整行可点（键盘可达），动作按钮各自 stopPropagation */
 .lrow-tap { grid-template-columns: 8px minmax(0, 1fr) auto auto 14px; }
+/* 行、段标题、展开剩余都是键盘可落点的收纳件，共用同一支内嵌墨框 */
+.lrow:focus-visible,
 .lrow-tap:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .lrow-acts { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .lrow-acts .btn { padding: 5px 10px; font-size: 12px; }
@@ -4295,8 +4298,12 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   .lrow { grid-template-columns: 8px minmax(0, 1fr) auto; gap: 10px; padding: 12px 4px; }
   .lrow-tap { grid-template-columns: 8px minmax(0, 1fr) auto auto; }
   .lrow-go { display: none; }
-  .lrow-title { font-size: 14px; }
   .subject-head { padding: 14px 14px; }
+  /* 卡里的行有卡片替它留内缩，所以只留 4px；段正文是贴边的，行得自己把内缩撑回来 */
+  .fold-body-flush .lrow,
+  .fold-body-flush .material-row,
+  .fold-body-flush .material-empty { padding-left: 14px; padding-right: 14px; }
+  .fold-body-flush .hist-more summary { padding-left: 14px; padding-right: 14px; }
 }
 
 /* 界面语言分段控件（对齐 Exam Plan AI 设置页的语言选择器） */
@@ -4656,6 +4663,8 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 }
 .fold-head::-webkit-details-marker { display: none; }
 .fold-head:hover { background: var(--surface-tint); }
+.fold-head:focus-visible,
+.hist-more summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .fold-dot {
   width: 10px;
   height: 10px;
@@ -4670,11 +4679,13 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   flex-direction: column;
   gap: 2px;
 }
+/* 段标题就是 .section-title 的那一级：15/600。全站只有一把标尺——
+   页面标题 26/600 › 段标题 15/600 › 行标题 13.5/500 › 副行与尾列 12/400 › 胶囊 11/500。 */
 .fold-name {
   font-family: var(--display);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.012em;
   color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4717,6 +4728,16 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   padding: 0;
   border-top: 1px solid var(--line);
 }
+/* 打开的段落是「容器」，行是「内容」：正文底色调深一档（Exam Plan 展开区同款 #faf9f6），
+   分隔线跟着加重一档才压得住纸纹；悬停改为反向往上提到卡面白，淡底上的行才不会糊成一团。 */
+.fold[open] > .fold-body-flush { background: var(--card-alt); }
+.fold-body-flush .lrow, .fold-body-flush .material-row { border-bottom-color: var(--line); }
+.fold-body-flush .lrow:last-child, .fold-body-flush .material-row:last-child { border-bottom: 0; }
+.fold-body-flush .lrow:hover, .fold-body-flush .material-row:hover { background: var(--card); }
+/* 资料列表在段正文里就是正文本身，不再自带 16px 段后距 */
+.fold-body-flush .material-list { margin-bottom: 0; }
+.fold-body-flush .hist-more { border-top-color: var(--line); }
+.fold-body-flush .hist-more summary { padding: 11px 16px 13px; }
 .fold-body-flush .material-empty { border-top: 0; }
 .fold-body-flush .upload-status { padding: 0 16px 12px; }
 .fold-body-flush .feedback { margin: 0 16px 14px; }
@@ -4749,7 +4770,6 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 }
 .fold-add-dot svg { width: 16px; height: 16px; }
 .fold-add .lrow-go { opacity: 1; }
-.fold-add .fold-name { font-size: 13px; }
 
 .fold-section { margin-bottom: 12px; }
 
