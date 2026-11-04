@@ -66,7 +66,11 @@ const ICON = {
   navChart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M8.5 16v-4.5M13 16V7.5M17.5 16v-6.5"/></svg>`,
   navGear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h9M18 7h1M5 12h4M13 12h6M5 17h9M18 17h1"/><circle cx="16" cy="7" r="2"/><circle cx="11" cy="12" r="2"/><circle cx="16" cy="17" r="2"/></svg>`,
   navWrong: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12.5a8 8 0 1 1-2.6-5.9"/><path d="M20 4.5V9h-4.5"/><path d="M9.5 11.5l5 5M14.5 11.5l-5 5"/></svg>`,
-  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`
+  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  // 科目收纳卡组与侧栏分组用的三个线性图标，规格同 Exam Plan（lucide 16px / 行内 14px）
+  trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.8h5V7M6.6 7l.8 12.1a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4L17.4 7"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5 12 15.5l6-6"/></svg>`,
+  calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>`
 };
 
 // bar 用于科目/练习集卡左侧的 3px 色条：需要在白卡上可读，所以用实色而不是淡底。
@@ -851,7 +855,7 @@ function hasInboxContent() {
     || materials.some((m) => m.subjectId === INBOX_SUBJECT.id);
 }
 
-// 文件夹列表：内置科目 + 自建科目，有未归档内容时补一个「未分类」
+// 科目列表：内置科目 + 自建科目，有未归档内容时补一个「未分类」
 function visibleSubjects() {
   return hasInboxContent() ? [...allSubjects(), INBOX_SUBJECT] : [...allSubjects()];
 }
@@ -1385,7 +1389,7 @@ async function importExamHandoffMaterials(subject, expectedPlanId) {
   return result;
 }
 
-// 出题弹窗直接带上这个文件夹里的全部资料：用户不用再手动选一遍
+// 出题弹窗直接带上这个科目里的全部资料：用户不用再手动选一遍
 function openPractice(subject) {
   openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
 }
@@ -1402,7 +1406,7 @@ function planHandoffToast(result, subject) {
     return `考试${folder}的资料与真题都已在这里，可以直接出题`;
   }
   if (held) return `这次跳转没有带来新资料：已选入${folder}的 ${held} 份资料，可以直接出题`;
-  return `考试${folder}的资料夹里还没有资料：上传资料即可出题`;
+  return `考试${folder}里还没有资料：上传资料即可出题`;
 }
 
 function planHandoffWarnings(result) {
@@ -1547,7 +1551,7 @@ function renderPlanLinkBanner(subjectId) {
   const examPart = exam ? ` · ${exam}` : '';
   const held = planMaterialCountLine(subjectId);
   const hint = held
-    ? `围绕${ctx}出题练习：这场考试的资料已在这个资料夹（${held}），可直接出题。`
+    ? `围绕${ctx}出题练习：这场考试的资料已在这个科目里（${held}），可直接出题。`
     : `围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本科目。`;
   // 横幅只负责带回原考点，不带任何成绩：这里没有「本次练习」可依附
   const back = planReturnHref(planLinkStore.links[planLink.linkId]);
@@ -1919,22 +1923,22 @@ function expandSidebar() {
 }
 
 // 导航只有一个来源：这一份配置同时喂给桌面侧栏和移动端底栏。
-// 之前 index.html 里手写了两套（侧栏一套、bottom-nav 一套，连 SVG 图标都重抄一遍），
-// 加一个入口要改两处，active 还要 `.nav-item, .bn-item` 两套类名分别同步——现在都从这里生成。
-// pin: 'bottom' 的项目在侧栏沉底，移动端仍然只是底栏的一项。
+// 科目页已经合并了练习记录，所以「记录」不再是独立的一级入口——四项目录和 Exam Plan 侧栏同构。
+// pin: 'bottom' 的项目在侧栏沉底（Exam Plan 也是只有设置沉底），移动端仍然只是底栏的一项。
 const NAV_VIEWS = [
   { view: 'dashboard', label: '首页', icon: 'navHome' },
   { view: 'sets', label: '科目', icon: 'navFolder' },
   { view: 'wrong', label: '错题本', icon: 'navWrong' },
-  { view: 'records', label: '记录', icon: 'navChart' },
   { view: 'settings', label: '设置', icon: 'navGear', pin: 'bottom' }
 ];
 
-// 全局动作同理：一个功能一个入口，桌面挂侧栏、移动端挂页头，由同一份配置渲染。
+// 全局动作只剩一个：新建科目。AI 出题永远按科目归属，入口在科目详情页与资料行，
+// 不再在侧栏底部挂第二个「出题」按钮让人先选科目。
 const NAV_ACTIONS = [
-  { id: 'ai', label: 'AI 出题', icon: 'spark', onclick: 'openAIModal()' },
   { id: 'subject', label: '新建科目', icon: 'plus', onclick: 'newSubjectModal()' }
 ];
+
+const addSubjectAction = () => NAV_ACTIONS.find((a) => a.id === 'subject');
 
 function activeNavView() {
   // 科目详情和练习集详情仍然属于「科目」这条导航，高亮不能跟着页面名跑
@@ -1954,62 +1958,63 @@ function navItemHTML(item) {
 }
 
 function navActionsHTML(slot) {
+  const only = addSubjectAction();
   if (slot === 'sidebar') {
-    return NAV_ACTIONS.map((a) => `<button type="button" class="side-add" onclick="${a.onclick}">
-      <span class="side-add-plus" aria-hidden="true">＋</span>${a.label}</button>`).join('');
+    // 侧栏的新建入口在科目分组末尾，用虚线导航项的形态（对齐 Exam Plan NotionSidebar）
+    return `<button type="button" class="ui-nav-item ui-nav-dashed" onclick="${only.onclick}">
+      <span class="nav-icon" aria-hidden="true">${ICON[only.icon] || ''}</span><span class="nav-label">${only.label}</span>
+    </button>`;
   }
-  // 页头是移动端的动作位：主按钮只给第一个，其余降级成 ghost，避免两个实心并排
-  return NAV_ACTIONS.map((a, i) => `<button type="button" class="btn ${i === 0 ? 'btn-primary' : 'btn-ghost'} btn-sm"
-    onclick="${a.onclick}">${ICON[a.icon] || ''}${a.label}</button>`).join('');
+  return `<button type="button" class="btn btn-primary btn-sm" onclick="${only.onclick}">${ICON[only.icon] || ''}${only.label}</button>`;
 }
 
 function renderNav() {
   const nav = document.getElementById('sidebarNav');
   if (nav) nav.innerHTML = NAV_VIEWS.filter((i) => !i.pin).map((i) => navItemHTML(i)).join('');
   const foot = document.getElementById('sidebarBottom');
-  if (foot) {
-    foot.innerHTML = NAV_VIEWS.filter((i) => i.pin === 'bottom').map((i) => navItemHTML(i)).join('')
-      + navActionsHTML('sidebar');
-  }
+  if (foot) foot.innerHTML = NAV_VIEWS.filter((i) => i.pin === 'bottom').map((i) => navItemHTML(i)).join('');
   const bar = document.getElementById('bottomNav');
   if (bar) bar.innerHTML = NAV_VIEWS.map((i) => navItemHTML(i)).join('');
   const head = document.getElementById('headerActions');
   if (head) head.innerHTML = navActionsHTML('header');
 }
 
-// 侧栏中间那组科目列表：色点 + 名称 + 题数，点击直达科目（纯导航，动作统一沉到底部）
+// 侧栏科目分组（对齐 Exam Plan NotionSidebar）：分组头带计数胶囊，行内只有色点 + 名称，
+// 删除按钮悬停才出现，纯导航不带数字——题数在科目页的卡组里看。
 function renderSidebarSubjects() {
   const host = document.getElementById('sidebarSubjects');
   if (!host) return;
   const subjects = visibleSubjects();
   const rows = subjects.map((s) => {
     const accent = setAccent({ id: s.id });
-    const qCount = subjectSets(s.id).reduce((n, x) => n + x.questions.length, 0);
     const active = state.view === 'subject' && state.subjectId === s.id;
-    return `<button type="button" class="side-subject${active ? ' is-active' : ''}" data-no-i18n onclick="openSubject('${s.id}')" title="${esc(s.name)}">
-      <span class="side-subject-dot" aria-hidden="true" style="background:${accent.bar}"></span>
-      <span class="side-subject-name" data-no-i18n>${esc(s.name)}</span>
-      <span class="side-subject-num">${qCount}</span>
-    </button>`;
+    return `<div class="side-row${active ? ' is-active' : ''}">
+      <button type="button" class="side-row-main" onclick="openSubject('${s.id}')"${active ? ' aria-current="page"' : ''}>
+        <span class="side-row-dot" aria-hidden="true" style="background:${accent.bar}"></span>
+        <span class="side-row-name" data-no-i18n title="${esc(s.name)}">${esc(s.name)}</span>
+      </button>
+      <button type="button" class="side-row-del" onclick="deleteSubject('${s.id}')"
+        title="删除此科目" aria-label="删除科目 ${esc(s.name)}">${ICON.trash}</button>
+    </div>`;
   }).join('');
   host.innerHTML = `
     <div class="sidebar-group-head">
       <span>备考科目</span>
-      <span class="sidebar-count">${subjects.length}</span>
+      <span class="ui-chip tabular-nums">${subjects.length}</span>
     </div>
-    ${rows || '<p class="sidebar-empty">还没有备考科目</p>'}`;
+    ${rows || '<p class="sidebar-empty">暂无科目</p>'}
+    ${navActionsHTML('sidebar')}`;
 }
 
 const PAGE_TITLES = {
   dashboard: '首页',
-  sets: '备考科目',
+  sets: '科目',
   subject: '备考科目',
   setDetail: '练习集',
   learning: '学习模式',
   exam: '考试模式',
   examResult: '考试结果',
   wrong: '错题本',
-  records: '练习记录',
   settings: '设置'
 };
 
@@ -2124,7 +2129,6 @@ function renderCore() {
     case 'exam': main.innerHTML = state.exam && state.exam.grading ? renderGrading() : renderExam(); break;
     case 'examResult': main.innerHTML = renderExamResult(); break;
     case 'wrong': main.innerHTML = renderWrongBook(); break;
-    case 'records': main.innerHTML = renderRecords(); break;
     case 'settings': main.innerHTML = renderSettings(); break;
     default: main.innerHTML = renderDashboard();
   }
@@ -2148,10 +2152,14 @@ function hideSubjectMenu() {
 }
 
 /* 卡片解剖（对齐 Exam Plan AI）：统计卡 = 标签 + 淡图标 / 大号数字 / 说明或进度；
-   科目与练习集卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 6px 进度 + 分隔页脚。 */
+   note 走文案翻译，noteHTML 只给用户起的名（科目 / 考试），带 data-no-i18n 不参与翻译。
+   科目与练习集卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 进度 + 分隔页脚。 */
 function statCard(label, value, opts) {
   const o = opts || {};
   const pct = typeof o.pct === 'number' ? Math.max(0, Math.min(100, Math.round(o.pct))) : null;
+  const note = o.noteHTML
+    ? `<div class="stat-note">${o.noteHTML}</div>`
+    : (o.note ? `<div class="stat-note">${esc(o.note)}</div>` : '');
   return `
     <div class="stat">
       <div class="stat-head">
@@ -2160,9 +2168,8 @@ function statCard(label, value, opts) {
       </div>
       <div class="stat-value">${value}</div>
       ${pct != null
-        ? `<div class="stat-track"><div style="width:${pct}%"></div></div>
-           ${o.note ? `<div class="stat-note">${esc(o.note)}</div>` : ''}`
-        : (o.note ? `<div class="stat-note">${esc(o.note)}</div>` : '')}
+        ? `<div class="stat-track"><div style="width:${pct}%"></div></div>${note}`
+        : note}
     </div>`;
 }
 
@@ -2199,6 +2206,30 @@ function daysToExam(subject) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Math.round((target - today) / 86400000);
+}
+
+// 「最近考试」全站只算一次：首页胶囊和科目总览的统计卡说的是同一个科目、同一个 D-N
+function nearestExamSubject() {
+  return visibleSubjects()
+    .map((s) => ({ s, left: daysToExam(s) }))
+    .filter((x) => x.left != null && x.left >= 0)
+    .sort((a, b) => a.left - b.left)[0] || null;
+}
+
+// 倒计时显示口径：已过日期和今天都显示「今天考试」，其余 D-N
+function examCountdownLabel(left) {
+  if (left == null) return '—';
+  return left <= 0 ? '今天考试' : `D-${left}`;
+}
+
+// 全部练习题的完成进度：科目总览的「总进度」与单个科目卡共用同一口径
+function overallProgress() {
+  return allSets().reduce((acc, s) => {
+    const p = setProgress(s.id);
+    acc.done += p.done;
+    acc.total += p.total;
+    return acc;
+  }, { done: 0, total: 0 });
 }
 
 // 首页只推一套「现在该练的」，主按钮的文案直接带上它的状态
@@ -2255,10 +2286,7 @@ function renderDashboard() {
   const lastExam = history.find((a) => a.mode === 'exam');
   // 「待练」按还没答完的练习集数算，和主按钮说的是同一件事
   const pendingSets = allSets().filter((s) => s.questions.length && pendingQuestionCount([s.id]) > 0).length;
-  const nearest = subjects
-    .map((s) => ({ s, left: daysToExam(s) }))
-    .filter((x) => x.left != null && x.left >= 0)
-    .sort((a, b) => a.left - b.left)[0];
+  const nearest = nearestExamSubject();
 
   const cell = (o) => `
     <button type="button" class="dispatch-cell" onclick="${o.onclick}">
@@ -2322,25 +2350,27 @@ function renderDashboard() {
   `;
 }
 
-// 空状态只解释「这里为什么是空的」，不再放按钮：新建科目与 AI 出题全站各一个入口（侧栏 / 移动页头）
+// 空状态只解释「这里为什么是空的」，并给出这一个动作：新建科目仍是全站唯一入口（侧栏虚线行 / 移动页头）
 function renderEmptyFolders() {
+  const a = addSubjectAction();
   return `
     <div class="empty-card">
       <div class="empty-card-icon">${ICON.book}</div>
       <div class="empty-card-title">还没有备考科目</div>
-      <div class="empty-card-desc">用「新建科目」建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集</div>
+      <div class="empty-card-desc">建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集；上传的资料、生成的练习集和练习成绩都收在同一个科目里。</div>
+      <button type="button" class="btn btn-primary" onclick="${a.onclick}">${ICON.plus}<span>${a.label}</span></button>
     </div>`;
 }
 
 /* 紧凑列表行（对齐 Exam Plan 的清单）：色点 + 标题 + 计数胶囊 + 一行说明 + 右侧次要数据。
-   页面只保留一层卡片（hero / 页头），其余内容用细线分行，不再一块块平铺大卡。 */
+   科目页只保留「科目卡组」这一层收纳，科目内部（资料 / 练习集）仍用细线行。 */
 function lrow(o) {
   return `
     <button type="button" class="lrow" onclick="${o.onclick}">
       <span class="lrow-dot" aria-hidden="true" style="background:${o.accent}"></span>
       <span class="lrow-main">
-        <span class="lrow-title"><span class="lrow-name" data-no-i18n>${esc(o.title)}</span><span class="lrow-chip">${o.chip}</span></span>
-        ${o.sub ? `<span class="lrow-sub">${esc(o.sub)}</span>` : ''}
+        <span class="lrow-title"><span class="lrow-name" data-no-i18n>${esc(o.title)}</span><span class="ui-chip tabular-nums">${o.chip}</span></span>
+        ${o.sub ? `<span class="lrow-sub"${o.subUserData ? ' data-no-i18n' : ''}>${esc(o.sub)}</span>` : ''}
       </span>
       <span class="lrow-tail">${o.tail}</span>
       <span class="lrow-go" aria-hidden="true">→</span>
@@ -2363,41 +2393,241 @@ function renderSetRow(s) {
     title: s.name,
     chip: `已做 ${p.done}/${p.total} 题`,
     sub: s.description || `${kpCount} 知识点 · ${st.attempts ? `已练 ${st.attempts} 次` : '还没有练过'}`,
+    subUserData: !!s.description,
     tail: tailAccuracy(st.accuracy)
   });
 }
 
-function renderSubjectRow(subject) {
+/* 科目收纳（对齐 Exam Plan AI 的 CourseAccordionGallery）：
+   桌面是一排横向卡——悬停或键盘聚焦的那张展开成 5 倍宽，其余收成 60px 只留旋转名称、D-N 和进度；
+   移动端这排卡换成同一批科目的手风琴行。两个形态共用 subjectDeckData 与同一段进度 / 页脚，
+   展开完全交给 CSS（.deck-card:hover），不靠重渲染，所以过渡不会被 innerHTML 打断。 */
+function subjectDeckData(subject) {
   const sets = subjectSets(subject.id);
   const mats = subjectMaterials(subject.id);
-  const pr = subjectProgress(subject.id);
+  const progress = subjectProgress(subject.id);
   const left = daysToExam(subject);
-  const facts = [];
-  if (subject.examName) facts.push(subject.examName);
-  if (left != null) facts.push(left >= 0 ? `距考试 ${left} 天` : '考试日期已过');
-  facts.push(mats.length
-    ? `${sets.length} 个练习集 · ${mats.length} 份资料`
-    : `${sets.length} 个练习集`);
-  return lrow({
-    onclick: `openSubject('${subject.id}')`,
-    accent: setAccent({ id: subject.id }).bar,
-    title: subject.name,
-    chip: `已做 ${pr.done}/${pr.total} 题`,
-    sub: facts.join(' · '),
-    tail: tailAccuracy(subjectStats(subject.id).accuracy)
-  });
+  return {
+    subject,
+    sets,
+    mats,
+    left,
+    progress,
+    qCount: sets.reduce((n, s) => n + s.questions.length, 0),
+    pct: progress.total ? Math.round((progress.done / progress.total) * 100) : 0,
+    accent: setAccent({ id: subject.id })
+  };
+}
+
+function deckFactLine(d) {
+  return d.mats.length
+    ? `${d.sets.length} 个练习集 · ${d.qCount} 道题 · ${d.mats.length} 份资料`
+    : `${d.sets.length} 个练习集 · ${d.qCount} 道题`;
+}
+
+function deckProgressBlock(d) {
+  return `
+    <div class="deck-prog">
+      <div class="deck-prog-head"><span>练习进度</span><b>${d.pct}%</b></div>
+      <div class="ui-progress deck-bar"><div style="width:${d.pct}%"></div></div>
+      <div class="deck-prog-sub">已做 ${d.progress.done}/${d.progress.total} 题</div>
+    </div>`;
+}
+
+// 页脚只有两个动作，和 Exam Plan 一致：删除（危险色）+ 进入（主按钮）
+function deckFootHTML(subjectId) {
+  return `
+    <div class="deck-foot">
+      <button type="button" class="deck-del" onclick="event.stopPropagation();deleteSubject('${subjectId}')" title="删除此科目">${ICON.trash}<span>删除</span></button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation();openSubject('${subjectId}')"><span>进入</span>${ICON.arrow}</button>
+    </div>`;
+}
+
+function deckIdleFoot(d) {
+  return `
+    <div class="deck-idle-foot">
+      ${d.left != null ? `<span class="deck-idle-days">${d.left <= 0 ? '今天' : `D-${d.left}`}</span>` : ''}
+      <span class="deck-idle-pct">${d.pct}%</span>
+      <span class="deck-idle-track" aria-hidden="true"><div style="width:${d.pct}%"></div></span>
+    </div>`;
+}
+
+function deckCardHTML(d) {
+  const s = d.subject;
+  return `
+    <article class="deck-card" role="button" tabindex="0" aria-label="打开科目 ${esc(s.name)}"
+      onclick="openSubject('${s.id}')"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubject('${s.id}')}">
+      <span class="deck-stripe" aria-hidden="true" style="background:${d.accent.bar}"></span>
+      <div class="deck-idle">
+        <span class="deck-idle-name" data-no-i18n>${esc(s.name)}</span>
+        ${deckIdleFoot(d)}
+      </div>
+      <div class="deck-full">
+        <div class="deck-head">
+          <button type="button" class="deck-title" onclick="openSubject('${s.id}')" title="${esc(s.name)}" data-no-i18n>${esc(s.name)}</button>
+          ${d.left != null ? `<span class="ui-chip tabular-nums">${examCountdownLabel(d.left)}</span>` : ''}
+        </div>
+        ${s.examDate ? `<div class="deck-meta"><span class="deck-meta-ico" aria-hidden="true">${ICON.calendar}</span><span>${esc(s.examDate)}</span></div>` : ''}
+        <div class="deck-sub">${deckFactLine(d)}</div>
+        ${deckProgressBlock(d)}
+        ${deckFootHTML(s.id)}
+      </div>
+    </article>`;
+}
+
+function deckFoldHTML(d) {
+  const s = d.subject;
+  return `
+    <details class="fold">
+      <summary class="fold-head">
+        <span class="fold-dot" aria-hidden="true" style="background:${d.accent.bar}"></span>
+        <span class="fold-copy">
+          <span class="fold-name" data-no-i18n>${esc(s.name)}</span>
+          <span class="fold-sub">${deckFactLine(d)}</span>
+        </span>
+        ${d.left != null ? `<span class="ui-chip tabular-nums">${examCountdownLabel(d.left)}</span>` : ''}
+        <span class="fold-chev" aria-hidden="true">${ICON.chevron}</span>
+      </summary>
+      <div class="fold-body">
+        ${deckProgressBlock(d)}
+        ${deckFootHTML(s.id)}
+      </div>
+    </details>`;
+}
+
+// 新建卡：和科目卡同一套悬停展开，收起时是虚线窄条，展开后是创建说明 + 立即创建
+function deckAddHTML() {
+  const a = addSubjectAction();
+  const open = `event.stopPropagation();${a.onclick}`;
+  return `
+    <div class="deck-card deck-add" role="button" tabindex="0" onclick="${a.onclick}"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${a.onclick}}"
+      aria-label="${a.label}">
+      <div class="deck-idle">
+        <span class="deck-idle-tile" aria-hidden="true">${ICON.plus}</span>
+        <span class="deck-idle-name">新建科目</span>
+        <span class="deck-idle-go" aria-hidden="true">${ICON.arrow}</span>
+      </div>
+      <div class="deck-full">
+        <div class="deck-add-head">
+          <span class="deck-tile deck-tile-ink" aria-hidden="true">${ICON.plus}</span>
+          <span>${a.label}</span>
+        </div>
+        <h3 class="deck-add-title">创建新的备考科目</h3>
+        <p class="deck-add-desc">上传考试大纲、讲义或真题，AI 整理成练习集后归到这个科目下。</p>
+        <div class="deck-foot">
+          <span></span>
+          <button type="button" class="btn btn-primary btn-sm" onclick="${open}">${ICON.plus}<span>立即创建</span></button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function foldAddHTML() {
+  const a = addSubjectAction();
+  return `
+    <button type="button" class="fold fold-add" onclick="${a.onclick}">
+      <span class="fold-dot fold-add-dot" aria-hidden="true">${ICON.plus}</span>
+      <span class="fold-copy"><span class="fold-name">${a.label}</span></span>
+      <span class="lrow-go" aria-hidden="true">→</span>
+    </button>`;
+}
+
+/* 科目详情里的收纳：和移动端科目行同一个 .fold 组件（对齐 CourseDetailPage 的可折叠资料段），
+   标题 + 计数胶囊 + 箭头，展开后是细线行列表。 */
+function foldSection(o) {
+  return `
+    <details class="fold fold-section"${o.open ? ' open' : ''}>
+      <summary class="fold-head">
+        <span class="fold-copy"><span class="fold-name">${esc(o.title)}</span></span>
+        ${o.actions ? `<span class="fold-actions">${o.actions}</span>` : ''}
+        ${o.chip ? `<span class="ui-chip tabular-nums">${o.chip}</span>` : ''}
+        <span class="fold-chev" aria-hidden="true">${ICON.chevron}</span>
+      </summary>
+      <div class="fold-body fold-body-flush">${o.body}</div>
+    </details>`;
+}
+
+/* 练习记录并入科目总览：这里只留「一共练成什么样」的一行摘要与按时间排列的历史，
+   原来按练习集分组的表现在卡组里已经是每个科目的进度条，不再重复一遍。 */
+function histRowHTML(a) {
+  const tone = a.score >= 85 ? 'score-high' : a.score >= 60 ? 'score-mid' : 'score-low';
+  return `
+    <div class="perf-row">
+      <span class="badge ${a.mode === 'exam' ? 'badge-primary' : 'badge-success'}">${a.mode === 'exam' ? '考试' : '学习'}</span>
+      <div class="perf-copy">
+        <div class="perf-name" data-no-i18n>${esc(a.setName)}</div>
+        <div class="perf-sub">${fmtDate(a.finishedAt)} · ${fmtDuration(a.durationSec)} · ${a.graded || 0}/${a.total || 0} 题</div>
+      </div>
+      <div class="history-score ${tone}">${a.score}%</div>
+    </div>`;
+}
+
+function renderHistorySection() {
+  const st = overallStats();
+  if (!history.length) {
+    return `
+      <div class="section-title"><span>练习记录<span class="section-count">0</span></span></div>
+      <div class="card"><div class="material-empty">还没有练习记录。从科目里挑一套开始学习，成绩会自动记在这里。</div></div>`;
+  }
+  const head = history.slice(0, 8);
+  const rest = history.slice(8);
+  return `
+    <div class="section-title">
+      <span>练习记录<span class="section-count">${history.length}</span></span>
+      <span class="text-sm text-muted">共 ${history.length} 次练习 · 平均 ${st.avg} 分 · 已批改 ${st.graded} 题</span>
+    </div>
+    <div class="card">
+      ${head.map((a) => histRowHTML(a)).join('')}
+      ${rest.length ? `
+        <details class="hist-more">
+          <summary>展开全部 ${history.length} 条</summary>
+          ${rest.map((a) => histRowHTML(a)).join('')}
+        </details>` : ''}
+    </div>`;
 }
 
 function renderSets() {
   const subjects = visibleSubjects();
+  const st = overallStats();
+  const today = todayAnswered();
+  const goal = dailyGoalTotal();
+  const nearest = nearestExamSubject();
+  const prog = overallProgress();
+  const progPct = prog.total ? Math.round((prog.done / prog.total) * 100) : 0;
+  const deckData = subjects.map((s) => subjectDeckData(s));
+
+  const deck = subjects.length
+    ? `<div class="deck">${deckData.map(deckCardHTML).join('')}${deckAddHTML()}</div>
+       <div class="deck-fold">${foldAddHTML()}${deckData.map(deckFoldHTML).join('')}</div>`
+    : renderEmptyFolders();
+
   return `
-    <div class="section-title">
-      <span>全部备考科目<span class="section-count">${subjects.length}</span></span>
+    <p class="page-lead">按备考科目收纳：上传的资料、AI 生成的练习集和练习记录都在同一个科目下，进度与考试倒计时在这页总览。</p>
+
+    <div class="stat-rail">
+      ${statCard('备考科目', subjects.length, { icon: ICON.book, note: `共 ${st.totalQ} 道题` })}
+      ${statCard('最近考试', nearest ? examCountdownLabel(nearest.left) : '—', {
+        icon: ICON.calendar,
+        noteHTML: nearest ? `<span data-no-i18n>${esc(nearest.s.name)}</span>` : '还没设考试日期'
+      })}
+      ${statCard('今日进度', `${today}<span class="stat-denom"> / ${goal} 题</span>`, {
+        icon: ICON.flame,
+        pct: goal ? Math.min(100, Math.round((today / goal) * 100)) : 0,
+        note: today >= goal && goal ? '今日目标已达成' : `每日目标 ${goal} 题`
+      })}
+      ${statCard('练习进度', `${progPct}%`, {
+        icon: ICON.chart,
+        pct: progPct,
+        note: st.count ? `已做 ${prog.done}/${prog.total} 题 · 正确率 ${st.accuracy == null ? '--' : st.accuracy + '%'}` : `共 ${prog.total} 道题待练`
+      })}
     </div>
-    <p class="page-lead">按备考科目归档：上传的原始资料、提取的文字和生成的练习集都在同一个科目里。</p>
-    <div class="lrow-list">
-      ${subjects.length ? subjects.map((s) => renderSubjectRow(s)).join('') : renderEmptyFolders()}
-    </div>`;
+
+    <div class="section-title"><span>科目收纳<span class="section-count">${subjects.length}</span></span></div>
+    ${deck}
+
+    ${renderHistorySection()}`;
 }
 
 function materialExtLabel(ext) {
@@ -2457,9 +2687,10 @@ function renderSubject() {
   const kpTotal = sets.reduce((n, s) => n + (s.knowledgePoints || []).length, 0);
   const left = daysToExam(subject);
   const meta = [];
-  if (subject.examName) meta.push(esc(subject.examName));
+  // 考试名与目标是用户填写的数据：英文模式下只翻标签，原文保留，不计入词典缺口
+  if (subject.examName) meta.push(`<span data-no-i18n>${esc(subject.examName)}</span>`);
   if (subject.examDate) meta.push(left == null ? subject.examDate : (left >= 0 ? `${subject.examDate} · 距考试 ${left} 天` : '考试日期已过'));
-  if (subject.goal) meta.push(`目标：${esc(subject.goal)}`);
+  if (subject.goal) meta.push(`目标：<span data-no-i18n>${esc(subject.goal)}</span>`);
   meta.push(`每日目标 ${subject.dailyGoal || 20} 题`);
 
   return `
@@ -2468,7 +2699,7 @@ function renderSubject() {
 
     <div class="subject-head">
       <div class="subject-head-main">
-        <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
+        <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}" data-no-i18n>${esc(subject.icon || subject.name.slice(0, 1))}</span>
         <div class="subject-head-copy">
           <div class="hero-eyebrow">备考科目</div>
           <h2 data-no-i18n>${esc(subject.name)}</h2>
@@ -2492,30 +2723,32 @@ function renderSubject() {
       accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
       onchange="handleSubjectFileInput(this)">
 
-    <div class="section-title">
-      <span>资料<span class="section-count">${mats.length}</span></span>
-      <span class="section-actions">
-        <button type="button" class="link-btn" onclick="pickSubjectFiles()">＋ 上传资料</button>
-      </span>
-    </div>
-    <div class="material-list" id="materialList">
-      ${mats.length
-        ? mats.map((m) => renderMaterialRow(m)).join('')
-        : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个科目下。'}</div>`}
-    </div>
-    ${materialsUnavailable
-      ? `<div class="feedback feedback-incorrect" style="margin-top:12px">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
-      : '<div class="upload-status" id="subjectUploadStatus" hidden></div>'}
+    ${foldSection({
+      title: '资料',
+      chip: mats.length ? `${mats.length} 份 · ${chars} 字` : '还没有资料',
+      actions: `<button type="button" class="link-btn" onclick="event.preventDefault();pickSubjectFiles()">＋ 上传资料</button>`,
+      body: `
+        <div class="material-list" id="materialList">
+          ${mats.length
+            ? mats.map((m) => renderMaterialRow(m)).join('')
+            : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个科目下。'}</div>`}
+        </div>
+        ${materialsUnavailable
+          ? `<div class="feedback feedback-incorrect">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
+          : '<div class="upload-status" id="subjectUploadStatus" hidden></div>'}`
+    })}
 
-    <div class="section-title">
-      <span>练习集<span class="section-count">${sets.length} 个 · ${qCount} 题</span></span>
-      <span class="text-sm text-muted">${kpTotal} 个知识点</span>
-    </div>
-    <div class="lrow-list">
-      ${sets.length
-        ? sets.map((s) => renderSetRow(s)).join('')
-        : `<div class="material-empty">还没有练习集。用上面的资料让 AI 出一套，或从其他科目移动过来。</div>`}
-    </div>`;
+    ${foldSection({
+      open: true,
+      title: '练习集',
+      chip: `${sets.length} 个 · ${qCount} 题 · ${kpTotal} 个知识点`,
+      body: `
+        <div class="lrow-list">
+          ${sets.length
+            ? sets.map((s) => renderSetRow(s)).join('')
+            : `<div class="material-empty">还没有练习集。用上面的资料让 AI 出一套，或从其他科目移动过来。</div>`}
+        </div>`
+    })}`;
 }
 
 // 新建备考科目向导：考试信息 → 上传资料 → 完成（对齐 Exam Plan AI 的三步向导）
@@ -3550,7 +3783,7 @@ function renderAnsweredQuestion(q, res, mode) {
   } else if (q.type === 'fill') {
     optionsHtml = `
       <div class="answer-compare">
-        <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}" data-no-i18n>${esc(res.answer || '（空）')}</b></div>
+        <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}" data-no-i18n>${esc(res.answer || t('（空）'))}</b></div>
         <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)" data-no-i18n>${esc(answerText(q))}</b></div>
       </div>`;
   } else if (q.type === 'code') {
@@ -3594,12 +3827,13 @@ function answerText(q) {
 }
 
 function userAnswerText(q, ans) {
-  if (ans == null || (Array.isArray(ans) && ans.length === 0) || ans === '') return '（未作答）';
-  if (q.type === 'tf') return ans ? '正确' : '错误';
+  // 这些是界面兜底文案，不是用户作答内容：容器带 data-no-i18n 不参与翻译层，所以在这里按当前语言取值
+  if (ans == null || (Array.isArray(ans) && ans.length === 0) || ans === '') return t('（未作答）');
+  if (q.type === 'tf') return ans ? t('正确') : t('错误');
   if (q.type === 'single') return `${String.fromCharCode(65 + ans)}. ${q.options[ans] ?? ''}`;
   if (q.type === 'multi' && Array.isArray(ans)) return ans.map((i) => String.fromCharCode(65 + i)).join(', ');
   if (q.type === 'fill') return String(ans);
-  if (q.type === 'code') return '（代码见作答）';
+  if (q.type === 'code') return t('（代码见作答）');
   return String(ans);
 }
 
@@ -4299,7 +4533,7 @@ function renderExamResult() {
       <div class="btn-group" style="justify-content:center;margin-bottom:28px;flex-wrap:wrap">
         ${set ? `<button class="btn btn-ghost" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
         ${set ? `<button class="btn btn-ghost" onclick="openSet('${set.id}')">返回练习集</button>` : ''}
-        <button class="btn btn-ghost" onclick="navigateTo('records')">查看记录</button>
+        <button class="btn btn-ghost" onclick="navigateTo('sets')">回到科目</button>
       </div>
 
       ${set ? `
@@ -4347,7 +4581,6 @@ function renderWrongBook() {
       </div>
       <div class="btn-group" style="justify-content:center;margin-top:18px">
         <button class="btn btn-primary" onclick="navigateTo('sets')">挑一个备考科目</button>
-        <button class="btn btn-secondary" onclick="navigateTo('records')">查看练习记录</button>
       </div>`;
   }
 
@@ -4359,7 +4592,7 @@ function renderWrongBook() {
         return `
           <div class="card mb-6">
             <div class="wrong-group-head">
-              <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(set.icon || '题')}</span>
+              <span class="mini-icon"${set.icon ? ' data-no-i18n' : ''} aria-hidden="true" style="background:${a.bg};color:${a.fg}">${esc(set.icon || '题')}</span>
               <span class="wrong-group-name" data-no-i18n>${esc(set.name)}</span>
               <span class="badge badge-danger">${qids.length} 题</span>
               <button class="btn btn-primary btn-sm" onclick="startLearning('${set.id}', true)">刷错题</button>
@@ -4377,64 +4610,6 @@ function renderWrongBook() {
           </div>`;
       }).join('')}
     </div>`;
-}
-
-function renderRecords() {
-  const st = overallStats();
-  const sets = allSets();
-
-  const perSet = sets.map((s) => {
-    const rs = setStats(s.id);
-    return { set: s, ...rs };
-  }).filter((x) => x.attempts > 0).sort((a, b) => b.attempts - a.attempts);
-
-  return `
-    <div class="stat-rail">
-      ${statCard('练习次数', st.count, { icon: ICON.chart, note: `今日 ${todayAnswered()} 题` })}
-      ${statCard('平均正确率', st.accuracy == null ? '--' : st.accuracy + '%', {
-        icon: ICON.target, pct: st.accuracy == null ? 0 : st.accuracy,
-        note: st.count ? `共批改 ${st.graded} 题` : '还没有练习记录'
-      })}
-      ${statCard('平均得分', st.avg == null ? '--' : st.avg, { icon: ICON.trophy, note: '每次练习的得分均值' })}
-    </div>
-
-    ${perSet.length ? `
-      <div class="section-title">按练习集表现</div>
-      <div class="card mb-6">
-        ${perSet.map((x) => {
-          const a = setAccent(x.set);
-          const acc = x.accuracy;
-          const fillCls = acc == null ? '' : acc >= 80 ? 'success' : acc < 60 ? 'warning' : '';
-          const p = setProgress(x.set.id);
-          return `
-          <div class="perf-row">
-            <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(x.set.icon || '题')}</span>
-            <div style="flex:1;min-width:0">
-              <div class="perf-name" data-no-i18n>${esc(x.set.name)}</div>
-              <div class="perf-sub">${x.attempts} 次练习 · 已做 ${p.done}/${p.total} 题 · 最佳 ${x.best}%</div>
-            </div>
-            <div class="perf-bar">
-              <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${acc || 0}%"></div></div>
-              <div class="progress-text"><span>正确率</span><span>${acc == null ? '--' : acc + '%'}</span></div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="openSet('${x.set.id}')">去练习</button>
-          </div>`;
-        }).join('')}
-      </div>` : ''}
-
-    <div class="section-title">历史记录</div>
-    ${history.length === 0 ? `<div class="card"><div class="text-sm text-muted text-center" style="padding:20px">还没有练习记录，从学习模式开始吧</div></div>` : `
-      <div class="card">
-        ${history.slice(0, 50).map((a, i) => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < Math.min(history.length, 50) - 1 ? 'border-bottom:1px solid var(--line-soft)' : ''}">
-            <span class="badge ${a.mode === 'exam' ? 'badge-primary' : 'badge-success'}">${a.mode === 'exam' ? '考试' : '学习'}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-no-i18n>${esc(a.setName)}</div>
-              <div class="text-sm text-muted">${fmtDate(a.finishedAt)} · ${fmtDuration(a.durationSec)}</div>
-            </div>
-            <div class="history-score" style="color:${a.score >= 85 ? 'var(--success)' : a.score >= 60 ? 'var(--warning)' : 'var(--danger)'}">${a.score}%</div>
-          </div>`).join('')}
-      </div>`}`;
 }
 
 function storageUsage() {

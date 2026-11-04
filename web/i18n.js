@@ -33,13 +33,12 @@ const EN = Object.assign({
   '设置': 'Settings',
   '主导航': 'Main navigation',
   '科目列表': 'Subject list',
-  '备考科目列表': 'Subject list',
   '收起侧栏': 'Collapse sidebar',
   '展开侧栏': 'Expand sidebar',
   '我的科目': 'My subjects',
   '新建科目': 'New subject',
   '＋ 新建': '＋ New',
-  '还没有备考科目': 'No subject folders yet',
+  '还没有备考科目': 'No subjects yet',
   '未分类': 'Unfiled',
   '更多操作': 'More actions',
   'AI 生成': 'AI generate',
@@ -139,13 +138,11 @@ const EN = Object.assign({
   '今日目标': 'Daily goal',
   '去练习': 'Practice',
   '刷错题': 'Review mistakes',
-  '备考科目': 'Subject folders',
-  '进入备考科目': 'Open subject folder',
+  '备考科目': 'Subjects',
+  '进入备考科目': 'Open subject',
   '还没有资料，点进去上传': 'No materials yet — open it to upload',
   '未练习': 'Not started',
   '去建第一个备考科目': 'Create your first subject',
-  '用「新建科目」建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集':
-    'Use "New subject" to create a subject folder, drop in PDF, Word, PPT or plain text, and let AI turn it into question sets',
 
   /* 科目页 */
   'AI 出题': 'AI questions',
@@ -158,8 +155,6 @@ const EN = Object.assign({
   '目标科目': 'Target subject',
   '（未知练习集）': '(unknown set)',
   '删除练习集': 'Delete question set',
-  '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个备考科目里。':
-    'No materials yet. Upload PDF, Word, PPT or TXT files and they stay in this subject folder.',
   '还没有练习集。用上面的资料让 AI 出一套，或从其他科目移动过来。':
     'No question sets yet. Use the materials above to generate one with AI, or move a set in from another subject.',
 
@@ -289,9 +284,6 @@ const EN = Object.assign({
 
   /* 新建科目向导 */
   '科目名称': 'Subject name',
-  '这个文件夹叫什么': 'What is this folder about?',
-  '之后上传的资料和生成的练习集都会放进这个文件夹。':
-    'Materials you upload and sets you generate will be filed here.',
   '下一步：上传资料': 'Next: upload materials',
   '下一步：处理方式': 'Next: how to handle',
   '下一步：确认生成': 'Next: confirm',
@@ -306,7 +298,6 @@ const EN = Object.assign({
   '可多选': 'multiple files OK',
   '单文件 ≤ 30MB': 'up to 30 MB each',
   '没有文件？直接粘贴文字': 'No file? Paste text instead',
-  '可跳过 · 之后在文件夹里也能传': 'Optional · you can also upload later in the folder',
   '这段文字属于': 'This text belongs to',
   '笔记 · 生成新题': 'Notes · generate questions',
   '真题 · 原样整理': 'Past paper · keep as is',
@@ -512,12 +503,11 @@ const EN = Object.assign({
     'The set may have been deleted, or the stored data is inconsistent. Your answer records are untouched.',
   '确认交卷': 'Submit the exam?',
   '所有题目已作答，确定交卷吗？': 'Every question is answered — submit now?',
-  '文件夹里没有内容。': 'The folder is empty.',
   '清空记录': 'Clear history',
   '将清除所有练习历史和错题本，练习集不受影响。确定继续吗？':
     'This clears all practice history and the mistake book. Question sets are untouched — continue?',
   '将删除所有自建练习集、备考科目、上传的资料、练习记录、错题本、考点联动关系和本地设置。确定继续吗？':
-    'This deletes every custom set, subject folder, uploaded material, record, mistake book, topic link and local setting. Continue?',
+    'This deletes every custom set, subject, uploaded material, record, mistake book, topic link and local setting. Continue?',
   '删除资料': 'Delete material',
   '重置全部': 'Reset everything',
   '判题服务返回了异常结果，请稍后重试': 'The judge returned an unexpected result — try again shortly',
@@ -706,6 +696,31 @@ const EN = Object.assign({
   '题目数：': 'Questions:',
   '移除': 'remove',
   '文件': 'File',
+
+  /* 科目总览：科目收纳卡组 + 练习记录（对齐 Exam Plan 的 MasterDashboard / CourseAccordionGallery） */
+  '科目收纳': 'Your subjects',
+  '按备考科目收纳：上传的资料、AI 生成的练习集和练习记录都在同一个科目下，进度与考试倒计时在这页总览。':
+    'Everything is filed by subject: the materials you upload, the question sets AI builds from them and the results you earn. Progress and exam countdowns live on this overview.',
+  '最近考试': 'Nearest exam',
+  '还没设考试日期': 'No exam date set yet',
+  '今日进度': 'Today',
+  '练习进度': 'Practice progress',
+  '今天考试': 'Exam today',
+  '今天': 'Today',
+  '进入': 'Open',
+  '立即创建': 'Create now',
+  '创建新的备考科目': 'Create a new subject',
+  '上传考试大纲、讲义或真题，AI 整理成练习集后归到这个科目下。':
+    'Upload a syllabus, lecture notes or past papers. AI turns them into question sets filed under this subject.',
+  '还没有练习记录。从科目里挑一套开始学习，成绩会自动记在这里。':
+    'No practice yet. Open a set from any subject and the result lands here automatically.',
+  '还没有资料': 'No materials',
+  '回到科目': 'Back to subjects',
+  '暂无科目': 'No subjects yet',
+  '删除此科目': 'Delete this subject',
+  '目标：': 'Goal: ',
+  '建一个备考科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集；上传的资料、生成的练习集和练习成绩都收在同一个科目里。':
+    'Create a subject, drop in PDF, Word, PPT or plain text, and let AI turn it into question sets. The materials, the sets and the results you earn all stay in that one subject.',
 });
 
 /* 含数字、名称或语序变化的句子：正则 + 替换（替换里可以继续调用 t）。 */
@@ -713,6 +728,22 @@ const EN = Object.assign({
 const pl = (n, one, many) => `${n} ${n === '1' ? one : many}`;
 
 const EN_PATTERNS = [
+  /* 科目总览：卡组事实行、进度注记、记录摘要与折叠段计数（放在最前，避免被后面的短模式抢走） */
+  [/^共 (\d+) 道题$/, (m) => `${pl(m[1], 'question', 'questions')} in total`],
+  [/^共 (\d+) 道题待练$/, (m) => (m[1] === '0' ? 'Nothing to practise yet' : `${pl(m[1], 'question', 'questions')} to practise`)],
+  [/^已做 (\d+)\/(\d+) 题 · 正确率 (\d+)%$/, (m) => `Done ${m[1]} of ${m[2]} · ${m[3]}% accuracy`],
+  [/^共 (\d+) 次练习 · 平均 (\d+) 分 · 已批改 (\d+) 题$/,
+    (m) => `${pl(m[1], 'attempt', 'attempts')} · avg ${m[2]}% · ${pl(m[3], 'question', 'questions')} graded`],
+  [/^展开全部 (\d+) 条$/, (m) => `Show all ${pl(m[1], 'entry', 'entries')}`],
+  [/^(\d+) 个练习集 · (\d+) 道题 · (\d+) 份资料$/,
+    (m) => `${pl(m[1], 'set', 'sets')} · ${pl(m[2], 'question', 'questions')} · ${pl(m[3], 'material', 'materials')}`],
+  [/^(\d+) 份 · ([\d,.]+) 字$/, (m) => `${pl(m[1], 'file', 'files')} · ${m[2]} characters`],
+  [/^(\d+) 个 · (\d+) 题 · (\d+) 个知识点$/,
+    (m) => `${pl(m[1], 'set', 'sets')} · ${pl(m[2], 'question', 'questions')} · ${pl(m[3], 'key point', 'key points')}`],
+  [/^删除科目 (.+)$/, (m) => `Delete subject ${m[1]}`],
+  [/^打开科目 (.+)$/, (m) => `Open subject ${m[1]}`],
+  [/^今日目标已达成$/, 'Daily goal met'],
+
   /* 首页调度台与进度口径 */
   [/^连续 (\d+) 天$/, (m) => `${m[1]}-day streak`],
   [/^待练 (\d+) 套$/, (m) => `${pl(m[1], 'set', 'sets')} to practise`],
@@ -796,7 +827,6 @@ const EN_PATTERNS = [
   [/^练习集已保存到「(.+)」$/, 'Question set saved to "$1"'],
   [/^已切换到「(.+)」$/, 'Switched to "$1"'],
   [/^已移动到「(.+)」$/, 'Moved to "$1"'],
-  [/^已建好「(.+)」文件夹$/, 'Created the "$1" folder'],
   [/^「(.+)」已在列表中$/, '"$1" is already in the list'],
   [/^「(.+)」超过 30MB，请拆分后再上传$/, '"$1" is over 30 MB — split it before uploading'],
   [/^「(.+)」当前在「(.+)」。$/, (m) => `"${m[1]}" is currently in "${m[2]}".`],
@@ -805,13 +835,13 @@ const EN_PATTERNS = [
   [/^(\d+) 份资料未能从资料库删除，刷新后可能仍会显示$/, '$1 files could not be removed from the store and may reappear after a reload'],
   [/^围绕(.+)出题练习：上传对应资料，AI 会生成题目并归入本科目。$/, (m) => `Practise ${m[1]}: upload its material and AI will generate questions for this subject.`],
   /* 考试级快照：随跳转一起带过来的资料与真题 */
-  [/^围绕(.+)出题练习：这场考试的资料已在这个资料夹（(.+)），可直接出题。$/, (m) => `Practise ${m[1]}: this exam's material is already in this folder (${m[2]}) — generate right away.`],
+  [/^围绕(.+)出题练习：这场考试的资料已在这个科目里（(.+)），可直接出题。$/, (m) => `Practise ${m[1]}: this exam's material is already in this subject (${m[2]}) — generate right away.`],
   [/^备考规划聚焦考点「(.+?)」(?:（(.+?)）)?：这场考试的资料已在这里（(.+)），可直接出题。$/, (m) => `Exam Plan topic "${m[1]}"${m[2] ? ` (${m[2]})` : ''}: this exam's material is already here (${m[3]}) — generate right away.`],
   [/^来自备考规划(?:（(.+?)）)?：这场考试的资料已在这里（(.+)），可直接出题。$/, (m) => `From Exam Plan AI${m[1] ? ` (${m[1]})` : ''}: this exam's material is already here (${m[2]}) — generate right away.`],
   [/^已同步考试「?(.+?)」?的资料与真题：新增 (\d+) 份，可以直接出题$/, (m) => `Synced materials and past papers for "${m[1]}": ${m[2]} added, ready to generate.`],
   [/^考试「?(.+?)」?的资料与真题都已在这里，可以直接出题$/, (m) => `All materials and past papers for "${m[1]}" are already here, ready to generate.`],
   [/^这次跳转没有带来新资料：已选入「?(.+?)」?的 (\d+) 份资料，可以直接出题$/, (m) => `This jump brought no new material: ${m[2]} file(s) from "${m[1]}" are selected, ready to generate.`],
-  [/^考试「?(.+?)」?的资料夹里还没有资料：上传资料即可出题$/, (m) => `The folder for "${m[1]}" has no material yet: upload one to generate questions.`],
+  [/^考试「?(.+?)」?里还没有资料：上传资料即可出题$/, (m) => `The subject for "${m[1]}" has no material yet: upload one to generate questions.`],
   [/^(\d+) 份资料没能写入本地资料库，请手动重新上传$/, '$1 file(s) could not be saved to the local store — please upload them again'],
   [/^另有 (\d+) 份资料超过单次携带上限，需要手动上传$/, '$1 more file(s) exceeded the per-jump limit — upload them manually'],
   [/^继续「(.+?)」的考点「(.+?)」练习$/, (m) => `Back to "${m[2]}" in "${m[1]}"`],
