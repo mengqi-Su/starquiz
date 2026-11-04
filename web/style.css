@@ -4664,7 +4664,10 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 .fold-head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  /* 允许换行：窄屏（或英文这类更长的标签）挤不下时，动作与计数落到第二行，
+     而不是把唯一可收缩的考点名压成 0 宽度、整行看不见。 */
+  flex-wrap: wrap;
+  gap: 10px 12px;
   width: 100%;
   padding: 16px;
   cursor: pointer;
@@ -4680,7 +4683,8 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   flex-shrink: 0;
 }
 .fold-copy {
-  flex: 1;
+  /* basis 用 auto：flex:1（=1 1 0%）会让名字在换行计算里永远是零宽，压不住就消失 */
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
