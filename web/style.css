@@ -539,6 +539,18 @@ a { color: var(--brand); }
   white-space: nowrap;
 }
 
+/* 可以点的胶囊（首页的考试倒计时）：外观和普通胶囊一致，只在 hover 时给出反馈 */
+button.today-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+button.today-chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+button.today-chip:hover { background: var(--surface-tint); border-color: var(--hover-line); color: var(--ink); }
+
 .today-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 
 /* 练法宫格：一格一种练法、一个数字、一行说明，点击直接进对应模式 */
@@ -4274,42 +4286,6 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 .lrow-acts { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .lrow-acts .btn { padding: 5px 10px; font-size: 12px; }
 
-.pop-wrap { position: relative; display: inline-flex; }
-
-.icon-btn { width: 30px; padding: 0; justify-content: center; font-size: 16px; line-height: 1; letter-spacing: 1px; }
-
-.pop-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  z-index: 60;
-  min-width: 134px;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
-}
-
-.pop-menu[hidden] { display: none; }
-
-.pop-item {
-  display: block;
-  width: 100%;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  font-family: inherit;
-  font-size: 12.5px;
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
-}
-
-.pop-item:hover { background: var(--paper-2); }
-.pop-danger { color: var(--coral); }
-
 @media (max-width: 860px) {
   .sidebar-collapse { display: none; }
   body.sidebar-collapsed .sidebar-expand { display: none; }
@@ -4598,7 +4574,7 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   padding-top: 12px;
   border-top: 1px solid var(--divider);
 }
-.deck-del {
+.deck-act {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -4609,12 +4585,16 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   font-family: inherit;
   font-size: 12px;
   font-weight: 500;
-  color: var(--red);
+  color: var(--ink-mute);
   cursor: pointer;
-  transition: background 0.14s ease;
+  transition: background 0.14s ease, color 0.14s ease;
 }
-.deck-del svg { width: 14px; height: 14px; }
-.deck-del:hover { background: var(--coral-soft); }
+.deck-act svg { width: 14px; height: 14px; }
+.deck-act:hover { background: var(--surface-tint); color: var(--ink); }
+/* 删除是这排里唯一的危险动作：平时淡红，按下 hover 才落到珊瑚底 */
+.deck-act-danger { color: var(--red); }
+.deck-act-danger:hover { background: var(--coral-soft); color: var(--red); }
+.deck-foot-acts { display: inline-flex; align-items: center; gap: 2px; }
 
 /* 新建卡：同一套展开行为，虚线窄条展开成创建说明 */
 .deck-card.deck-add {

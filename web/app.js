@@ -121,7 +121,17 @@ const SESSION_KEYS = { exam: 'sq_exam_v1', learning: 'sq_learning_v1' };
 
 // 起始不预置任何练习科目：练习科目由用户新建或在 AI 生成时自动创建；未归档的练习集进入「未分类」
 const BUILTIN_SUBJECTS = [];
-const INBOX_SUBJECT = { id: 'sub-inbox', name: '未分类', icon: '杂', builtin: true, inbox: true };
+// 「未分类」是系统收纳位，不是用户取的名字：名字跟着界面语言走，这样英文界面里不会漏出中文。
+// 用户自建练习科目的 name 仍然是数据，渲染处一律 data-no-i18n，不进词典。切语言会整页重渲染，getter 取值即最新。
+const INBOX_SUBJECT = {
+  id: 'sub-inbox',
+  icon: '杂',
+  builtin: true,
+  inbox: true,
+  get name() {
+    return typeof isEn === 'function' && isEn() ? 'Unfiled' : '未分类';
+  }
+};
 // 备考规划伴侣应用：考点级深链互相跳转，数据各自保存在本地浏览器
 const EXAM_PLAN_URL = 'https://exam-plan-ai-zfc3er164xi.qoder.zone';
 let planLink = null; // 当前页面的临时联动上下文；持久关系保存在 sq_plan_links_v1（planLinkStore）
@@ -1025,7 +1035,7 @@ function updateSubject(id, patch) {
   if (!merged) return null;
   const next = userSubjects.map((s) => (s.id === id ? merged : s));
   if (!saveJSON(STORAGE.subjects, next)) {
-    toast('考试信息没有保存成功', 'error');
+    toast('修改没有保存成功', 'error');
     return null;
   }
   userSubjects = next;
@@ -2365,17 +2375,6 @@ function renderCore() {
   syncQnav();
 }
 
-function toggleSubjectMenu(event) {
-  if (event) event.stopPropagation();
-  const menu = document.getElementById('subjectMenu');
-  if (menu) menu.hidden = !menu.hidden;
-}
-
-function hideSubjectMenu() {
-  const menu = document.getElementById('subjectMenu');
-  if (menu) menu.hidden = true;
-}
-
 /* 卡片解剖（对齐 Exam Plan AI）：统计卡 = 标签 + 淡图标 / 大号数字 / 说明或进度；
    note 走文案翻译，noteHTML 只给用户起的名（练习科目 / 考试），带 data-no-i18n 不参与翻译。
    练习科目与练习集卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 进度 + 分隔页脚。 */
@@ -2525,14 +2524,16 @@ function renderDashboard() {
       <span class="dispatch-note">${o.note}</span>
     </button>`;
 
+  const chip = (content) => `<span class="today-chip">${content}</span>`;
   const chips = [];
-  if (streak > 0) chips.push(`连续 ${streak} 天`);
-  if (pendingSets) chips.push(`待练 ${pendingSets} 套`);
+  if (streak > 0) chips.push(chip(`连续 ${streak} 天`));
+  if (pendingSets) chips.push(chip(`待练 ${pendingSets} 套`));
   if (nearest) {
-    chips.push(`<span data-no-i18n>${esc(nearest.s.examName || nearest.s.name)}</span>`);
-    chips.push(`距考试 ${nearest.left} 天`);
+    chips.push(chip(`<span data-no-i18n>${esc(nearest.s.examName || nearest.s.name)}</span>`));
+    // 考试倒计时的落点就是改考试：日期定错了，点这枚胶囊直接进编辑弹窗，不再另开入口
+    chips.push(`<button type="button" class="today-chip" onclick="examInfoModal('${nearest.s.id}')" title="编辑考试信息">${ICON.pen}<span>距考试 ${nearest.left} 天</span></button>`);
   }
-  chips.push(st.accuracy == null ? '还没有练习成绩' : `累计正确率 ${st.accuracy}%`);
+  chips.push(chip(st.accuracy == null ? '还没有练习成绩' : `累计正确率 ${st.accuracy}%`));
 
   return `
     <div class="card today-card">
@@ -2544,7 +2545,7 @@ function renderDashboard() {
       <div class="today-track">
         <div class="today-track-head"><span>今日目标</span><b>${today} / ${goal} 题</b></div>
         <div class="ui-progress"><div style="width:${goalPct}%"></div></div>
-        <div class="today-chips">${chips.map((c) => `<span class="today-chip">${c}</span>`).join('')}</div>
+        <div class="today-chips">${chips.join('')}</div>
       </div>
       <div class="today-actions">
         <button class="btn btn-primary" onclick="${cta.onclick}">${cta.label}</button>
@@ -2667,12 +2668,20 @@ function deckProgressBlock(d) {
     </div>`;
 }
 
-// 页脚只有两个动作，和 Exam Plan 一致：删除（危险色）+ 进入（主按钮）
-function deckFootHTML(subjectId) {
+// 页脚动作：编辑（练习科目名 + 考试信息）与删除都是次要动作，主按钮「进入」留在右侧。
+// 编辑必须摆在明面上：改考点、改考试日期是每天都会发生的事，不该藏进 ⋯ 里。
+// 「未分类」是内置收纳位，改名和删除都不成立，所以和详情页页头一样只留「进入」。
+function deckFootHTML(subject) {
+  const acts = subject.builtin
+    ? '<span></span>'
+    : `<span class="deck-foot-acts">
+        <button type="button" class="deck-act" onclick="event.stopPropagation();examInfoModal('${subject.id}')" title="编辑练习科目">${ICON.pen}<span>编辑</span></button>
+        <button type="button" class="deck-act deck-act-danger" onclick="event.stopPropagation();deleteSubject('${subject.id}')" title="删除此练习科目">${ICON.trash}<span>删除</span></button>
+      </span>`;
   return `
     <div class="deck-foot">
-      <button type="button" class="deck-del" onclick="event.stopPropagation();deleteSubject('${subjectId}')" title="删除此练习科目">${ICON.trash}<span>删除</span></button>
-      <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation();openSubject('${subjectId}')"><span>进入</span>${ICON.arrow}</button>
+      ${acts}
+      <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation();openSubject('${subject.id}')"><span>进入</span>${ICON.arrow}</button>
     </div>`;
 }
 
@@ -2704,7 +2713,7 @@ function deckCardHTML(d) {
         ${s.examDate ? `<div class="deck-meta"><span class="deck-meta-ico" aria-hidden="true">${ICON.calendar}</span><span>${esc(s.examDate)}</span></div>` : ''}
         <div class="deck-sub">${deckFactLine(d)}</div>
         ${deckProgressBlock(d)}
-        ${deckFootHTML(s.id)}
+        ${deckFootHTML(s)}
       </div>
     </article>`;
 }
@@ -2724,7 +2733,7 @@ function deckFoldHTML(d) {
       </summary>
       <div class="fold-body">
         ${deckProgressBlock(d)}
-        ${deckFootHTML(s.id)}
+        ${deckFootHTML(s)}
       </div>
     </details>`;
 }
@@ -2942,13 +2951,8 @@ function renderSubject() {
       </div>
       <div class="subject-head-actions">
         <button class="btn btn-primary btn-sm" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">${ICON.spark} AI 出题</button>
-        ${own ? `<div class="pop-wrap">
-          <button class="btn btn-ghost btn-sm icon-btn" onclick="toggleSubjectMenu(event)" aria-label="更多操作" title="更多操作">⋯</button>
-          <div class="pop-menu" id="subjectMenu" hidden>
-            <button type="button" class="pop-item" onclick="hideSubjectMenu();examInfoModal('${subject.id}')">考试信息</button>
-            <button type="button" class="pop-item pop-danger" onclick="hideSubjectMenu();deleteSubject('${subject.id}')">删除练习科目</button>
-          </div>
-        </div>` : ''}
+        ${own ? `<button class="btn btn-secondary btn-sm" onclick="examInfoModal('${subject.id}')" title="练习科目名称与考试信息都能改">${ICON.pen}<span>编辑</span></button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSubject('${subject.id}')">${ICON.trash}<span>删除</span></button>` : ''}
       </div>
     </div>
 
@@ -3384,13 +3388,14 @@ async function nsUpload(files) {
 }
 
 
-// 练习科目页的「考试信息」：和新建向导第一步共用 examFieldsHtml / examFormValues
+// 练习科目页与卡组页脚的「编辑」：和新建向导第一步共用 examFieldsHtml / examFormValues，
+// 一个弹窗同时改练习科目名称与考试信息（目标考试 / 考试日期 / 开始日期 / 备考目标 / 题量）
 function examInfoModal(id) {
   const subject = userSubjects.find((s) => s.id === id);
   if (!subject) return;
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">考试信息</div>
+      <div class="modal-title">编辑练习科目</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
@@ -3416,7 +3421,7 @@ function submitExamInfo(id) {
   if (v.name !== subject.name && !renameSubject(id, v.name)) return;
   if (!updateSubject(id, v)) return;
   closeModal();
-  toast('考试信息已保存', 'success');
+  toast('修改已保存', 'success');
   render();
 }
 
@@ -6402,7 +6407,7 @@ function openAIModal(subjectId, materialIds) {
                 <input class="form-input" type="date" id="aiNewExamDate">
               </div>
             </div>
-            <p class="wiz-note">备考目标、每日题量可以在练习科目页的「考试信息」里补全。</p>
+            <p class="wiz-note">备考目标、每日题量可以在练习科目页的「编辑」里补全。</p>
           </div>
         </section>
 
@@ -7783,11 +7788,6 @@ window.addEventListener('pagehide', () => {
   // 标签页名字里的一次性快照要最早取走并清空：它只在「刚从 Exam Plan 点过来」这件事上有意义
   examHandoff = takeExamHandoff();
   applySidebarPref();
-  document.addEventListener('click', (e) => {
-    const t = e.target;
-    if (t && t.closest && (t.closest('.pop-menu') || t.closest('.icon-btn'))) return;
-    hideSubjectMenu();
-  });
   await loadMaterials();
   if (materialsUnavailable) bootNotes.push('当前浏览器无法打开本地资料库，上传的资料这次不会保留');
   loadResumeSessions();

@@ -40,7 +40,6 @@ const EN = Object.assign({
   '＋ 新建': '＋ New',
   '还没有练习科目': 'No practice subjects yet',
   '未分类': 'Unfiled',
-  '更多操作': 'More actions',
   'AI 生成': 'AI generate',
   '练习集详情': 'Question set',
   '学习进度': 'Progress',
@@ -593,8 +592,12 @@ const EN = Object.assign({
 
   /* 练习科目页的备考上下文 */
   '考试信息': 'Exam info',
-  '考试信息已保存': 'Exam info saved',
-  '考试信息没有保存成功': 'The exam info could not be saved',
+  '编辑': 'Edit',
+  '编辑练习科目': 'Edit practice subject',
+  '编辑考试信息': 'Edit exam details',
+  '练习科目名称与考试信息都能改': 'Rename the subject or change its exam details',
+  '修改已保存': 'Changes saved',
+  '修改没有保存成功': 'The changes could not be saved',
   '目标考试': 'Target exam',
   '备考目标': 'Goal',
   '考试日期': 'Exam date',
@@ -650,8 +653,8 @@ const EN = Object.assign({
   '先填上练习科目名称': 'Type the new subject name first',
   '目标练习科目还没定，请选一个练习科目或填新练习科目名称': 'Pick a subject or name the new one first',
   '点「下一步」时创建，不会重复建同名练习科目。': 'Created when you press Next — never a duplicate subject.',
-  '备考目标、每日题量可以在练习科目页的「考试信息」里补全。':
-    'Add the goal and daily count later in Exam info on the subject page.',
+  '备考目标、每日题量可以在练习科目页的「编辑」里补全。':
+    'Add the goal and daily count later with Edit on the subject page.',
   '只围绕一个考点出题，其它内容少出或不出题。':
     'Ask about one topic only; other content gets few or no questions.',
   '上传资料后，会按资料篇幅自动推荐题量': 'Once materials are in, the count is suggested from their length',
