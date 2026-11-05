@@ -372,6 +372,156 @@ function isoDateOf(v) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
 }
 
+/* ===== 页头身份：页图标 =====
+ * 规则与 Exam Plan AI 的 lib/pageIcon.ts 一致：图标只在「这份科目被点名的地方」出现一次，
+ * 取值统一走 subjectIcon()；没显式选过时按名称/考试关键词自动配，配不出落到 📚。
+ * 绝不随机——同一科目在两个位置渲染成不同图标，身份就散了。 */
+const PAGE_ICON_CHOICES = ['📐', '🧮', '📊', '⚗️', '🔬', '🧬', '🧲', '🌍', '💻', '🧠', '🩺', '📜', '⚖️', '🏛️', '💹', '🔤', '🎼', '🎨', '🏗️', '⚙️', '🗄️', '🎓', '🧭', '📚'];
+
+const KEYWORD_ICONS = [
+  [['数学', '高数', '线性代数', '概率', '统计', '微积分', 'math', 'calculus', 'algebra', 'statistic', 'geometry'], '📐'],
+  [['经济', '金融', '会计', '财务', 'market', 'finance', 'economi', 'account'], '💹'],
+  [['物理', '力学', '电磁', 'quantum', 'physics'], '🧲'],
+  [['化学', 'chemical', 'chemistry', 'organic'], '⚗️'],
+  [['生物', '生物化', 'genetic', 'biology', 'molecu'], '🧬'],
+  [['医学', '护理', '解剖', '临床', 'medic', 'nursing', 'anatom'], '🩺'],
+  [['心理', 'cognit', 'psycholog'], '🧠'],
+  [['计算机', '软件', '程序', '算法', '数据', 'code', 'programming', 'computer', 'algorithm', 'database', 'network'], '💻'],
+  [['语文', '中文', '文学', '汉语', '历史', '考古', 'literature', 'chinese', 'history'], '📜'],
+  [['政治', '法律', '法学', '马克思', 'philosoph', 'politic', 'law', 'legal'], '⚖️'],
+  [['英语', '日语', '韩语', '法语', '德语', '俄语', '外语', '雅思', '托福', 'english', 'japanese', 'french', 'german'], '🔤'],
+  [['地理', '地质', '环境', 'environment', 'geograph', 'geolog'], '🌍'],
+  [['建筑', '工程', '机械', '电气', '土木', 'architect', 'engineer', 'mechanic', 'civil'], '🏗️'],
+  [['音乐', '美术', '设计', '艺术', 'music', 'art', 'design'], '🎨'],
+  [['管理', '工商', '人力', '营销', 'management', 'business', 'marketing'], '🗄️'],
+  [['教育', '师范', 'teach', 'educat'], '🎓'],
+  [['导游', '旅游', '酒店', 'travel', 'tourism', 'hospitality'], '🧭'],
+];
+
+function autoPageIcon(name, examName) {
+  const haystack = `${name || ''} ${examName || ''}`.toLowerCase();
+  for (const [keys, emoji] of KEYWORD_ICONS) {
+    if (keys.some((key) => haystack.includes(key.toLowerCase()))) return emoji;
+  }
+  return '📚';
+}
+
+function subjectIcon(subject) {
+  const custom = strOf(subject && subject.icon, 8).trim();
+  if (custom) return custom;
+  return autoPageIcon(subject && subject.name, subject && subject.examName);
+}
+
+/* ===== 页头封面：内置纹理 + 用户上传 =====
+ * 与 Exam Plan AI 的 lib/pageCover.ts 同一套：封面只是装饰，不承载信息与动作，
+ * 只出现在「打开这份科目」那一页的页头。存法一眼分得开——内置是 "preset:<id>"，
+ * 图片是 "data:image/..."，其余一律当没有封面。纹理走浅纸质调子，压深了就成了营销 hero。 */
+const grain = (angle, alpha) =>
+  `repeating-linear-gradient(${angle}deg, rgba(28,27,26,${alpha}) 0 1px, rgba(255,255,255,0) 1px 7px)`;
+const sheen = (from, to) =>
+  `radial-gradient(120% 95% at 12% 0%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 58%), linear-gradient(180deg, ${from} 0%, ${to} 100%)`;
+
+const COVER_PRESETS = [
+  { id: 'paper', zh: '纸纹', en: 'Paper', background: `${grain(135, 0.022)}, ${grain(45, 0.014)}, ${sheen('#f1eee6', '#e5e1d6')}` },
+  { id: 'mist', zh: '雾蓝', en: 'Mist', background: `${grain(135, 0.018)}, ${sheen('#e9f0f8', '#dbe6f1')}` },
+  { id: 'moss', zh: '苔绿', en: 'Moss', background: `${grain(135, 0.018)}, ${sheen('#e9f0e7', '#dae4d8')}` },
+  { id: 'wheat', zh: '麦黄', en: 'Wheat', background: `${grain(135, 0.02)}, ${sheen('#faf0cf', '#f2e2b0')}` },
+  { id: 'clay', zh: '陶土', en: 'Clay', background: `${grain(135, 0.018)}, ${sheen('#f6e8e0', '#eed9cf')}` },
+  { id: 'slate', zh: '石墨', en: 'Slate', background: `${grain(135, 0.02)}, ${grain(45, 0.012)}, ${sheen('#ececeb', '#dcdcd9')}` },
+];
+
+const PRESET_PREFIX = 'preset:';
+// 封面进 localStorage，尺寸必须封顶：长边 1600 足够铺满最宽的带，再大只是把本地存储撑爆。
+const COVER_MAX_EDGE = 1600;
+const COVER_MAX_INPUT_BYTES = 12 * 1024 * 1024;
+const COVER_MAX_DATA_CHARS = 420000;
+
+function findCoverPreset(value) {
+  const s = String(value || '');
+  if (!s.startsWith(PRESET_PREFIX)) return null;
+  return COVER_PRESETS.find((p) => p.id === s.slice(PRESET_PREFIX.length)) || null;
+}
+
+function coverImageSrc(value) {
+  const s = String(value || '');
+  return s.startsWith('data:image/') && s.length <= COVER_MAX_DATA_CHARS && !s.includes('"') ? s : null;
+}
+
+/** 存储层唯一的封面校验：不是内置纹理也不是合规图片，就退回「没有封面」。 */
+function coverOf(raw) {
+  const s = strOf(raw, COVER_MAX_DATA_CHARS + 64).trim();
+  if (findCoverPreset(s)) return s;
+  return coverImageSrc(s) ? s : '';
+}
+
+function hasSubjectCover(subject) {
+  return Boolean(findCoverPreset(subject && subject.cover) || coverImageSrc(subject && subject.cover));
+}
+
+function subjectCoverHTML(subject) {
+  const preset = findCoverPreset(subject.cover);
+  const src = coverImageSrc(subject.cover);
+  if (!preset && !src) return '';
+  const style = preset ? ` style="background:${preset.background}"` : '';
+  return `<div class="ui-cover-band"${style}>${src ? `<img src="${esc(src)}" alt="" decoding="async">` : ''}</div>`;
+}
+
+/** 读成封面用的 data URL：限尺寸 → 等比缩到长边 1600 → webp（不支持就 jpeg）；
+ * 透明底先铺应用纸色，免得转 jpeg 时变黑块。压到上限还装不下就报 size。 */
+function readCoverImage(file) {
+  if (!file || !String(file.type || '').startsWith('image/')) return Promise.reject(coverError('type'));
+  if (file.size > COVER_MAX_INPUT_BYTES) return Promise.reject(coverError('size'));
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(coverError('decode'));
+    reader.readAsDataURL(file);
+  }).then((raw) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(coverError('decode'));
+    image.src = raw;
+  })).then((image) => {
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    if (!width || !height) throw coverError('decode');
+    const encode = (edge, quality) => {
+      const scale = Math.min(1, edge / Math.max(width, height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw coverError('canvas');
+      ctx.fillStyle = '#f8f7f4';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      let out = '';
+      try { out = canvas.toDataURL('image/webp', quality); } catch { out = ''; }
+      if (!out.startsWith('data:image/webp')) {
+        try { out = canvas.toDataURL('image/jpeg', quality); } catch { throw coverError('canvas'); }
+      }
+      if (!out.startsWith('data:image/')) throw coverError('canvas');
+      return out;
+    };
+    let encoded = encode(COVER_MAX_EDGE, 0.82);
+    if (encoded.length > COVER_MAX_DATA_CHARS) encoded = encode(1000, 0.72);
+    if (encoded.length > COVER_MAX_DATA_CHARS) throw coverError('size');
+    return encoded;
+  });
+}
+
+function coverError(code) {
+  const error = new Error(`cover:${code}`);
+  error.code = code;
+  return error;
+}
+
+function coverErrorMessage(code) {
+  if (code === 'size') return '图片太大，本地存不下，换一张或选内置纹理。';
+  if (code === 'type') return '只能选图片文件。';
+  return '这张图片读不出来，换一张或选内置纹理。';
+}
+
 function sanitizeSubjects(raw) {
   const builtinNames = new Set(BUILTIN_SUBJECTS.map((s) => s.name));
   const seen = new Set(BUILTIN_SUBJECTS.map((s) => s.id));
@@ -385,10 +535,13 @@ function sanitizeSubjects(raw) {
     let id = /^sub-[A-Za-z0-9_-]{1,32}$/.test(String(item.id)) ? String(item.id) : '';
     if (!id || seen.has(id)) id = 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     seen.add(id);
+    // 早期版本把名称首字当图标存了下来；那不是用户选的图标，遇到就清空，让自动配图接管。
+    const rawIcon = strOf(item.icon, 8).trim();
     out.push({
       id,
       name: name.slice(0, 40),
-      icon: (strOf(item.icon, 2) || name.slice(0, 1)).slice(0, 2),
+      icon: rawIcon && rawIcon !== name.slice(0, 1) ? rawIcon : '',
+      cover: coverOf(item.cover),
       examName: strOf(item.examName, 100).trim(),
       examDate: isoDateOf(item.examDate),
       startDate: isoDateOf(item.startDate),
@@ -1009,7 +1162,9 @@ function createSubject(name, extra) {
   const subject = {
     id: 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: clean,
-    icon: clean.slice(0, 1),
+    // 图标留空 = 让自动配图接管；封面同理，没有就是「没有封面」的页头。
+    icon: strOf(e.icon, 8).trim(),
+    cover: coverOf(e.cover),
     examName: strOf(e.examName, 100).trim(),
     examDate: isoDateOf(e.examDate),
     startDate: isoDateOf(e.startDate),
@@ -1027,11 +1182,11 @@ function createSubject(name, extra) {
   return subject;
 }
 
-// 只更新考试信息与练习参数：id / 名称 / 图标 / 创建时间保持不变，写入前再过一遍 sanitize
+// 只更新考试信息、页头身份与练习参数：id / 名称 / 创建时间保持不变，写入前再过一遍 sanitize
 function updateSubject(id, patch) {
   const current = userSubjects.find((s) => s.id === id);
   if (!current) return null;
-  const merged = sanitizeSubjects([{ ...current, ...patch, id: current.id, name: current.name, icon: current.icon, createdAt: current.createdAt }])[0];
+  const merged = sanitizeSubjects([{ ...current, ...patch, id: current.id, name: current.name, createdAt: current.createdAt }])[0];
   if (!merged) return null;
   const next = userSubjects.map((s) => (s.id === id ? merged : s));
   if (!saveJSON(STORAGE.subjects, next)) {
@@ -1048,7 +1203,8 @@ function renameSubject(id, name) {
   if (!subject) return false;
   if (!clean) { toast('练习科目名称不能为空', 'info'); return false; }
   if (subjectNameTaken(clean, id)) { toast('已经有同名练习科目了', 'info'); return false; }
-  const next = userSubjects.map((s) => (s.id === id ? { ...s, name: clean, icon: clean.slice(0, 1) } : s));
+  // 改名不再顺手重写图标：用户选定的身份要留在原处，没选过的才由自动配图按新名字重算。
+  const next = userSubjects.map((s) => (s.id === id ? { ...s, name: clean } : s));
   if (!saveJSON(STORAGE.subjects, next)) { toast('重命名没有保存成功', 'error'); return false; }
   userSubjects = next;
   return true;
@@ -2933,6 +3089,46 @@ function setListHTML(sets) {
     </div>`;
 }
 
+// 页头动作：返回 + 本页独有的三个动作。有封面时同一组按钮浮在封面带上，
+// 只多一层半透明白垫（ui-cover-chip），档位不变——一个功能仍然只有这一个入口。
+function subjectHeadChrome(subject, covered, own, matIds) {
+  const cls = covered ? 'ui-text-btn ui-cover-chip' : 'ui-text-btn';
+  return `
+    <button class="${cls}" onclick="navigateTo('sets')">← 全部练习科目</button>
+    <div class="subject-actions">
+      <button class="${cls}" onclick="openAIModal('${subject.id}'${matIds ? `, [${matIds}]` : ''})">${ICON.spark}<span>AI 出题</span></button>
+      ${own ? `<button class="${cls}" onclick="examInfoModal('${subject.id}')" title="练习科目名称与考试信息都能改">${ICON.pen}<span>编辑</span></button>
+      <button class="${cls} is-danger" onclick="deleteSubject('${subject.id}')">${ICON.trash}<span>删除</span></button>` : ''}
+    </div>`;
+}
+
+// 属性 = 图标 + 定宽灰标签 + 同档不加粗取值；没填的走 ui-prop-empty 那档灰。
+function subjectProp(iconKey, label, value, opts) {
+  const o = opts || {};
+  return `<span class="ui-prop"><span class="ui-prop-icon">${ICON[iconKey]}</span>`
+    + `<span class="ui-prop-label">${label}</span>`
+    + `<span class="ui-prop-value${o.muted ? ' ui-prop-empty' : ''}"${o.raw ? ' data-no-i18n' : ''}>${esc(value)}</span></span>`;
+}
+
+function subjectPropsHTML(subject, left) {
+  const notSet = '未设定';
+  return [
+    subject.examName
+      ? subjectProp('book', '目标考试', subject.examName, { raw: true })
+      : subjectProp('book', '目标考试', notSet, { muted: true }),
+    subject.examDate
+      ? subjectProp('calendar', '考试日期', subject.examDate)
+      : subjectProp('calendar', '考试日期', notSet, { muted: true }),
+    left == null
+      ? subjectProp('clock', '距考试', notSet, { muted: true })
+      : subjectProp('clock', '距考试', examCountdownLabel(left)),
+    subject.goal
+      ? subjectProp('target', '备考目标', subject.goal, { raw: true })
+      : subjectProp('target', '备考目标', notSet, { muted: true }),
+    subjectProp('flame', '每日目标', `${subject.dailyGoal || 20} 题`)
+  ].join('');
+}
+
 function renderSubject() {
   const subject = subjectById(state.subjectId);
   if (!subject) {
@@ -2942,38 +3138,24 @@ function renderSubject() {
   const sets = subjectSets(subject.id).slice().reverse();
   const mats = subjectMaterials(subject.id);
   const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
-  const accent = setAccent({ id: subject.id });
   const own = !subject.builtin;
   const matIds = mats.map((m) => `'${m.id}'`).join(',');
   const busy = !materialsReady;
   const chars = mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN');
   const kpTotal = sets.reduce((n, s) => n + (s.knowledgePoints || []).length, 0);
   const left = daysToExam(subject);
-  const meta = [];
-  // 考试名与目标是用户填写的数据：英文模式下只翻标签，原文保留，不计入词典缺口
-  if (subject.examName) meta.push(`<span data-no-i18n>${esc(subject.examName)}</span>`);
-  if (subject.examDate) meta.push(left == null ? subject.examDate : (left >= 0 ? `${subject.examDate} · 距考试 ${left} 天` : '考试日期已过'));
-  if (subject.goal) meta.push(`目标：<span data-no-i18n>${esc(subject.goal)}</span>`);
-  meta.push(`每日目标 ${subject.dailyGoal || 20} 题`);
+  const covered = hasSubjectCover(subject);
+  const chrome = subjectHeadChrome(subject, covered, own, matIds);
 
   return `
-    <button class="back-link" onclick="navigateTo('sets')">← 全部练习科目</button>
-    ${renderPlanLinkBanner(subject.id)}
+    ${covered ? `<div class="subject-cover">${subjectCoverHTML(subject)}<div class="subject-chrome is-float">${chrome}</div></div>` : ''}
 
-    <div class="subject-head">
-      <div class="subject-head-main">
-        <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}" data-no-i18n>${esc(subject.icon || subject.name.slice(0, 1))}</span>
-        <div class="subject-head-copy">
-          <div class="hero-eyebrow">练习科目</div>
-          <h2 data-no-i18n>${esc(subject.name)}</h2>
-          ${meta.length ? `<div class="subject-meta">${meta.map((m) => `<span class="ui-chip">${m}</span>`).join('')}</div>` : ''}
-        </div>
-      </div>
-      <div class="subject-head-actions">
-        <button class="btn btn-primary btn-sm" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">${ICON.spark} AI 出题</button>
-        ${own ? `<button class="btn btn-secondary btn-sm" onclick="examInfoModal('${subject.id}')" title="练习科目名称与考试信息都能改">${ICON.pen}<span>编辑</span></button>
-        <button class="btn btn-danger btn-sm" onclick="deleteSubject('${subject.id}')">${ICON.trash}<span>删除</span></button>` : ''}
-      </div>
+    <div class="subject-head${covered ? ' is-covered' : ''}">
+      ${covered ? '' : `<div class="subject-chrome is-static">${chrome}</div>`}
+      <span class="ui-page-icon" data-no-i18n>${esc(subjectIcon(subject))}</span>
+      <h2 class="ui-doc-title" data-no-i18n>${esc(subject.name)}</h2>
+      <div class="subject-props">${subjectPropsHTML(subject, left)}</div>
+      ${renderPlanLinkBanner(subject.id)}
     </div>
 
     <input type="file" id="subjectFileInput" multiple hidden
@@ -3008,7 +3190,7 @@ const NS_STEPS = ['考试信息', '上传资料', '完成'];
 
 function nsBlank() {
   return {
-    step: 1, subjectId: null, name: '', examName: '', examDate: '', startDate: '', goal: '',
+    step: 1, subjectId: null, name: '', icon: '', cover: '', examName: '', examDate: '', startDate: '', goal: '',
     defaultCount: 15, dailyGoal: 20, parsing: false, added: 0, chars: 0, failed: []
   };
 }
@@ -3026,13 +3208,15 @@ function nsField(id) {
 
 // 考试信息表单：新建向导第一步和练习科目页的「考试信息」弹窗共用同一套字段
 const EXAM_FORM_DEFAULTS = {
-  id: '', subjectKind: '', name: '', examName: '', goal: '', examDate: '', startDate: '',
+  id: '', subjectKind: '', name: '', icon: '', cover: '', examName: '', goal: '', examDate: '', startDate: '',
   defaultCount: 15, dailyGoal: 20
 };
 
 function examFormValues() {
   return {
     name: nsField('newSubjectName').trim(),
+    icon: strOf(nsField('nsIcon'), 8).trim(),
+    cover: coverOf(nsField('nsCover')),
     examName: nsField('nsExamName').trim(),
     goal: nsField('nsGoal').trim(),
     examDate: nsField('nsExamDate').trim(),
@@ -3040,6 +3224,80 @@ function examFormValues() {
     defaultCount: intOf(nsField('nsDefaultCount'), 15, 5, 60),
     dailyGoal: intOf(nsField('nsDailyGoal'), 20, 5, 100)
   };
+}
+
+/* 页图标与封面选择器：只在「编辑练习科目」弹窗里出现——新建向导第一步讲的是考试信息，
+ * 身份（图标 / 封面）留到科目页的编辑里配，一个入口只管一件事。
+ * 取值写进隐藏域，保存时由 examFormValues() 一并读出，不在弹窗里即时落库。 */
+function iconGridHTML(current) {
+  return PAGE_ICON_CHOICES.map((emoji) =>
+    `<button type="button" class="icon-tile${emoji === current ? ' is-active' : ''}" data-icon="${esc(emoji)}" `
+    + `onclick="pickExamIcon(this.dataset.icon)" aria-label="${esc(emoji)}">${emoji}</button>`).join('');
+}
+
+function coverStripHTML(value) {
+  const tiles = COVER_PRESETS.map((preset) =>
+    `<button type="button" class="cover-tile${value === `${PRESET_PREFIX}${preset.id}` ? ' is-active' : ''}" `
+    + `style="background:${preset.background}" title="${preset.zh}" onclick="pickExamCover('${PRESET_PREFIX}${preset.id}')"></button>`).join('');
+  const uploaded = coverImageSrc(value)
+    ? `<button type="button" class="cover-tile is-active" style="background-image:url('${value}')" title="上传的图片"></button>`
+    : '';
+  return `<button type="button" class="cover-tile is-none${value ? '' : ' is-active'}" title="不用封面" onclick="pickExamCover('')">无</button>${tiles}${uploaded}`;
+}
+
+function examIdentityHtml(v) {
+  return `
+      <div class="wiz-field wiz-span">
+        <span class="form-label">页图标</span>
+        <input type="hidden" id="nsIcon" value="${esc(v.icon)}">
+        <div class="icon-grid" id="nsIconPicker">${iconGridHTML(v.icon)}</div>
+        <span class="wiz-help">不选就按科目名自动配；再点一次选中的图标可以取消。</span>
+      </div>
+      <div class="wiz-field wiz-span">
+        <span class="form-label">封面</span>
+        <input type="hidden" id="nsCover" value="${esc(v.cover)}">
+        <div class="cover-strip" id="nsCoverPicker">${coverStripHTML(v.cover)}</div>
+        <div class="cover-tools">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="pickCoverFile()">${ICON.upload}<span>上传图片</span></button>
+          <span class="cover-hint">JPG / PNG / WebP，最长边压到 1600 存在本机。</span>
+        </div>
+        <input type="file" id="nsCoverInput" hidden accept="image/png,image/jpeg,image/webp,image/gif" onchange="onCoverFileSelected(this)">
+      </div>`;
+}
+
+function pickExamIcon(emoji) {
+  const input = document.getElementById('nsIcon');
+  const grid = document.getElementById('nsIconPicker');
+  if (!input || !grid) return;
+  const next = input.value === emoji ? '' : emoji;
+  input.value = next;
+  grid.innerHTML = iconGridHTML(next);
+}
+
+function pickExamCover(value) {
+  const input = document.getElementById('nsCover');
+  const strip = document.getElementById('nsCoverPicker');
+  if (!input || !strip) return;
+  const next = coverOf(value);
+  input.value = next;
+  strip.innerHTML = coverStripHTML(next);
+}
+
+function pickCoverFile() {
+  document.getElementById('nsCoverInput')?.click();
+}
+
+async function onCoverFileSelected(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  try {
+    const data = await readCoverImage(file);
+    pickExamCover(data);
+    toast('封面已选好，保存后生效', 'success');
+  } catch (err) {
+    toast(coverErrorMessage(err && err.code), 'error');
+  }
 }
 
 function examFieldsHtml(raw) {
@@ -3052,6 +3310,7 @@ function examFieldsHtml(raw) {
         <input class="form-input" id="newSubjectName" maxlength="40" placeholder="例如：导游业务、考研英语、高等数学" value="${esc(v.name)}" onkeydown="if(event.key==='Enter'){event.preventDefault();${v.subjectKind === 'edit' ? `submitExamInfo('${esc(v.id)}')` : 'nsNext()'}};">
         <span class="wiz-help">之后上传的资料和生成的练习集都会归到这个练习科目下。</span>
       </div>
+      ${v.subjectKind === 'edit' ? examIdentityHtml(v) : ''}
       <div class="wiz-field">
         <label class="form-label" for="nsExamName">目标考试</label>
         <input class="form-input" id="nsExamName" maxlength="100" placeholder="例如：2026 年导游资格考试" value="${esc(v.examName)}">
@@ -3092,6 +3351,8 @@ function nsCollectExamInfo() {
 
 function nsExamInfo() {
   return {
+    icon: nsDraft.icon || '',
+    cover: nsDraft.cover || '',
     examName: nsDraft.examName,
     examDate: nsDraft.examDate,
     startDate: nsDraft.startDate,

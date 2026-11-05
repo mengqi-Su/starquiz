@@ -616,6 +616,32 @@ const EN = Object.assign({
   'AI 出题和开始练习时默认用这个题量。':
     'The count AI generation and practice start with by default.',
   '首页的今日目标按各练习科目目标累加。': "The daily goal on the home card adds up every subject's goal.",
+  '未设定': 'Not set',
+  '距考试': 'Days left',
+
+  /* 科目页头：Notion 式页图标与封面 */
+  '页图标': 'Page icon',
+  '不选就按科目名自动配；再点一次选中的图标可以取消。':
+    'Leave it unset and the icon follows the subject name. Click the selected icon again to clear it.',
+  '封面': 'Cover',
+  '无': 'None',
+  '不用封面': 'No cover',
+  '上传图片': 'Upload image',
+  'JPG / PNG / WebP，最长边压到 1600 存在本机。':
+    'JPG / PNG / WebP, downscaled to 1600px on the long edge and kept on this device.',
+  '上传的图片': 'Uploaded image',
+  '纸纹': 'Paper',
+  '雾蓝': 'Mist',
+  '苔绿': 'Moss',
+  '麦黄': 'Wheat',
+  '陶土': 'Clay',
+  '石墨': 'Slate',
+  '封面已选好，保存后生效': 'Cover picked. Save to apply it.',
+  '图片太大，本地存不下，换一张或选内置纹理。':
+    'That image is too big to store locally. Try another one or a built-in texture.',
+  '只能选图片文件。': 'Only image files work as a cover.',
+  '这张图片读不出来，换一张或选内置纹理。':
+    'That image could not be read. Try another file or a built-in texture.',
   '这个练习科目': 'this subject',
   '这个练习科目还没有内容。': 'This subject has nothing yet.',
   '已删除的练习集': 'a deleted set',
@@ -772,6 +798,8 @@ const EN = Object.assign({
 const pl = (n, one, many) => `${n} ${n === '1' ? one : many}`;
 
 const EN_PATTERNS = [
+  /* 科目页头的「每日目标 20 题」：标签与取值是两个节点，这里只翻取值 */
+  [/^(\d+) 题$/, (m) => pl(m[1], 'question', 'questions')],
   /* 错题本 v2：复习节奏、组卷预览、收纳计数（带数字，放在短模式之前） */
   [/^(\d+) 题 · 错 (\d+) 次$/, (m) => `${pl(m[1], 'question', 'questions')} · ${pl(m[2], 'miss', 'misses')}`],
   [/^今日到期 (\d+) [题道]$/, (m) => `${pl(m[1], 'question', 'questions')} due today`],

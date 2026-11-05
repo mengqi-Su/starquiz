@@ -296,14 +296,20 @@ a { color: var(--brand); }
    同一份 NAV_ACTIONS 不会在两个地方同时可见。 */
 .header-actions { display: none; align-items: center; gap: 9px; }
 
+/* 页面内缩与内容列宽只在这一处定义：满宽封面带靠负边距破出内容列，
+   移动端只改这四个变量，不再把 padding 和 max-width 重写一遍。 */
 .main-body {
+  --page-pad-top: 24px;
+  --page-pad-x: 32px;
+  --page-pad-bottom: 40px;
+  --page-col: 1152px;
   flex: 1;
   overflow-y: auto;
-  padding: 30px 32px 56px;
+  padding: var(--page-pad-top) var(--page-pad-x) var(--page-pad-bottom);
   scroll-behavior: smooth;
 }
 
-.main-body > * { max-width: 1120px; margin-left: auto; margin-right: auto; }
+.main-body > * { max-width: var(--page-col); margin-left: auto; margin-right: auto; }
 
 .menu-toggle { display: none; }
 
@@ -2265,7 +2271,8 @@ input[type="file"].form-input:active::file-selector-button {
   .header-actions { display: flex; }
   .main-header { padding: 0 16px; }
   .main-header h2 { font-size: 16px; }
-  .main-body { padding: 18px 14px 104px; }
+  /* 页面内缩统一走 .main-body 的 --page-pad-* 变量（窄屏那一条在文件末尾），
+     这里只留专注模式的底栏高度；封面带靠同一组变量破出才不会错位。 */
   body.focus-mode .main-body { padding-bottom: 96px; }
 
   .qnav-toggle {
@@ -3078,68 +3085,206 @@ body {
   color: var(--ink-mute);
 }
 
-.subject-head {
-  display: flex;
+/* ============================================================
+   科目页头 · Notion 结构（和 Exam Plan AI 同一把标尺同一套 Anatomy）
+   满宽封面带 → 页图标骑在下沿 → 文档标题 → 属性行；
+   返回与动作悬浮在封面带的两个上角，页头本身不再是卡。
+   ============================================================ */
+
+/* 封面带破出内容列：占满页面区、贴着顶边、方角——它是这份文档的底，
+   不是内容列里的一张卡。高度只在这一处定义，页图标靠页头的负上边距骑回下沿。 */
+.subject-cover {
+  position: relative;
+  max-width: none;
+  margin: calc(-1 * var(--page-pad-top)) calc(-1 * var(--page-pad-x)) 0;
+}
+
+.ui-cover-band {
+  display: block;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+.ui-cover-band img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* 页面上的文字按钮：返回 / 编辑 / 删除都是这一档，不再另立按钮体系。 */
+.ui-text-btn {
+  display: inline-flex;
   align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink-mute);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.ui-text-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.ui-text-btn:hover { background: var(--lime-soft); color: var(--ink); }
+/* 删除只把语义色用在文字上，不另做一套危险按钮。 */
+.ui-text-btn.is-danger { color: var(--coral-deep); }
+.ui-text-btn.is-danger:hover { background: var(--coral-soft); color: var(--coral-deep); }
+
+/* 压在封面上的那几颗只多一层半透明白垫：字号和档位沿用 ui-text-btn，
+   浅纹理上也保证读得清，但不许长成第二套按钮。 */
+.ui-cover-chip {
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 1px 3px rgba(28, 27, 26, 0.10);
+  backdrop-filter: blur(6px);
+  color: var(--ink);
+}
+.ui-cover-chip:hover { background: #ffffff; }
+
+.subject-chrome {
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding: 16px 18px;
-  margin-bottom: 6px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
 }
+.subject-chrome.is-float {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  margin: 0 auto;
+  max-width: var(--page-col);
+  padding: 12px var(--page-pad-x);
+}
+.subject-chrome.is-static { margin-bottom: 10px; }
+.subject-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
-.subject-head-main {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.subject-head {
+  position: relative;
   min-width: 0;
+  /* 页头是贴边的文字块，不再是卡：和第一段之间要自己留一整段块间距（全站 24），
+     不然属性行的下沿会直接压在练习集的行列表上。 */
+  margin-bottom: 24px;
+}
+/* 联动横幅跟在属性行后面，只留上间距，剩下的呼吸由页头统一给。 */
+.subject-head .plan-link-banner { margin: 16px 0 0; }
+/* 有封面时整块往上提 16（= 64 页图标盒高的四分之一），图标才压在带子的下沿上。 */
+.subject-head.is-covered { margin-top: -16px; }
+
+.ui-page-icon {
+  position: relative;
+  z-index: 1;
+  display: block;
+  font-size: 64px;
+  line-height: 1;
+  user-select: none;
 }
 
-.subject-icon {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
+.ui-doc-title {
+  margin: 8px 0 0;
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* 属性 = 图标 + 定宽灰标签 + 同档不加粗取值；桌面两列，窄屏退回一列。 */
+.subject-props {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 10px;
+  margin-top: 16px;
+}
+.ui-prop { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ui-prop-icon { display: inline-flex; width: 15px; height: 15px; flex-shrink: 0; color: var(--ink-faint); }
+.ui-prop-icon svg { width: 15px; height: 15px; }
+.ui-prop-label { flex-shrink: 0; width: 4.2em; font-size: 15px; color: var(--ink-mute); }
+.ui-prop-value {
+  min-width: 0;
+  font-size: 15px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.ui-prop-empty { color: var(--ink-faint); }
+
+/* 编辑弹窗里的页图标 / 封面选择器：小方格，选中只用墨黑内描边，不加第二套高亮。 */
+.icon-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.icon-tile {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  background: var(--surface-tint);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.icon-tile:hover { border-color: var(--hover-line, var(--ink-faint)); }
+.icon-tile.is-active { border-color: var(--ink); background: var(--lime-soft); box-shadow: inset 0 0 0 1px var(--ink); }
+
+.cover-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.cover-tile {
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-input);
+  background-color: var(--card);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: border-color 0.14s ease;
+}
+.cover-tile:hover { border-color: var(--ink-faint); }
+.cover-tile.is-active { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.cover-tile.is-none {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--display);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ink);
+  background: var(--card-alt);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-mute);
+}
+.cover-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.cover-hint { font-size: 11.5px; color: var(--ink-mute); }
+
+/* 窄屏整套等比退回 Notion 移动端尺度：带 168 / 图标 48 / 标题 28，
+   重叠量跟着取图标盒高的四分之一，属性退回单列。 */
+@media (max-width: 720px) {
+  .ui-cover-band { height: 168px; }
+  .ui-page-icon { font-size: 48px; }
+  .subject-head.is-covered { margin-top: -12px; }
+  .ui-doc-title { font-size: 28px; }
+  .cover-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.subject-head-copy { min-width: 0; }
-
-.subject-head-copy h2 {
-  margin: 0 0 2px;
-  font-family: var(--display);
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--ink);
+@media (max-width: 640px) {
+  .subject-props { grid-template-columns: 1fr; row-gap: 8px; }
 }
 
-/* 备考上下文：目标考试 / 考试日期 / 每日目标 */
+/* 备考上下文：练习集详情页的上下文胶囊仍用这一行（页头改属性行后不再需要卡面）。 */
 .subject-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
-}
-
-.subject-head-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .material-list {
@@ -3335,11 +3480,6 @@ body {
 .ai-library-meta { font-size: 11.5px; color: var(--ink-mute); }
 
 @media (max-width: 720px) {
-  .subject-head { gap: 14px; }
-  .subject-head-main { gap: 12px; }
-  .subject-icon { width: 40px; height: 40px; border-radius: var(--radius-input); font-size: 16px; }
-  .subject-head-actions { width: 100%; }
-  .subject-head-actions .btn { flex: 1; justify-content: center; }
   .material-row { grid-template-columns: 42px minmax(0, 1fr); row-gap: 8px; }
   .material-ext { width: 42px; height: 32px; }
   .material-actions { grid-column: 2; gap: 16px; flex-wrap: wrap; }
@@ -3441,10 +3581,13 @@ body {
 .question-knowledge,
 .resume-tag { border: none; }
 
-.main-body { padding: 24px 32px 40px; }
-.main-body > * { max-width: 1152px; margin-left: auto; margin-right: auto; }
+/* 窄屏只改页面内缩变量：封面带和浮在上面的动作行靠同一组变量破出，不用再重写一遍。 */
 @media (max-width: 1000px) {
-  .main-body { padding: 20px 16px 104px; }
+  .main-body {
+    --page-pad-top: 20px;
+    --page-pad-x: 16px;
+    --page-pad-bottom: 104px;
+  }
 }.stat-label,
 .stat-rail .stat-label,
 .result-stat-label,
@@ -3790,8 +3933,7 @@ b, strong { font-weight: 600; }
 .set-detail-hero .ai-quality { color: var(--ink-soft); }
 
 @media (max-width: 720px) {
-  .set-detail-hero,
-  .subject-head { padding: 18px 16px; }
+  .set-detail-hero { padding: 18px 16px; }
   .set-detail-hero h2 { font-size: 21px; }
 }
 
@@ -4298,7 +4440,6 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   .lrow { grid-template-columns: 8px minmax(0, 1fr) auto; gap: 10px; padding: 12px 4px; }
   .lrow-tap { grid-template-columns: 8px minmax(0, 1fr) auto auto; }
   .lrow-go { display: none; }
-  .subject-head { padding: 14px 14px; }
   /* 卡里的行有卡片替它留内缩，所以只留 4px；段正文是贴边的，行得自己把内缩撑回来 */
   .fold-body-flush .lrow,
   .fold-body-flush .material-row,
@@ -4680,7 +4821,8 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   gap: 2px;
 }
 /* 段标题就是 .section-title 的那一级：15/600。全站只有一把标尺——
-   页面标题 26/600 › 段标题 15/600 › 行标题 13.5/500 › 副行与尾列 12/400 › 胶囊 11/500。 */
+   文档标题 36/600（只有科目页头用，页图标同档 64）› 页面标题 26/600 ›
+   段标题与属性 15 › 行标题 13.5/500 › 副行与尾列 12/400 › 胶囊 11/500。 */
 .fold-name {
   font-family: var(--display);
   font-size: 15px;
