@@ -386,7 +386,7 @@ const KEYWORD_ICONS = [
   [['生物', '生物化', 'genetic', 'biology', 'molecu'], '🧬'],
   [['医学', '护理', '解剖', '临床', 'medic', 'nursing', 'anatom'], '🩺'],
   [['心理', 'cognit', 'psycholog'], '🧠'],
-  [['计算机', '软件', '程序', '算法', '数据', 'code', 'programming', 'computer', 'algorithm', 'database', 'network'], '💻'],
+  [['计算机', '软件', '程序', '编程', '算法', '数据', 'code', 'programming', 'computer', 'algorithm', 'database', 'network'], '💻'],
   [['语文', '中文', '文学', '汉语', '历史', '考古', 'literature', 'chinese', 'history'], '📜'],
   [['政治', '法律', '法学', '马克思', 'philosoph', 'politic', 'law', 'legal'], '⚖️'],
   [['英语', '日语', '韩语', '法语', '德语', '俄语', '外语', '雅思', '托福', 'english', 'japanese', 'french', 'german'], '🔤'],
@@ -406,10 +406,19 @@ function autoPageIcon(name, examName) {
   return '📚';
 }
 
+/* 图标的合法形态只有两种：选择器里那种字形，或者「没选」。早期版本把名称里的汉字
+ * 当图标存了下来（历史 → 史、编程 → 码），那不是身份，一律按没选处理——
+ * 校验只在这一处，读取和落库都走它，不在每个调用点各判一遍。 */
+const PICTOGRAPH = /\p{Extended_Pictographic}/u;
+
+function pageIconOf(raw) {
+  const icon = strOf(raw, 8).trim();
+  return PICTOGRAPH.test(icon) ? icon : '';
+}
+
 function subjectIcon(subject) {
-  const custom = strOf(subject && subject.icon, 8).trim();
-  if (custom) return custom;
-  return autoPageIcon(subject && subject.name, subject && subject.examName);
+  return pageIconOf(subject && subject.icon)
+    || autoPageIcon(subject && subject.name, subject && subject.examName);
 }
 
 /* ===== 页头封面：内置纹理 + 用户上传 =====
@@ -535,12 +544,10 @@ function sanitizeSubjects(raw) {
     let id = /^sub-[A-Za-z0-9_-]{1,32}$/.test(String(item.id)) ? String(item.id) : '';
     if (!id || seen.has(id)) id = 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     seen.add(id);
-    // 早期版本把名称首字当图标存了下来；那不是用户选的图标，遇到就清空，让自动配图接管。
-    const rawIcon = strOf(item.icon, 8).trim();
     out.push({
       id,
       name: name.slice(0, 40),
-      icon: rawIcon && rawIcon !== name.slice(0, 1) ? rawIcon : '',
+      icon: pageIconOf(item.icon),
       cover: coverOf(item.cover),
       examName: strOf(item.examName, 100).trim(),
       examDate: isoDateOf(item.examDate),
@@ -1163,7 +1170,7 @@ function createSubject(name, extra) {
     id: 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: clean,
     // 图标留空 = 让自动配图接管；封面同理，没有就是「没有封面」的页头。
-    icon: strOf(e.icon, 8).trim(),
+    icon: pageIconOf(e.icon),
     cover: coverOf(e.cover),
     examName: strOf(e.examName, 100).trim(),
     examDate: isoDateOf(e.examDate),
@@ -3215,7 +3222,7 @@ const EXAM_FORM_DEFAULTS = {
 function examFormValues() {
   return {
     name: nsField('newSubjectName').trim(),
-    icon: strOf(nsField('nsIcon'), 8).trim(),
+    icon: pageIconOf(nsField('nsIcon')),
     cover: coverOf(nsField('nsCover')),
     examName: nsField('nsExamName').trim(),
     goal: nsField('nsGoal').trim(),
