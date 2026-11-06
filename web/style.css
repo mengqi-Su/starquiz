@@ -1639,6 +1639,9 @@ input[type="file"].form-input:active::file-selector-button {
 .plan-link-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .plan-link-note { border-style: solid; border-color: var(--ink); background: var(--lime-soft); color: var(--ink-soft); }
 .plan-link-note .ai-note-dot { background: var(--coral); }
+/* 出题弹窗「资料来源」卡住原因：借 ai-note 的行质感，只把点换成警告琥珀 */
+.ai-source-gate { margin-top: 10px; }
+.ai-source-gate .ai-note-dot { background: var(--sun); }
 /* 联动回程：练习结果回执卡片，复用横幅的质感，只加统计与时间行 */
 .plan-receipt .plan-link-text { color: var(--ink); font-weight: 500; }
 .plan-receipt-meta { font-size: 12px; line-height: 1.5; color: var(--ink-mute); font-variant-numeric: tabular-nums; }

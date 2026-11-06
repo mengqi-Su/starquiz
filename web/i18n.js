@@ -684,6 +684,15 @@ const EN = Object.assign({
     'Ask about one topic only; other content gets few or no questions.',
   '上传资料后，会按资料篇幅自动推荐题量': 'Once materials are in, the count is suggested from their length',
 
+  /* 资料来源卡住原因（灰下一步按钮旁边的那一行） */
+  '资料还在解析中，解析完成就能继续下一步。':
+    'Still parsing — once it finishes you can go to the next step.',
+  '这一轮的内容不足 50 字，AI 出题需要更长的原文。再粘一段或继续上传文件。':
+    'This round has under 50 characters — AI needs more text. Paste another stretch or upload more files.',
+  '粘贴文字': 'Paste text',
+  '全部选上': 'Select all',
+  '去练习科目页传': 'Upload on the subject page',
+
   /* 失败与兜底文案 */
   'AI 本次没有生成内容，请重试': 'AI returned nothing this time — try again',
   'AI 没有返回题目': 'AI returned no questions',
@@ -929,6 +938,9 @@ const EN_PATTERNS = [
   [/^考试「?(.+?)」?的资料与真题都已在这里，可以直接出题$/, (m) => `All materials and past papers for "${m[1]}" are already here, ready to generate.`],
   [/^这次跳转没有带来新资料：已选入「?(.+?)」?的 (\d+) 份资料，可以直接出题$/, (m) => `This jump brought no new material: ${pl(m[2], 'file', 'files')} from "${m[1]}" ${Number(m[2]) === 1 ? 'is' : 'are'} selected, ready to generate.`],
   [/^考试「?(.+?)」?里还没有资料：上传资料即可出题$/, (m) => `The subject for "${m[1]}" has no material yet: upload one to generate questions.`],
+  [/^「(.+?)」已有 (\d+) 份资料，勾一份就能继续下一步。?$/, (m) => `"${m[1]}" already has ${pl(m[2], 'material', 'materials')} — tick one to continue.`],
+  [/^「(.+?)」还没有资料。现在传就行；也可以先关掉，之后在练习科目页的「资料」里补传，科目不用重建。$/,
+    (m) => `"${m[1]}" has no material yet. Upload now, or close this and add files later under Materials on the subject page — no need to recreate the subject.`],
   [/^(\d+) 份资料没能写入本地资料库，请手动重新上传$/, (m) => `${pl(m[1], 'file', 'files')} could not be saved to the local store — upload again manually`],
   [/^另有 (\d+) 份资料超过单次携带上限，需要手动上传$/, (m) => `${pl(m[1], 'more file', 'more files')} exceeded the per-jump limit — upload manually`],
   [/^继续「(.+?)」的考点「(.+?)」练习$/, (m) => `Back to "${m[2]}" in "${m[1]}"`],
@@ -955,12 +967,14 @@ const EN_PATTERNS = [
   [/^目标考点「(.+?)」本次计分 (\d+) 题，答对 (\d+) 题，正确率 (\d+)%。$/, (m) => `Target topic "${m[1]}": ${m[2]} graded, ${m[3]} correct, ${m[4]}% accuracy.`],
   [/^考试模式 · (.+?) · 按题目归属统计，未评分题不计入$/, (m) => `Exam mode · ${m[1]} · counted per attributed question; unscored ones excluded`],
   [/^学习模式 · (.+?) · 按题目归属统计，未评分题不计入$/, (m) => `Study mode · ${m[1]} · counted per attributed question; unscored ones excluded`],
-  [/^(\d+) 字笔记 · 建议 (\d+) 题$/, (m) => `${Number(m[1]).toLocaleString('en-US')} chars of notes · about ${m[2]} questions`],
   [/^笔记 (\d+) 份$/, 'Notes $1'],
   [/^笔记 (\d+) 份、真题 (\d+) 份$/, (m) => `Notes ${m[1]} · Papers ${m[2]}`],
   [/^真题 (\d+) 份$/, 'Papers $1'],
   [/^(\d+) 份 · 生成新题$/, '$1 · generate questions'],
   [/^(\d+) 份 · 原样保留$/, '$1 · keep as is'],
+  /* 弹窗里的分组小药丸：整句一条正则，不靠「·」逐段兜底（漏一段就是半个中文） */
+  [/^笔记 (\d+) 份 · 生成新题$/, (m) => `${pl(m[1], 'note', 'notes')} · generate questions`],
+  [/^真题 (\d+) 份 · 原样保留$/, (m) => `${pl(m[1], 'past paper', 'past papers')} · keep as is`],
   [/^段并行整理 · 已完成/, 'segments cleaned · done'],
   [/^整理全部真题 · 已用时/, 'Cleaning the whole paper · elapsed'],
   [/^(笔记|真题) · 已用时(.+)$/, (m) => `${t(m[1])} · elapsed ${m[2]}`],
@@ -987,8 +1001,10 @@ const EN_PATTERNS = [
   /* 出题弹窗：题量推荐与容量提示 */
   [/^识别到约 (\d+) 道题$/, 'Found about $1 questions'],
   [/^识别到约 (\d+) 道题，$/, 'Found about $1 questions'],
-  [/^([\d,]+) 字笔记 · 建议 (\d+) 题，可调 (\d+)–(\d+)(；真题部分全部保留，不计入此数量)?$/,
-    (m) => `${Number(m[1]).toLocaleString('en-US')} chars of notes · about ${m[2]} questions, adjustable ${m[3]}–${m[4]}${m[5] ? ' (past papers are all kept and not counted here)' : ''}`],
+  [/^([\d,]+) 字资料 · 按篇幅建议 (\d+) 题，可调 (\d+)–(\d+)(；真题部分全部保留，不计入此数量)?$/,
+    (m) => `${m[1]} characters · about ${m[2]} questions for that length, adjustable ${m[3]}–${m[4]}${m[5] ? ' (past papers are all kept and not counted here)' : ''}`],
+  [/^([\d,]+) 字资料 · 用练习科目默认 (\d+) 题（按篇幅建议 (\d+)），可调 (\d+)–(\d+)(；真题部分全部保留，不计入此数量)?$/,
+    (m) => `${m[1]} characters · this subject defaults to ${m[2]} (length suggests ${m[3]}), adjustable ${m[4]}–${m[5]}${m[6] ? ' (past papers are all kept and not counted here)' : ''}`],
   [/^笔记资料 ([\d,]+) 字，超过 24,000 字，请拆分后再上传$/, 'Notes are $1 characters, over the 24,000 limit — split them before uploading'],
   [/^真题资料超过 48,000 字，请拆分后再整理，避免漏题。$/, 'The past paper is over 48,000 characters — split it before cleaning so no question is missed.'],
   [/^字，超过 24,000 字，请拆分后再上传$/, 'characters, over the 24,000 limit — split before uploading'],

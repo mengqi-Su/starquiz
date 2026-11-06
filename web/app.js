@@ -6490,8 +6490,89 @@ function renderAIRail() {
   if (rail) rail.innerHTML = aiRailHTML();
 }
 
+// 「先建科目、资料回头再传」之后回到出题弹窗，下一步是灰的——灰按钮只说「不行」，
+// 不说差在哪一步。这里把卡住的原因和离它最近的一个入口写在同一行，
+// 原因口径与 aiStepReady(1) 完全一致，不另起一套判断。
+function aiSourceGateInfo() {
+  if (aiParseBusy) return { line: '资料还在解析中，解析完成就能继续下一步。', actions: [] };
+  if (aiStepReady(1)) return null;
+  const groups = collectAIGroups();
+  const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const name = esc(subject.name);
+  if (groups.hasFiles || groups.hasNotes || groups.hasExams) {
+    return {
+      line: '这一轮的内容不足 50 字，AI 出题需要更长的原文。再粘一段或继续上传文件。',
+      actions: [{ label: '粘贴文字', fn: 'revealAIPaste()' }]
+    };
+  }
+  const held = subjectMaterials(subject.id);
+  if (held.length) {
+    return {
+      line: `「${name}」已有 ${held.length} 份资料，勾一份就能继续下一步。`,
+      actions: [{ label: '全部选上', fn: 'selectAllLibraryMaterials()' }]
+    };
+  }
+  return {
+    line: `「${name}」还没有资料。现在传就行；也可以先关掉，之后在练习科目页的「资料」里补传，科目不用重建。`,
+    actions: [{ label: '上传资料', fn: 'pickAIFiles()' }].concat(
+      // 未分类没有科目页可去，只在真正的练习科目上给这个出口
+      subject.inbox ? [] : [{ label: '去练习科目页传', fn: 'leaveAIForMaterials()' }]
+    )
+  };
+}
+
+function renderAISourceGate() {
+  const wrap = document.getElementById('aiSourceGate');
+  if (!wrap) return;
+  const gate = aiSourceGateInfo();
+  if (!gate) {
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="ai-note ai-source-gate">
+      <span class="ai-note-dot"></span>
+      <span>${gate.line}${gate.actions.length
+        ? ` ${gate.actions.map((a) => `<button type="button" class="link-btn" onclick="${a.fn}">${a.label}</button>`).join(' · ')}`
+        : ''}</span>
+    </div>`;
+}
+
+function revealAIPaste() {
+  const wrap = document.getElementById('aiPasteWrap');
+  if (wrap && wrap.hidden) toggleAIPaste();
+  else document.getElementById('aiMaterial')?.focus();
+}
+
+function pickAIFiles() {
+  const input = document.getElementById('aiFileInput');
+  if (!input) return;
+  input.click();
+}
+
+// 资料库里已有资料、这一轮一份没勾：一次全选，省得逐份点。
+function selectAllLibraryMaterials() {
+  const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const todo = subjectMaterials(subject.id)
+    .filter((m) => !aiPieces.some((p) => p.materialId === m.id))
+    .map((m) => m.id);
+  if (!todo.length) return;
+  addMaterialsToAI(todo);
+  renderAILibrary();
+  renderAIFileList();
+  refreshAIState();
+}
+
+// 科目已经建好，只是这轮不想出题：把用户放回真正能传资料的地方。
+function leaveAIForMaterials() {
+  const id = aiSubjectId;
+  closeModal();
+  if (subjectById(id)) openSubject(id);
+}
+
 function syncAILayerState() {
   renderAIRail();
+  renderAISourceGate();
   const next = document.getElementById('aiNextBtn');
   if (next) next.disabled = !aiStepReady(aiStep);
   if (aiStep === 3) renderAIReview();
@@ -6643,6 +6724,7 @@ function openAIModal(subjectId, materialIds) {
           </label>
           <div class="ai-file-list" id="aiFileList"></div>
           <div class="ai-file-summary" id="aiFileSummary"></div>
+          <div id="aiSourceGate"></div>
           <button type="button" class="ai-paste-toggle" id="aiPasteToggle" onclick="toggleAIPaste()">没有文件？直接粘贴文字</button>
           <div id="aiPasteWrap" hidden>
             <div class="ai-paste-kind" id="aiPasteKindWrap" hidden>
