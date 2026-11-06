@@ -100,7 +100,6 @@ const EN = Object.assign({
   '待提交': 'To submit',
   '当前': 'Current',
   '未知': 'Unknown',
-  '必填': 'Required',
   '考试': 'Exam',
   '学习': 'Study',
   '题目': 'Questions',
@@ -153,8 +152,6 @@ const EN = Object.assign({
   '目标练习科目': 'Target subject',
   '（未知练习集）': '(unknown set)',
   '删除练习集': 'Delete question set',
-  '还没有练习集。让 AI 用资料出一套，或从其他练习科目移动过来。':
-    'No question sets yet. Let AI build one from your materials, or move a set in from another subject.',
 
   /* 练习集详情 */
   '练习次数': 'Attempts',
@@ -211,8 +208,6 @@ const EN = Object.assign({
   '正在评分...': 'Grading…',
   '编程题正在运行测试用例，请稍候': 'Coding questions are still running their tests',
   '考试时长': 'Duration',
-  '考试模式下答完交卷才会显示结果，编程题交卷时自动运行测试用例评分。':
-    'In exam mode results appear after you submit; coding questions are graded by running their tests on submission.',
   '交卷后自动运行测试用例评分': 'Coding questions are graded by tests after you submit',
   '没有结果': 'No result yet',
   '没有进行中的考试': 'No exam in progress',
@@ -236,10 +231,6 @@ const EN = Object.assign({
   /* 错题本 v2：考点收纳台 + 错题模拟（一级视图） */
   '错题本': 'Mistake book',
   '暂无错题': 'No mistakes to review',
-  '答错自动进账，答对一次即归档为已掌握。按考点练最省时间——同一个考点错得越多，排得越前。':
-    'Every miss is booked automatically; one right answer files it as mastered. Practising by key point saves the most time — the more you miss a point, the higher it sits.',
-  '学习和考试里答错的题会自动记到这里，按考点收纳；答对一次就归档为已掌握，可以随时重新列入。':
-    'Questions you miss in study or exam mode land here, filed by key point. One right answer archives them as mastered, and you can bring any of them back.',
   '考点收纳': 'Filed by key point',
   '未归类考点': 'Unfiled key point',
   '待复习': 'To review',
@@ -265,8 +256,6 @@ const EN = Object.assign({
   '还没有归档的错题': 'Nothing archived yet',
   '先答错题才会形成考点画像': 'Miss a question and the profile starts here',
   '错过 3 次以上，每天都要见一面': 'Missed three times or more — they show up every day',
-  '这个筛选下暂时没有题目。换个筛选看看，或去练习集里再练一轮。':
-    'Nothing under this filter. Try another one, or practise a set and come back.',
   '错题模拟': 'Mistake mock',
   '今日到期': 'Due today',
   '全部未掌握': 'All open mistakes',
@@ -290,12 +279,8 @@ const EN = Object.assign({
   /* 设置页 */
   '界面语言': 'Language',
   '显示语言': 'Display language',
-  '切换后所有页面即时生效，偏好只保存在本浏览器。题目和资料内容跟随原文，不会被翻译。':
-    'Applies instantly on every page and is stored in this browser only. Questions and materials keep their original language — they are never translated.',
   'AI 出题 · 真题整理': 'AI questions · past-paper cleanup',
   '出题引擎': 'Question engine',
-  'Qoder AI · 由站点后端安全调用，密钥不会进入浏览器':
-    'Qoder AI · called securely by the site backend; keys never reach the browser',
   '已内置': 'Built in',
   '用 AI 新建练习集': 'Create a set with AI',
   '判题服务': 'Judge service',
@@ -306,26 +291,14 @@ const EN = Object.assign({
   '选择文件': 'Choose file',
   '本地存储': 'Local storage',
   '清空练习记录': 'Clear practice history',
-  '清除所有历史成绩与错题本，保留练习集': 'Removes every score and mistake, keeps your question sets',
   '恢复初始状态': 'Reset to a clean state',
-  '删除所有自建练习集、练习科目、资料、记录与设置': 'Deletes every set, subject, material, record and preference you created',
   '备考规划': 'Study planning',
-  '已内置 Qoder AI，无需填写 API Key。上传 PDF、Word、PPT 等资料，系统自动提取文字并按篇幅推荐题量，生成单选、多选、判断、填空和编程题；没有文件时也可以直接粘贴文字。':
-    'Qoder AI is built in — no API key needed. Upload PDF, Word or PPT material and the text is extracted, sized to its length and turned into single choice, multiple choice, true/false, fill-in and coding questions. With no file, paste text instead.',
-  '编程题通过后端调用 Judge0 公共实例判题，默认无需额外配置。如需使用私有 Judge0 或 RapidAPI 密钥，请在站点后端环境变量中配置 JUDGE0_URL / JUDGE0_KEY。':
-    'Coding questions run against the public Judge0 instance through the backend, with no extra setup. To use a private Judge0 or a RapidAPI key, set JUDGE0_URL / JUDGE0_KEY in the site backend environment.',
   '粘贴课堂笔记、教材段落、真题试卷……': 'Paste lecture notes, textbook passages, exam papers…',
   'PDF · Word · PPT · TXT · 粘贴': 'PDF · Word · PPT · TXT · paste',
   'Exam Plan AI 备考规划': 'Exam Plan AI',
   '打开备考规划 ↗': 'Open Exam Plan AI ↗',
   '返回备考规划 ↗': 'Back to Exam Plan AI ↗',
   '带回备考规划 ↗': 'Send this result back ↗',
-  '由资料生成复习计划，按考点一键跳转到这里出题':
-    'Turns materials into a study plan and deep-links each key point here for practice',
-  '练习集、练习科目、资料文字、练习记录与错题本（不含原始文件）':
-    'Question sets, subjects, extracted text, practice records and mistakes (original files excluded)',
-  '从导出的 JSON 恢复，已存在的练习集、资料与记录会自动跳过':
-    'Restores from an exported JSON; sets, materials and records that already exist are skipped',
 
   /* 新增练习科目向导 */
   '练习科目名称': 'Practice subject name',
@@ -334,19 +307,11 @@ const EN = Object.assign({
   '下一步：确认生成': 'Next: confirm',
   '下一步：完成': 'Next: finish',
   '拖入文件，或点击选择': 'Drop files here, or click to choose',
-  '支持多选 · 笔记和真题可以一起传 · 单文件 ≤ 30MB · 扫描版 PDF 需先 OCR':
-    'Multiple files · notes and past papers together · up to 30 MB each · scanned PDFs need OCR',
-  '点击选择或拖入 · PDF / Word / PPT / TXT · 可多选 · 单文件 ≤ 30MB':
-    'Click to choose or drop in · PDF / Word / PPT / TXT · multiple files OK · up to 30 MB each',
   /* 单独可拼进长文案的片段：整句查不到时由分段兜底逐段替换 */
-  '点击选择或拖入': 'Click to choose or drop in',
-  '可多选': 'multiple files OK',
-  '单文件 ≤ 30MB': 'up to 30 MB each',
   '没有文件？直接粘贴文字': 'No file? Paste text instead',
   '这段文字属于': 'This text belongs to',
   '笔记 · 生成新题': 'Notes · generate questions',
   '真题 · 原样整理': 'Past paper · keep as is',
-  '粘贴的文字会和上传的资料一起使用。': 'Pasted text is used together with your uploaded materials.',
   '例如：高等数学、英语写作、导游实务': 'e.g. Calculus, Essay writing, Tour guide practice',
   '练习科目名称不能为空': 'Subject name is required',
   '已经有同名练习科目了': 'A subject with this name already exists',
@@ -362,22 +327,12 @@ const EN = Object.assign({
   '真题整理': 'From past papers',
   '笔记出题 · 真题原样保留': 'Notes become questions · past papers stay untouched',
   '根据资料出题': 'Generate from materials',
-  '笔记、教材 → 生成新题': 'Notes & textbooks → new questions',
-  '试卷、练习集 → 全部保留': 'Papers & banks → all preserved',
   '笔记 · 出题': 'Notes · generate',
   '真题 · 保留': 'Past paper · keep',
   '笔记资料': 'Note materials',
   '检测到试卷格式，点这里改为原样整理，题目全部保留 →':
     'Looks like an exam paper — click here to keep it as is and preserve every question →',
   '将全部整理': 'Everything will be kept',
-  '题干、选项和答案按原文保留，不改写、不删减；原文没有答案时会给出参考答案。':
-    'Stems, options and answers stay exactly as written; missing answers get a reference answer.',
-  '题干、选项和答案按原文保留，不改写、不删减；较长试卷会自动分段并行整理，速度更快。':
-    'Stems, options and answers stay exactly as written; long papers are split and cleaned in parallel.',
-  '真题部分按原文逐题保留；笔记部分另出新题。较长试卷会自动分段并行整理。':
-    'Past-paper questions are preserved one by one; notes generate new questions. Long papers are split and cleaned in parallel.',
-  '混合题型包含单选、多选、判断、填空；只有编程类资料才需要选择「含编程题」。':
-    'Mixed covers single choice, multiple choice, true/false and fill-in. Pick With coding only for programming material.',
   '确认并生成': 'Confirm and generate',
   '保存前会先给你看结果': 'You review the result before it is saved',
   '开始整理': 'Start cleanup',
@@ -402,7 +357,6 @@ const EN = Object.assign({
   '资料还不能用，请检查上面的提示': 'The material is not ready yet — check the hints above',
   '请先上传资料或粘贴文字（至少 50 字）': 'Upload a file or paste at least 50 characters first',
   '笔记和真题都需要至少 50 字才能一起整理': 'Notes and past papers each need at least 50 characters to be cleaned together',
-  '勾选后直接参与出题': 'Checked items go straight into generation',
   '直接 AI 出题': 'Generate with AI directly',
   '生成成功': 'Generated',
   '整理完成': 'Cleaned up',
@@ -418,12 +372,6 @@ const EN = Object.assign({
   /* 深链：来自备考规划 */
   '来自备考规划': 'From Exam Plan AI',
   '请选择或新增一个练习科目开始出题': 'choose or create a subject to start generating questions',
-  '复习计划、每日任务与考点梳理在「Exam Plan AI 备考规划」里完成，这里负责出题与练习。两个应用通过考点深链互相跳转，数据各自保存在本地浏览器，不会互相同步。':
-    'Study plans, daily tasks and key-point breakdowns happen in Exam Plan AI; this app handles question generation and practice. The two apps deep-link through each key point, and each keeps its own data in this browser.',
-  '复习计划在 Exam Plan AI 里完成，两个应用通过考点深链互相跳转。':
-    'Study plans live in Exam Plan AI; the two apps jump between each other through key-point links.',
-  '智题 StarQuiz · 学习模式与考试模式，普通题目与编程题混合练习，数据保存在本地浏览器。':
-    'StarQuiz · study mode and exam mode, regular and coding questions side by side, all data kept in this browser.',
 
   /* 提示与错误消息 */
   '已切换到「': 'Switched to "',
@@ -484,8 +432,6 @@ const EN = Object.assign({
     'The site just updated and its services are restarting — wait about ten seconds, then reload',
 }, {
   /* 解析相关提示 */
-  '扫描版 PDF 没有文字层，需要先 OCR；解析失败会在下面说明原因。':
-    'Scanned PDFs have no text layer and need OCR first; parsing failures are explained below.',
   '页无文字层已跳过': 'pages had no text layer and were skipped',
   '这份 PDF 没有可提取的文字层，可能是扫描件或图片版；请上传可复制文字的 PDF，或直接上传 Word/TXT':
     'This PDF has no extractable text layer — it is probably scanned. Upload a text PDF, a Word file, or paste the text',
@@ -518,7 +464,6 @@ const EN = Object.assign({
   '笔记生成新题': 'Notes become questions',
   '真题原样保留': 'Past papers stay as is',
   '点击切换：笔记生成新题 / 真题原样保留': 'Click to switch: notes become questions / past papers stay as is',
-  '点文件名右侧的标签可单独切换': 'Use the tag next to a file name to change it individually',
 
   /* 编程题运行态 */
   '正确答案': 'Correct answer',
@@ -538,7 +483,6 @@ const EN = Object.assign({
   '正在出题…': 'Writing questions…',
   '正在整理…': 'Cleaning up…',
   '逐题保留，不改写不删减': 'Every question is kept verbatim, nothing rewritten or dropped',
-  '不改写、不删减': 'nothing rewritten, nothing dropped',
   '约需 20–60 秒': 'about 20–60 seconds',
   '约需 1–2 分钟': 'about 1–2 minutes',
   '约需 2–4 分钟': 'about 2–4 minutes',
@@ -568,11 +512,12 @@ const EN = Object.assign({
   '还没有练习成绩': 'No scores yet',
   '未开始': 'Not started',
   '还没有练习记录': 'No practice records yet',
+  '还没有练习集': 'No question sets yet',
+  '这个筛选下暂时没有题目': 'No questions in this filter',
   '练习记录': 'Practice history',
   '挑一个练习科目': 'Pick a subject',
   '全部练习科目': 'All practice subjects',
   '← 全部练习科目': '← All practice subjects',
-  '选一个练习科目': 'Choose one',
   '按练习科目归档：上传的原始资料、提取的文字和生成的练习集都在同一个练习科目里。':
     'Filed by subject: original files, extracted text and generated sets all live in one place.',
 
@@ -607,28 +552,16 @@ const EN = Object.assign({
   '高级设置': 'Advanced',
   '默认题量（道）': 'Default questions',
   '每日练习目标（道）': 'Daily goal',
-  '只有练习科目必填': 'Only the subject name is required',
   '请填写练习科目': 'Enter a subject name',
-  '之后上传的资料和生成的练习集都会归到这个练习科目下。':
-    'Materials you upload and sets you generate stay under this subject.',
-  '考试日期和备考目标之后还能在练习科目页里改。':
-    'You can change the exam date and goal later on the subject page.',
-  'AI 出题和开始练习时默认用这个题量。':
-    'The count AI generation and practice start with by default.',
-  '首页的今日目标按各练习科目目标累加。': "The daily goal on the home card adds up every subject's goal.",
   '未设定': 'Not set',
   '距考试': 'Days left',
 
   /* 科目页头：Notion 式页图标与封面 */
   '页图标': 'Page icon',
-  '不选就按科目名自动配；再点一次选中的图标可以取消。':
-    'Leave it unset and the icon follows the subject name. Click the selected icon again to clear it.',
   '封面': 'Cover',
   '无': 'None',
   '不用封面': 'No cover',
   '上传图片': 'Upload image',
-  'JPG / PNG / WebP，最长边压到 1600 存在本机。':
-    'JPG / PNG / WebP, downscaled to 1600px on the long edge and kept on this device.',
   '上传的图片': 'Uploaded image',
   '纸纹': 'Paper',
   '雾青': 'Haze',
@@ -645,8 +578,6 @@ const EN = Object.assign({
   '这个练习科目': 'this subject',
   '这个练习科目还没有内容。': 'This subject has nothing yet.',
   '已删除的练习集': 'a deleted set',
-  '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个练习科目下。':
-    'No materials yet. Upload a PDF, Word, PPT or TXT file and it stays in this subject.',
   '正在读取资料…': 'Loading materials…',
   '还没有练过': 'Nothing practised yet',
   '练习集中没有题目': 'This set has no questions',
@@ -657,10 +588,6 @@ const EN = Object.assign({
   /* 新增练习科目向导 */
   '跳过资料': 'Skip materials',
   '新练习科目': 'new subject',
-  '可跳过 · 之后在练习科目里也能传': 'Optional — you can upload later from the subject page',
-  '先整理资料，稍后再出题': 'Tidy the materials first, generate later',
-  '先上传资料，或粘贴一段文字': 'Upload materials first, or paste some text',
-  '笔记生成新题，真题原样整理': 'Notes become new questions; past papers stay as they are',
 
   /* AI 出题弹窗：资料来源 / 保存位置 / 处理方式 */
   '资料来源': 'Material',
@@ -671,24 +598,12 @@ const EN = Object.assign({
   '围绕一个考点出题': 'Questions around one topic',
   '出题方式': 'Question mode',
   '笔记出题 + 真题整理': 'Notes to questions + past papers tidied',
-  '上传文件 · 已有资料 · 粘贴文字': 'Upload files · existing materials · paste text',
-  'PDF / Word / PPT / TXT 都可以，笔记和真题能一起传。':
-    'PDF, Word, PPT and TXT all work — notes and past papers can go in together.',
-  '练习集和这一轮的资料都归到这里': 'Sets and this round of materials land here',
   '先填上练习科目名称': 'Type the new subject name first',
   '目标练习科目还没定，请选一个练习科目或填新练习科目名称': 'Pick a subject or name the new one first',
-  '点「下一步」时创建，不会重复建同名练习科目。': 'Created when you press Next — never a duplicate subject.',
-  '备考目标、每日题量可以在练习科目页的「编辑」里补全。':
-    'Add the goal and daily count later with Edit on the subject page.',
-  '只围绕一个考点出题，其它内容少出或不出题。':
-    'Ask about one topic only; other content gets few or no questions.',
-  '上传资料后，会按资料篇幅自动推荐题量': 'Once materials are in, the count is suggested from their length',
 
-  /* 资料来源卡住原因（灰下一步按钮旁边的那一行） */
-  '资料还在解析中，解析完成就能继续下一步。':
-    'Still parsing — once it finishes you can go to the next step.',
-  '这一轮的内容不足 50 字，AI 出题需要更长的原文。再粘一段或继续上传文件。':
-    'This round has under 50 characters — AI needs more text. Paste another stretch or upload more files.',
+  /* 资料来源卡住的原因：只说差什么，怎么补救交给同一行的动作按钮 */
+  '资料还在解析中…': 'Still parsing…',
+  '这一轮的内容不足 50 字': 'This round has under 50 characters',
   '粘贴文字': 'Paste text',
   '全部选上': 'Select all',
   '去练习科目页传': 'Upload on the subject page',
@@ -751,14 +666,10 @@ const EN = Object.assign({
   '选填': 'Optional',
   '删除失败': 'Delete failed',
   '题目数据异常，已跳过': 'Some question data was invalid and got skipped',
-  '建一个新的练习科目': 'Create a new one',
   '内置示例': 'Sample set',
   '手动添加': 'Added by hand',
   'AI 根据资料出题': 'AI questions from material',
   '真题原样整理': 'Past papers kept as they are',
-  '改名不会动已经存好的练习集和资料。': 'Renaming leaves your saved sets and materials untouched.',
-  '这个练习集会标上备考规划的考点，练完可以把结果带回计划。':
-    'This set is tagged with the Exam Plan topic, so results can go back to your plan.',
   '例如：导游业务、考研英语、高等数学': 'e.g. Guide Studies, GRE Math, Linear Algebra',
   '例如：导游业务、考研英语': 'e.g. Guide Studies, GRE Math',
   '例如：2026 年导游资格考试': 'e.g. 2026 National Tour Guide Exam',
@@ -778,8 +689,6 @@ const EN = Object.assign({
 
   /* 练习科目总览：练习科目收纳卡组 + 练习记录（对齐 Exam Plan 的 MasterDashboard / CourseAccordionGallery） */
   '练习科目收纳': 'Practice subjects',
-  '按练习科目收纳：上传的资料、AI 生成的练习集和练习记录都在同一个练习科目下，进度与考试倒计时在这页总览。':
-    'Everything is filed by subject: the materials you upload, the question sets AI builds from them and the results you earn. Progress and exam countdowns live on this overview.',
   '最近考试': 'Nearest exam',
   '还没设考试日期': 'No exam date set yet',
   '今日进度': 'Today',
@@ -789,17 +698,11 @@ const EN = Object.assign({
   '进入': 'Open',
   '立即创建': 'Create now',
   '创建新的练习科目': 'Create a new subject',
-  '上传考试大纲、讲义或真题，AI 整理成练习集后归到这个练习科目下。':
-    'Upload a syllabus, lecture notes or past papers. AI turns them into question sets filed under this subject.',
-  '还没有练习记录。从练习科目里挑一套开始学习，成绩会自动记在这里。':
-    'No practice yet. Open a set from any subject and the result lands here automatically.',
   '还没有资料': 'No materials',
   '回到练习科目': 'Back to subjects',
   '暂无练习科目': 'No practice subjects yet',
   '删除此练习科目': 'Delete this subject',
   '目标：': 'Goal: ',
-  '建一个练习科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集；上传的资料、生成的练习集和练习成绩都收在同一个练习科目里。':
-    'Create a subject, drop in PDF, Word, PPT or plain text, and let AI turn it into question sets. The materials, the sets and the results you earn all stay in that one subject.',
 });
 
 /* 含数字、名称或语序变化的句子：正则 + 替换（替换里可以继续调用 t）。 */
@@ -870,8 +773,8 @@ const EN_PATTERNS = [
   [/^(\d+) 个练习集 · (\d+) 道题$/, (m) => `${pl(m[1], 'set', 'sets')} · ${pl(m[2], 'question', 'questions')}`],
   [/^(\d+) 份资料 · (\d+) 个练习集$/, (m) => `${pl(m[1], 'material', 'materials')} · ${pl(m[2], 'question set', 'question sets')}`],
   [/^(\d+) 份资料 · (\d+) 道题目$/, (m) => `${pl(m[1], 'material', 'materials')} · ${pl(m[2], 'question', 'questions')}`],
-  [/^练习集与记录已用 (.+)（上限约 5 MB）(?: · 资料库 (\d+) 份，原始文件单独存放)?$/,
-    (m) => `Sets and records use ${m[1]} (about 5 MB available)${m[2] ? ` · ${t('资料库 ' + m[2] + ' 份，原始文件单独存放')}` : ''}`],
+  [/^练习集与记录已用 (.+)（上限约 5 MB）(?: · 资料库 (\d+) 份)?$/,
+    (m) => `Sets and records use ${m[1]} (about 5 MB available)${m[2] ? ` · ${pl(m[2], 'material file', 'material files')}` : ''}`],
   [/^已答 (\d+) \/ (\d+) 题$/, (m) => `Answered ${m[1]} / ${m[2]}`],
   [/^(学习模式|考试模式) · 已答 (\d+) \/ (\d+)$/, (m) => `${t(m[1])} · ${m[2]} / ${m[3]} answered`],
   [/^(\d+)\s*\/\s*(\d+) 题$/, (m) => `${m[1]} / ${pl(m[2], 'question', 'questions')}`],
@@ -938,9 +841,8 @@ const EN_PATTERNS = [
   [/^考试「?(.+?)」?的资料与真题都已在这里，可以直接出题$/, (m) => `All materials and past papers for "${m[1]}" are already here, ready to generate.`],
   [/^这次跳转没有带来新资料：已选入「?(.+?)」?的 (\d+) 份资料，可以直接出题$/, (m) => `This jump brought no new material: ${pl(m[2], 'file', 'files')} from "${m[1]}" ${Number(m[2]) === 1 ? 'is' : 'are'} selected, ready to generate.`],
   [/^考试「?(.+?)」?里还没有资料：上传资料即可出题$/, (m) => `The subject for "${m[1]}" has no material yet: upload one to generate questions.`],
-  [/^「(.+?)」已有 (\d+) 份资料，勾一份就能继续下一步。?$/, (m) => `"${m[1]}" already has ${pl(m[2], 'material', 'materials')} — tick one to continue.`],
-  [/^「(.+?)」还没有资料。现在传就行；也可以先关掉，之后在练习科目页的「资料」里补传，科目不用重建。$/,
-    (m) => `"${m[1]}" has no material yet. Upload now, or close this and add files later under Materials on the subject page — no need to recreate the subject.`],
+  [/^「(.+?)」的资料还没勾上（(\d+) 份）$/, (m) => `None of "${m[1]}"'s ${pl(m[2], 'material', 'materials')} are ticked.`],
+  [/^「(.+?)」还没有资料$/, (m) => `"${m[1]}" has no materials yet.`],
   [/^(\d+) 份资料没能写入本地资料库，请手动重新上传$/, (m) => `${pl(m[1], 'file', 'files')} could not be saved to the local store — upload again manually`],
   [/^另有 (\d+) 份资料超过单次携带上限，需要手动上传$/, (m) => `${pl(m[1], 'more file', 'more files')} exceeded the per-jump limit — upload manually`],
   [/^继续「(.+?)」的考点「(.+?)」练习$/, (m) => `Back to "${m[2]}" in "${m[1]}"`],
@@ -965,8 +867,8 @@ const EN_PATTERNS = [
   [/^联动考点：(.+?) 没有可靠归属，本练习集只记录来源$/, (m) => `Linked topic "${m[1]}" has no reliable attribution — this set only records its source`],
   [/^备考规划练习回执(.*)$/, 'Exam Plan practice receipt$1'],
   [/^目标考点「(.+?)」本次计分 (\d+) 题，答对 (\d+) 题，正确率 (\d+)%。$/, (m) => `Target topic "${m[1]}": ${m[2]} graded, ${m[3]} correct, ${m[4]}% accuracy.`],
-  [/^考试模式 · (.+?) · 按题目归属统计，未评分题不计入$/, (m) => `Exam mode · ${m[1]} · counted per attributed question; unscored ones excluded`],
-  [/^学习模式 · (.+?) · 按题目归属统计，未评分题不计入$/, (m) => `Study mode · ${m[1]} · counted per attributed question; unscored ones excluded`],
+  /* 练习回执那行只剩「模式 · 时间」：模式词翻完就停，时间戳是数据，原样保留 */
+  [/^(考试模式|学习模式) · (.+)$/, (m) => `${t(m[1])} · ${m[2]}`],
   [/^笔记 (\d+) 份$/, 'Notes $1'],
   [/^笔记 (\d+) 份、真题 (\d+) 份$/, (m) => `Notes ${m[1]} · Papers ${m[2]}`],
   [/^真题 (\d+) 份$/, 'Papers $1'],
@@ -1098,7 +1000,7 @@ const EN_PATTERNS = [
   [/^正在解析 (\d+)\/(\d+)：(.+)$/, 'Parsing $1/$2: $3'],
   [/^查看 前 (\d+) 条（共 (\d+) 条）提示$/, 'Review the first $1 of $2 hints'],
   [/^查看 (\d+) 条提示$/, 'Review $1 hints'],
-  [/^「(.+?)」还是空的，出题后会出现在这里$/, '"$1" is still empty — generated sets appear here'],
+  [/^「(.+?)」还是空的$/, '"$1" is still empty'],
   [/^「(.+?)」已有 (\d+) 个练习集 · (\d+) 份资料$/, (m) => `"${m[1]}" already has ${m[2]} sets · ${m[3]} materials`],
   [/^笔记 (\d+) 份 · ([\d,]+) 字$/, 'Notes $1 · $2 chars'],
   [/^真题 (\d+) 份 · ([\d,]+) 字$/, 'Papers $1 · $2 chars'],
@@ -1106,7 +1008,6 @@ const EN_PATTERNS = [
   [/^(\d+) 知识点$/, '$1 key points'],
   [/^仅文字$/, 'text only'],
   [/^原始文件未保存$/, 'original file not stored'],
-  [/^资料库 (\d+) 份，原始文件单独存放$/, (m) => `${pl(m[1], 'material file', 'material files')} stored separately`],
   [/^过滤 (\d+) 行页眉页脚$/, '$1 header/footer lines filtered'],
   [/^(\d+) 页无文字层已跳过$/, '$1 pages had no text layer and were skipped'],
   [/^服务正在更新，自动重连中（第 (\d+) 次）…$/, 'The service is updating — reconnecting (attempt $1)…'],

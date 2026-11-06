@@ -1510,7 +1510,7 @@ function renderPlanReceiptCard(receipt) {
       <div class="plan-link-main">
         <span class="plan-link-eyebrow">备考规划练习回执${examPart}</span>
         <span class="plan-link-text">目标考点「${esc(link.path.topic)}」本次计分 ${result.graded} 题，答对 ${result.correct} 题，正确率 ${pct}%。</span>
-        <span class="plan-receipt-meta">${attempt.mode === 'exam' ? '考试模式' : '学习模式'} · ${planCompletedTimeLabel(attempt.finishedAt)} · 按题目归属统计，未评分题不计入</span>
+        <span class="plan-receipt-meta">${attempt.mode === 'exam' ? '考试模式' : '学习模式'} · ${planCompletedTimeLabel(attempt.finishedAt)}</span>
       </div>
       <div class="plan-link-actions">
         <a class="btn btn-primary btn-sm" href="${href}">带回备考规划 ↗</a>
@@ -2757,7 +2757,6 @@ function renderEmptyFolders() {
     <div class="empty-card">
       <div class="empty-card-icon">${ICON.book}</div>
       <div class="empty-card-title">还没有练习科目</div>
-      <div class="empty-card-desc">建一个练习科目，把 PDF、Word、PPT 或文字资料放进去，再由 AI 整理成练习集；上传的资料、生成的练习集和练习成绩都收在同一个练习科目里。</div>
       <button type="button" class="btn btn-primary" onclick="${a.onclick}">${ICON.plus}<span>${a.label}</span></button>
     </div>`;
 }
@@ -2926,7 +2925,6 @@ function deckAddHTML() {
           <span>${a.label}</span>
         </div>
         <h3 class="deck-add-title">创建新的练习科目</h3>
-        <p class="deck-add-desc">上传考试大纲、讲义或真题，AI 整理成练习集后归到这个练习科目下。</p>
         <div class="deck-foot">
           <span></span>
           <button type="button" class="btn btn-primary btn-sm" onclick="${open}">${ICON.plus}<span>立即创建</span></button>
@@ -2980,7 +2978,7 @@ function renderHistorySection() {
   if (!history.length) {
     return `
       <div class="section-title"><span>练习记录<span class="section-count">0</span></span></div>
-      <div class="card"><div class="material-empty">还没有练习记录。从练习科目里挑一套开始学习，成绩会自动记在这里。</div></div>`;
+      <div class="card"><div class="material-empty">还没有练习记录</div></div>`;
   }
   const head = history.slice(0, 8);
   const rest = history.slice(8);
@@ -3015,8 +3013,6 @@ function renderSets() {
     : renderEmptyFolders();
 
   return `
-    <p class="page-lead">按练习科目收纳：上传的资料、AI 生成的练习集和练习记录都在同一个练习科目下，进度与考试倒计时在这页总览。</p>
-
     <div class="stat-rail">
       ${statCard('练习科目', subjects.length, { icon: ICON.book, note: `共 ${st.totalQ} 道题` })}
       ${statCard('最近考试', nearest ? examCountdownLabel(nearest.left) : '—', {
@@ -3088,7 +3084,7 @@ const SET_PREVIEW = 6;
 
 function setListHTML(sets) {
   if (!sets.length) {
-    return `<div class="material-empty">还没有练习集。让 AI 用资料出一套，或从其他练习科目移动过来。</div>`;
+    return `<div class="material-empty">还没有练习集</div>`;
   }
   const rest = sets.slice(SET_PREVIEW);
   return `
@@ -3190,7 +3186,7 @@ function renderSubject() {
         <div class="material-list" id="materialList">
           ${mats.length
             ? mats.map((m) => renderMaterialRow(m)).join('')
-            : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个练习科目下。'}</div>`}
+            : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料'}</div>`}
         </div>
         ${materialsUnavailable
           ? `<div class="feedback feedback-incorrect">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
@@ -3264,7 +3260,6 @@ function examIdentityHtml(v) {
         <span class="form-label">页图标</span>
         <input type="hidden" id="nsIcon" value="${esc(v.icon)}">
         <div class="icon-grid" id="nsIconPicker">${iconGridHTML(v.icon)}</div>
-        <span class="wiz-help">不选就按科目名自动配；再点一次选中的图标可以取消。</span>
       </div>
       <div class="wiz-field wiz-span">
         <span class="form-label">封面</span>
@@ -3272,7 +3267,6 @@ function examIdentityHtml(v) {
         <div class="cover-strip" id="nsCoverPicker">${coverStripHTML(v.cover)}</div>
         <div class="cover-tools">
           <button type="button" class="btn btn-secondary btn-sm" onclick="pickCoverFile()">${ICON.upload}<span>上传图片</span></button>
-          <span class="cover-hint">JPG / PNG / WebP，最长边压到 1600 存在本机。</span>
         </div>
         <input type="file" id="nsCoverInput" hidden accept="image/png,image/jpeg,image/webp,image/gif" onchange="onCoverFileSelected(this)">
       </div>`;
@@ -3321,7 +3315,6 @@ function examFieldsHtml(raw) {
       <div class="wiz-field wiz-span">
         <label class="form-label" for="newSubjectName">练习科目名称</label>
         <input class="form-input" id="newSubjectName" maxlength="40" placeholder="例如：导游业务、考研英语、高等数学" value="${esc(v.name)}" onkeydown="if(event.key==='Enter'){event.preventDefault();${v.subjectKind === 'edit' ? `submitExamInfo('${esc(v.id)}')` : 'nsNext()'}};">
-        <span class="wiz-help">之后上传的资料和生成的练习集都会归到这个练习科目下。</span>
       </div>
       ${v.subjectKind === 'edit' ? examIdentityHtml(v) : ''}
       <div class="wiz-field">
@@ -3346,12 +3339,10 @@ function examFieldsHtml(raw) {
           <div class="wiz-field">
             <label class="form-label" for="nsDefaultCount">默认题量（道）</label>
             <input class="form-input" type="number" id="nsDefaultCount" min="5" max="60" step="1" value="${v.defaultCount}">
-            <span class="wiz-help">AI 出题和开始练习时默认用这个题量。</span>
           </div>
           <div class="wiz-field">
             <label class="form-label" for="nsDailyGoal">每日练习目标（道）</label>
             <input class="form-input" type="number" id="nsDailyGoal" min="5" max="100" step="1" value="${v.dailyGoal}">
-            <span class="wiz-help">首页的今日目标按各练习科目目标累加。</span>
           </div>
         </div>
       </details>
@@ -3398,17 +3389,14 @@ function nsLayerBody() {
     return `
       <div class="wiz-head">
         <span class="wiz-title">考试信息</span>
-        <span class="wiz-hint">只有练习科目必填</span>
       </div>
-      ${examFieldsHtml(nsDraft)}
-      <p class="wiz-note">考试日期和备考目标之后还能在练习科目页里改。</p>`;
+      ${examFieldsHtml(nsDraft)}`;
   }
   if (nsDraft.step === 2) {
     const subjectName = esc(nsDraft.name || (subjectById(nsDraft.subjectId) || {}).name || '新练习科目');
     return `
       <div class="wiz-head">
         <span class="wiz-title">上传资料</span>
-        <span class="wiz-hint">可跳过 · 之后在练习科目里也能传</span>
       </div>
       <input type="file" id="nsFileInput" multiple hidden
         accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
@@ -3416,11 +3404,9 @@ function nsLayerBody() {
       <label class="ai-dropzone" for="nsFileInput">
         <span class="ai-dropzone-icon">${ICON.upload}</span>
         <span class="ai-dropzone-title">把资料放进「${subjectName}」</span>
-        <span class="ai-dropzone-hint">点击选择或拖入 · PDF / Word / PPT / TXT · 可多选 · 单文件 ≤ 30MB</span>
       </label>
       <div class="upload-status" id="nsUploadStatus"${nsDraft.parsing ? '' : ' hidden'}>${nsDraft.parsing ? '正在解析资料…' : ''}</div>
-      <div class="wiz-summary" id="nsSummary">${nsSummaryBits()}</div>
-      <p class="wiz-note">扫描版 PDF 没有文字层，需要先 OCR；解析失败会在下面说明原因。</p>`;
+      <div class="wiz-summary" id="nsSummary">${nsSummaryBits()}</div>`;
   }
   const subject = subjectById(nsDraft.subjectId) || {};
   const mats = subjectMaterials(subject.id || '');
@@ -3441,14 +3427,12 @@ function nsLayerBody() {
       <button type="button" class="wiz-choice" onclick="nsFinish('ai')">
         <span class="wiz-choice-main">
           <span class="wiz-choice-title">直接 AI 出题${mats.length ? `（用这 ${mats.length} 份资料）` : ''}</span>
-          <span class="wiz-choice-desc">${mats.length ? '笔记生成新题，真题原样整理' : '先上传资料，或粘贴一段文字'}</span>
         </span>
         <span class="set-row-foot-go">开始 →</span>
       </button>
       <button type="button" class="wiz-choice" style="margin-top:8px" onclick="nsFinish('folder')">
         <span class="wiz-choice-main">
           <span class="wiz-choice-title">进入练习科目</span>
-          <span class="wiz-choice-desc">先整理资料，稍后再出题</span>
         </span>
         <span class="set-row-foot-go">打开 →</span>
       </button>
@@ -3689,7 +3673,6 @@ function examInfoModal(id) {
     </div>
     <div class="modal-body">
       <div class="wiz-layer">${examFieldsHtml({ ...subject, subjectKind: 'edit' })}</div>
-      <p class="wiz-note">改名不会动已经存好的练习集和资料。</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">取消</button>
@@ -4786,7 +4769,6 @@ function startExamModal(setId) {
         <label class="form-label">题目范围</label>
         <select class="form-select" id="examCount">${countOptions.join('')}</select>
       </div>
-      <p class="text-sm text-muted">考试模式下答完交卷才会显示结果，编程题交卷时自动运行测试用例评分。</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">取消</button>
@@ -5541,7 +5523,6 @@ function renderWrongBook() {
       <div class="empty-card">
         <div class="empty-card-icon">${ICON.target}</div>
         <div class="empty-card-title">暂无错题</div>
-        <div class="empty-card-desc">学习和考试里答错的题会自动记到这里，按考点收纳；答对一次就归档为已掌握，可以随时重新列入。</div>
       </div>
       <div class="btn-group" style="justify-content:center;margin-top:18px">
         <button class="btn btn-primary" onclick="navigateTo('sets')">挑一个练习科目</button>
@@ -5562,8 +5543,6 @@ function renderWrongBook() {
   }).join('');
 
   return `
-    <p class="page-lead">答错自动进账，答对一次即归档为已掌握。按考点练最省时间——同一个考点错得越多，排得越前。</p>
-
     <div class="stat-rail">
       ${statCard('待复习', `${stats.open}`, { icon: ICON.target, note: stats.due ? `今日到期 ${stats.due} 题` : '还没有到复习时间' })}
       ${statCard('顽固错题', `${stats.stubborn}`, { icon: ICON.flame, note: stats.stubborn ? '错过 3 次以上，每天都要见一面' : '暂时没有反复错的题' })}
@@ -5595,7 +5574,7 @@ function renderWrongBook() {
           <summary>展开其余 ${rest.length} 个考点</summary>
           ${rest.map((g, i) => wrongGroupHTML(g, shown.length + i, false)).join('')}
         </details>` : ''}` : `
-      <div class="card"><div class="material-empty">这个筛选下暂时没有题目。换个筛选看看，或去练习集里再练一轮。</div></div>`}`;
+      <div class="card"><div class="material-empty">这个筛选下暂时没有题目</div></div>`}`;
 }
 
 function storageUsage() {
@@ -5622,7 +5601,6 @@ function renderSettings() {
       <div class="settings-row">
         <div>
           <div class="settings-row-title">显示语言</div>
-          <div class="text-sm text-muted">切换后所有页面即时生效，偏好只保存在本浏览器。题目和资料内容跟随原文，不会被翻译。</div>
         </div>
         <div class="lang-seg" data-no-i18n role="group" aria-label="显示语言">
           <button type="button" class="${isEn() ? '' : 'is-active'}" onclick="setLang('zh')" aria-pressed="${!isEn()}">简体中文</button>
@@ -5633,19 +5611,13 @@ function renderSettings() {
 
     <div class="settings-section">
       <h3>AI 出题</h3>
-      <p class="text-sm text-muted mb-4">已内置 Qoder AI，无需填写 API Key。上传 PDF、Word、PPT 等资料，系统自动提取文字并按篇幅推荐题量，生成单选、多选、判断、填空和编程题；没有文件时也可以直接粘贴文字。</p>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">出题引擎</div>
-          <div class="text-sm text-muted">Qoder AI · 由站点后端安全调用，密钥不会进入浏览器</div>
+          <div class="text-sm text-muted">Qoder AI</div>
         </div>
         <span class="badge badge-success">已内置</span>
       </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>判题服务</h3>
-      <p class="text-sm text-muted">编程题通过后端调用 Judge0 公共实例判题，默认无需额外配置。如需使用私有 Judge0 或 RapidAPI 密钥，请在站点后端环境变量中配置 JUDGE0_URL / JUDGE0_KEY。</p>
     </div>
 
     <div class="settings-section">
@@ -5653,35 +5625,31 @@ function renderSettings() {
       <div class="settings-row">
         <div>
           <div class="settings-row-title">导出全部数据</div>
-          <div class="text-sm text-muted">练习集、练习科目、资料文字、练习记录与错题本（不含原始文件）</div>
         </div>
         <button class="btn btn-secondary" onclick="exportData()">导出 JSON</button>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">导入数据备份</div>
-          <div class="text-sm text-muted">从导出的 JSON 恢复，已存在的练习集、资料与记录会自动跳过</div>
         </div>
         <button class="btn btn-secondary" onclick="importData()">选择文件</button>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">本地存储</div>
-          <div class="text-sm text-muted">练习集与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份，原始文件单独存放` : ''}</div>
+          <div class="text-sm text-muted">练习集与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份` : ''}</div>
         </div>
         <span class="badge ${usage.pct >= 80 ? 'badge-danger' : 'badge-muted'}">${usage.pct}%</span>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">清空练习记录</div>
-          <div class="text-sm text-muted">清除所有历史成绩与错题本，保留练习集</div>
         </div>
         <button class="btn btn-secondary" onclick="clearRecords()">清空</button>
       </div>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">恢复初始状态</div>
-          <div class="text-sm text-muted">删除所有自建练习集、练习科目、资料、记录与设置</div>
         </div>
         <button class="btn btn-danger" onclick="resetAll()">重置</button>
       </div>
@@ -5689,19 +5657,16 @@ function renderSettings() {
 
     <div class="settings-section">
       <h3>备考规划</h3>
-      <p class="text-sm text-muted">复习计划、每日任务与考点梳理在「Exam Plan AI 备考规划」里完成，这里负责出题与练习。两个应用通过考点深链互相跳转，数据各自保存在本地浏览器，不会互相同步。</p>
       <div class="settings-row">
         <div>
           <div class="settings-row-title">Exam Plan AI 备考规划</div>
-          <div class="text-sm text-muted">由资料生成复习计划，按考点一键跳转到这里出题</div>
         </div>
         <a class="btn btn-secondary" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">打开备考规划 ↗</a>
       </div>
     </div>
 
     <div class="settings-footer">
-      <p>智题 StarQuiz · 学习模式与考试模式，普通题目与编程题混合练习，数据保存在本地浏览器。</p>
-      <p class="settings-footer-sub">复习计划在 Exam Plan AI 里完成，两个应用通过考点深链互相跳转。</p>
+      <p>智题 StarQuiz</p>
     </div>
     </div>`;
 }
@@ -6491,29 +6456,29 @@ function renderAIRail() {
 }
 
 // 「先建科目、资料回头再传」之后回到出题弹窗，下一步是灰的——灰按钮只说「不行」，
-// 不说差在哪一步。这里把卡住的原因和离它最近的一个入口写在同一行，
-// 原因口径与 aiStepReady(1) 完全一致，不另起一套判断。
+// 不说差在哪一步。这里把卡住的原因和离它最近的一个入口写在同一行：只说差什么，不解释流程。
+// 原因口径与 aiStepReady(1) 完全一致，不另起一套判断；说法和 Exam Plan 的待办文案对齐。
 function aiSourceGateInfo() {
-  if (aiParseBusy) return { line: '资料还在解析中，解析完成就能继续下一步。', actions: [] };
+  if (aiParseBusy) return { line: '资料还在解析中…', actions: [] };
   if (aiStepReady(1)) return null;
   const groups = collectAIGroups();
   const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
   const name = esc(subject.name);
   if (groups.hasFiles || groups.hasNotes || groups.hasExams) {
     return {
-      line: '这一轮的内容不足 50 字，AI 出题需要更长的原文。再粘一段或继续上传文件。',
+      line: '这一轮的内容不足 50 字',
       actions: [{ label: '粘贴文字', fn: 'revealAIPaste()' }]
     };
   }
   const held = subjectMaterials(subject.id);
   if (held.length) {
     return {
-      line: `「${name}」已有 ${held.length} 份资料，勾一份就能继续下一步。`,
+      line: `「${name}」的资料还没勾上（${held.length} 份）`,
       actions: [{ label: '全部选上', fn: 'selectAllLibraryMaterials()' }]
     };
   }
   return {
-    line: `「${name}」还没有资料。现在传就行；也可以先关掉，之后在练习科目页的「资料」里补传，科目不用重建。`,
+    line: `「${name}」还没有资料`,
     actions: [{ label: '上传资料', fn: 'pickAIFiles()' }].concat(
       // 未分类没有科目页可去，只在真正的练习科目上给这个出口
       subject.inbox ? [] : [{ label: '去练习科目页传', fn: 'leaveAIForMaterials()' }]
@@ -6709,9 +6674,7 @@ function openAIModal(subjectId, materialIds) {
         <section class="wiz-layer" id="aiLayer1"${aiStep === 1 ? '' : ' hidden'}>
           <div class="wiz-head">
             <span class="wiz-title">资料来源</span>
-            <span class="wiz-hint">上传文件 · 已有资料 · 粘贴文字</span>
           </div>
-          <p class="wiz-note wiz-note-first">PDF / Word / PPT / TXT 都可以，笔记和真题能一起传。</p>
           <div class="ai-library" id="aiLibrary"></div>
 
           <label class="ai-dropzone" id="aiDropzone" for="aiFileInput" style="margin-top:12px">
@@ -6720,7 +6683,6 @@ function openAIModal(subjectId, materialIds) {
               onchange="handleAIFileInput(this)">
             <span class="ai-dropzone-icon">${ICON.upload}</span>
             <span class="ai-dropzone-title">拖入文件，或点击选择</span>
-            <span class="ai-dropzone-hint">支持多选 · 笔记和真题可以一起传 · 单文件 ≤ 30MB · 扫描版 PDF 需先 OCR</span>
           </label>
           <div class="ai-file-list" id="aiFileList"></div>
           <div class="ai-file-summary" id="aiFileSummary"></div>
@@ -6735,23 +6697,19 @@ function openAIModal(subjectId, materialIds) {
               </select>
             </div>
             <textarea class="form-textarea" id="aiMaterial" style="margin-top:10px;min-height:120px" placeholder="粘贴课堂笔记、教材段落、真题试卷……" oninput="refreshAIState()"></textarea>
-            <p class="text-sm text-muted" style="margin:5px 0 0">粘贴的文字会和上传的资料一起使用。</p>
           </div>
         </section>
 
         <section class="wiz-layer" id="aiLayer2"${aiStep === 2 ? '' : ' hidden'}>
           <div class="wiz-head">
             <span class="wiz-title">保存位置</span>
-            <span class="wiz-hint">练习集和这一轮的资料都归到这里</span>
           </div>
           <div class="ai-mode" role="group" aria-label="保存位置">
             <button type="button" class="ai-mode-btn${aiDest === 'existing' ? ' active' : ''}" data-dest="existing" onclick="setAIDest('existing')">
               <span class="ai-mode-title">已有练习科目</span>
-              <span class="ai-mode-desc">选一个练习科目</span>
             </button>
             <button type="button" class="ai-mode-btn${aiDest === 'new' ? ' active' : ''}" data-dest="new" onclick="setAIDest('new')">
               <span class="ai-mode-title">新增练习科目</span>
-              <span class="ai-mode-desc">建一个新的练习科目</span>
             </button>
           </div>
 
@@ -6768,7 +6726,6 @@ function openAIModal(subjectId, materialIds) {
               <div class="wiz-field wiz-span">
                 <label class="form-label" for="aiNewSubjectName">练习科目名称</label>
                 <input class="form-input" id="aiNewSubjectName" maxlength="40" placeholder="例如：导游业务、考研英语" oninput="syncAILayerState()">
-                <span class="wiz-help">点「下一步」时创建，不会重复建同名练习科目。</span>
               </div>
               <div class="wiz-field">
                 <label class="form-label" for="aiNewExamName">目标考试</label>
@@ -6779,23 +6736,19 @@ function openAIModal(subjectId, materialIds) {
                 <input class="form-input" type="date" id="aiNewExamDate">
               </div>
             </div>
-            <p class="wiz-note">备考目标、每日题量可以在练习科目页的「编辑」里补全。</p>
           </div>
         </section>
 
         <section class="wiz-layer" id="aiLayer3"${aiStep === 3 ? '' : ' hidden'}>
           <div class="wiz-head">
             <span class="wiz-title">处理方式</span>
-            <span class="wiz-hint">出题 · 原样整理 · 聚焦考点</span>
           </div>
           <div class="ai-mode" id="aiModeGroup" role="group" aria-label="出题方式">
             <button type="button" class="ai-mode-btn active" data-mode="generate" onclick="setAIMode('generate')">
               <span class="ai-mode-title">根据资料出题</span>
-              <span class="ai-mode-desc">笔记、教材 → 生成新题</span>
             </button>
             <button type="button" class="ai-mode-btn" data-mode="exam" onclick="setAIMode('exam')">
               <span class="ai-mode-title">原样整理真题</span>
-              <span class="ai-mode-desc">试卷、练习集 → 全部保留</span>
             </button>
           </div>
           <div class="ai-group-summary" id="aiGroupSummary" hidden></div>
@@ -6806,7 +6759,6 @@ function openAIModal(subjectId, materialIds) {
               <input type="checkbox" id="aiFocusOn" onchange="toggleAIFocus(this.checked)">
               <span class="ai-focus-title">聚焦考点</span>
             </label>
-            <span class="ai-mode-desc" id="aiFocusDesc">只围绕一个考点出题，其它内容少出或不出题。</span>
             <input class="form-input" id="aiFocusTopic" maxlength="400" placeholder="例如：导游语言技巧、定语从句" oninput="refreshAIState()" hidden>
           </div>
 
@@ -6816,7 +6768,7 @@ function openAIModal(subjectId, materialIds) {
               <span class="ai-count-value" id="aiCountValue">—</span>
             </div>
             <input type="range" class="ai-range" id="aiCount" min="3" max="40" value="8" step="1" disabled oninput="onAICountInput()">
-            <div class="ai-count-hint" id="aiCountHint">上传资料后，会按资料篇幅自动推荐题量</div>
+            <div class="ai-count-hint" id="aiCountHint"></div>
           </div>
           <div id="aiTypesWrap">
             <div class="form-group" style="margin-bottom:0">
@@ -6834,11 +6786,10 @@ function openAIModal(subjectId, materialIds) {
                 <option value="javascript">JavaScript</option>
               </select>
             </div>
-            <p class="text-sm text-muted" style="margin:8px 0 0">混合题型包含单选、多选、判断、填空；只有编程类资料才需要选择「含编程题」。</p>
           </div>
           <div class="ai-exam-note" id="aiExamNote" hidden>
             <b id="aiExamEstimate">将全部整理</b>
-            <span id="aiExamNoteText">题干、选项和答案按原文保留，不改写、不删减；原文没有答案时会给出参考答案。</span>
+            <span id="aiExamNoteText"></span>
           </div>
 
           <div class="ai-review">
@@ -6906,7 +6857,6 @@ function renderAILibrary() {
   wrap.innerHTML = `
     <div class="ai-library-head">
       <span>「${esc(subject.name)}」已有资料</span>
-      <span class="text-sm text-muted">勾选后直接参与出题</span>
     </div>
     <div class="ai-library-list">
       ${list.map((m) => {
@@ -7096,14 +7046,13 @@ function refreshAIState() {
     const destMats = subjectMaterials(destSubject.id).length;
     destHelp.textContent = destSets || destMats
       ? `「${destSubject.name}」已有 ${destSets} 个练习集 · ${destMats} 份资料`
-      : `「${destSubject.name}」还是空的，出题后会出现在这里`;
+      : `「${destSubject.name}」还是空的`;
   }
 
   // 聚焦考点：真题整理是原样保留，不能同时只练一个考点
   const focusCard = document.getElementById('aiFocusCard');
   const focusBox = document.getElementById('aiFocusOn');
   const focusInput = document.getElementById('aiFocusTopic');
-  const focusDesc = document.getElementById('aiFocusDesc');
   const link = captureFocusLink();
   if (focusCard) focusCard.classList.toggle('is-off', hasExams && !hasNotes);
   if (focusBox) {
@@ -7120,11 +7069,6 @@ function refreshAIState() {
     } else {
       focusInput.disabled = false;
     }
-  }
-  if (focusDesc) {
-    focusDesc.textContent = link
-      ? '这个练习集会标上备考规划的考点，练完可以把结果带回计划。'
-      : '只围绕一个考点出题，其它内容少出或不出题。';
   }
 
   const countCard = document.getElementById('aiCountCard');
@@ -7158,12 +7102,12 @@ function refreshAIState() {
       hintEl.textContent = '正在解析资料…';
     } else if (noteOversize) {
       hintEl.textContent = `笔记资料 ${groups.noteText.length.toLocaleString()} 字，超过 24,000 字，请拆分后再上传`;
-    } else if (noteChars < 50) {
-      hintEl.textContent = '上传资料后，会按资料篇幅自动推荐题量';
-    } else {
+    } else if (noteChars >= 50) {
       const examTail = hasExams ? '；真题部分全部保留，不计入此数量' : '';
       const from = pref === rec ? `按篇幅建议 ${rec} 题` : `用练习科目默认 ${pref} 题（按篇幅建议 ${rec}）`;
       hintEl.textContent = `${noteChars.toLocaleString()} 字资料 · ${from}，可调 ${min}–${max}${examTail}`;
+    } else {
+      hintEl.textContent = '';
     }
   } else {
     range.disabled = true;
@@ -7178,11 +7122,7 @@ function refreshAIState() {
     }
     const noteText = document.getElementById('aiExamNoteText');
     if (noteText) {
-      noteText.textContent = examOversize
-        ? '真题资料超过 48,000 字，请拆分后再整理，避免漏题。'
-        : mixed
-          ? '真题部分按原文逐题保留；笔记部分另出新题。较长试卷会自动分段并行整理。'
-          : '题干、选项和答案按原文保留，不改写、不删减；较长试卷会自动分段并行整理，速度更快。';
+      noteText.textContent = examOversize ? '真题资料超过 48,000 字，请拆分后再整理，避免漏题。' : '';
     }
     if (examNote) examNote.classList.toggle('is-warn', examOversize);
   }
@@ -7201,7 +7141,6 @@ function refreshAIState() {
         <div class="ai-group-actions">
           <button type="button" onclick="setAllAIFileKinds('note')">全部按笔记</button>
           <button type="button" onclick="setAllAIFileKinds('exam')">全部按真题</button>
-          <span>点文件名右侧的标签可单独切换</span>
         </div>`;
     }
   }

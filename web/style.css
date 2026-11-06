@@ -1683,7 +1683,6 @@ input[type="file"].form-input:active::file-selector-button {
 }
 .ai-dropzone-icon svg { width: 18px; height: 18px; }
 .ai-dropzone-title { font-family: var(--display); font-size: 13px; font-weight: 600; color: var(--ink); }
-.ai-dropzone-hint { font-size: 12px; color: var(--ink-mute); }
 
 .ai-file-list { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
 .ai-file-list:empty { display: none; }
@@ -1770,8 +1769,6 @@ input[type="file"].form-input:active::file-selector-button {
   transform: none;
 }
 .ai-mode-title { display: block; font-family: var(--display); font-size: 13.5px; font-weight: 700; color: var(--ink); }
-.ai-mode-desc { display: block; margin-top: 2px; font-size: 11.5px; color: var(--ink-mute); }
-.ai-mode-btn.active .ai-mode-desc { color: var(--ink-soft); }
 .ai-exam-note {
   border: 1px solid var(--line-soft);
   border-radius: 12px;
@@ -3082,12 +3079,6 @@ body {
   .resume-actions { width: 100%; justify-content: flex-end; }
 }
 
-.page-lead {
-  margin: -6px 0 18px;
-  font-size: 13px;
-  color: var(--ink-mute);
-}
-
 /* ============================================================
    科目页头 · Notion 结构（和 Exam Plan AI 同一把标尺同一套 Anatomy）
    满宽封面带 → 页图标骑在下沿 → 文档标题 → 属性行；
@@ -3266,7 +3257,6 @@ body {
   color: var(--ink-mute);
 }
 .cover-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-.cover-hint { font-size: 11.5px; color: var(--ink-mute); }
 
 /* 窄屏整套等比退回 Notion 移动端尺度：带 168 / 图标 48 / 标题 28，
    重叠量跟着取图标盒高的四分之一，属性退回单列。 */
@@ -3424,7 +3414,6 @@ body {
   color: var(--ink);
 }
 
-.ai-focus-card .ai-mode-desc { display: block; margin-top: 2px; }
 .ai-focus-card .form-input { margin-top: 10px; }
 
 /* 确认区：处理方式层底部的结果预告 */
@@ -3689,7 +3678,6 @@ body {
   letter-spacing: -0.012em;
 }
 .settings-footer p { margin: 0; }
-.settings-footer-sub { margin-top: 2px; }
 
 /* ---------- 去掉装饰性几何：假窗口红点 ---------- */
 .code-editor-toolbar label::before { display: none; }
@@ -3700,11 +3688,9 @@ body {
 .learning-progress-text,
 .code-editor-toolbar label { font-size: 11px; }
 .link-btn { font-size: 13px; }
-.ai-mode-desc,
 .ai-count-hint { font-size: 12px; }
 .form-label { font-size: 12px; font-weight: 500; }
 .ai-count-label { font-size: 12px; font-weight: 600; letter-spacing: -0.012em; }
-.ai-dropzone-hint,
 .ai-quality-detail summary { font-size: 12px; }
 .ai-count-value small { font-size: 11px; }
 b, strong { font-weight: 600; }
@@ -3821,7 +3807,8 @@ b, strong { font-weight: 600; }
 .empty-card-icon { display: inline-flex; color: var(--ink-faint); }
 .empty-card-icon svg { width: 34px; height: 34px; }
 .empty-card-title { margin-top: 14px; font-size: 16px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); }
-.empty-card-desc { margin: 6px 0 18px; max-width: 430px; font-size: 13px; line-height: 1.6; color: var(--ink-mute); }
+/* 说明灰字去掉后，按钮顶上它原先留出的那 18px 间距 */
+.empty-card .btn { margin-top: 18px; }
 
 /* ---------- 分组列表：段落收纳自己带边框，列表只留淡分隔线 ---------- */
 .material-list {
@@ -4035,16 +4022,6 @@ b, strong { font-weight: 600; }
 }
 .wiz-hint { font-size: 11.5px; color: var(--ink-faint); }
 
-.wiz-note {
-  margin-top: 12px;
-  font-size: 12px;
-  line-height: 1.65;
-  color: var(--ink-mute);
-}
-
-/* 紧跟层标题的说明：不要顶部留白 */
-.wiz-note-first { margin-top: 0; margin-bottom: 12px; }
-
 /* 向导字段：两列栅格（窄屏自动一列），与 Exam Plan AI 新建科目向导的
    `grid sm:grid-cols-2 gap-4` 同规格；高级设置用 details 折叠，默认收起。 */
 .wiz-grid {
@@ -4128,7 +4105,6 @@ b, strong { font-weight: 600; }
   letter-spacing: -0.01em;
   color: var(--ink);
 }
-.wiz-choice-desc { margin-top: 2px; font-size: 11.5px; color: var(--ink-mute); }
 
 @media (max-width: 480px) {
   .wiz-step-label { display: none; }
@@ -4781,7 +4757,6 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
   letter-spacing: -0.02em;
   color: var(--ink);
 }
-.deck-add-desc { font-size: 13px; line-height: 1.6; color: var(--ink-mute); }
 .deck-add .deck-foot { justify-content: flex-end; }
 
 /* 折叠段：移动端科目行与科目详情里的资料 / 练习集收纳共用一套规格 */
