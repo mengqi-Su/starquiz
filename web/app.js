@@ -426,17 +426,20 @@ function subjectIcon(subject) {
  * 只出现在「打开这份科目」那一页的页头。存法一眼分得开——内置是 "preset:<id>"，
  * 图片是 "data:image/..."，其余一律当没有封面。纹理走浅纸质调子，压深了就成了营销 hero。 */
 const grain = (angle, alpha) =>
-  `repeating-linear-gradient(${angle}deg, rgba(28,27,26,${alpha}) 0 1px, rgba(255,255,255,0) 1px 7px)`;
+  `repeating-linear-gradient(${angle}deg, rgba(15,13,12,${alpha}) 0 1px, rgba(255,255,255,0) 1px 7px)`;
 const sheen = (from, to) =>
   `radial-gradient(120% 95% at 12% 0%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 58%), linear-gradient(180deg, ${from} 0%, ${to} 100%)`;
 
+// 色卡取自 Qoder 官网实测值（与 Exam Plan 的 lib/pageCover.ts 同一套）：
+// 纸面 #F2F4F2 / #F7F8F7 / #F9F9F9，墨色 #0F0D0C，灰阶 #E3E3E3 / #DDDDDD，
+// 品牌绿 #73B78E / #80C776，强调色 #FF5F57 / #FEBD2E。每格都是强调色压淡 + 纸面底色。
 const COVER_PRESETS = [
-  { id: 'paper', zh: '纸纹', en: 'Paper', background: `${grain(135, 0.022)}, ${grain(45, 0.014)}, ${sheen('#f1eee6', '#e5e1d6')}` },
-  { id: 'mist', zh: '雾蓝', en: 'Mist', background: `${grain(135, 0.018)}, ${sheen('#e9f0f8', '#dbe6f1')}` },
-  { id: 'moss', zh: '苔绿', en: 'Moss', background: `${grain(135, 0.018)}, ${sheen('#e9f0e7', '#dae4d8')}` },
-  { id: 'wheat', zh: '麦黄', en: 'Wheat', background: `${grain(135, 0.02)}, ${sheen('#faf0cf', '#f2e2b0')}` },
-  { id: 'clay', zh: '陶土', en: 'Clay', background: `${grain(135, 0.018)}, ${sheen('#f6e8e0', '#eed9cf')}` },
-  { id: 'slate', zh: '石墨', en: 'Slate', background: `${grain(135, 0.02)}, ${grain(45, 0.012)}, ${sheen('#ececeb', '#dcdcd9')}` },
+  { id: 'paper', zh: '纸纹', en: 'Paper', background: `${grain(135, 0.022)}, ${grain(45, 0.014)}, ${sheen('#f9f9f9', '#f2f4f2')}` },
+  { id: 'mist', zh: '雾青', en: 'Haze', background: `${grain(135, 0.018)}, ${sheen('#f1f6f2', '#e2ede5')}` },
+  { id: 'moss', zh: '苔绿', en: 'Moss', background: `${grain(135, 0.018)}, ${sheen('#eef6ea', '#dcebd8')}` },
+  { id: 'wheat', zh: '麦黄', en: 'Wheat', background: `${grain(135, 0.02)}, ${sheen('#fbf4e1', '#f4e5bf')}` },
+  { id: 'clay', zh: '陶土', en: 'Clay', background: `${grain(135, 0.018)}, ${sheen('#fbefee', '#f3dbd8')}` },
+  { id: 'slate', zh: '石墨', en: 'Slate', background: `${grain(135, 0.02)}, ${grain(45, 0.012)}, ${sheen('#f3f3f3', '#dcdcdc')}` },
 ];
 
 const PRESET_PREFIX = 'preset:';
@@ -501,7 +504,7 @@ function readCoverImage(file) {
       canvas.height = Math.max(1, Math.round(height * scale));
       const ctx = canvas.getContext('2d');
       if (!ctx) throw coverError('canvas');
-      ctx.fillStyle = '#f8f7f4';
+      ctx.fillStyle = '#f7f8f7';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
       let out = '';
@@ -2660,7 +2663,10 @@ function startFocusLink(linkId) {
     return;
   }
   planLink = transientPlanLink(link, subject);
-  openAIModal(subject.id);
+  // 和深链首次落地走同一个入口：把资料夹里已经躺着的资料带进弹窗。
+  // 只传 subject.id 的话 aiPieces 是空的，aiStepReady(1) 的 hasMaterial 就是 false，
+  // 用户看到的是「资料明明在列表里，下一步却是灰的」。
+  openPractice(subject);
 }
 
 function renderDashboard() {
@@ -7416,7 +7422,7 @@ async function parseDOCX(file) {
 let docTextPromise = null;
 function loadDocText() {
   if (!docTextPromise) {
-    docTextPromise = import('./doc-text.js?v=53').catch((e) => {
+    docTextPromise = import('./doc-text.js?v=54').catch((e) => {
       docTextPromise = null;
       throw e;
     });

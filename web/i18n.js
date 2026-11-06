@@ -631,7 +631,7 @@ const EN = Object.assign({
     'JPG / PNG / WebP, downscaled to 1600px on the long edge and kept on this device.',
   '上传的图片': 'Uploaded image',
   '纸纹': 'Paper',
-  '雾蓝': 'Mist',
+  '雾青': 'Haze',
   '苔绿': 'Moss',
   '麦黄': 'Wheat',
   '陶土': 'Clay',
