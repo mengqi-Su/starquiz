@@ -177,7 +177,12 @@ function cleanWordText(raw) {
     .trim();
 }
 
-// 读取 Word 97 二进制正文：优先用 piece table（fComplex），否则退回 fcMin..fcMac
+// 读取 Word 97 二进制正文：piece table 结构可信就用它，否则退回 fcMin..fcMac
+// 为什么不看 fComplex：Word 存盘时正文并不总是连成一段（Exam Plan 的回归样本
+// graph-notes.doc 就是 fComplex=0 而正文分两截），只看标志位会把中间那 1KB 属性区
+// 当正文读出来。改成让结构自己证明自己：分段要从 0 起、首尾相接、刚好收到 ccpText，
+// 每段字节范围还得落在 WordDocument 里，任一条不成立才退回连续区。
+// 与 Exam Plan 的 src/lib/legacyWord.ts 同一套算法，两端读数必须一致。
 export function extractLegacyWordText(bytes) {
   const { streams } = parseCfb(bytes);
   const wd = streams.get('WordDocument');
@@ -187,7 +192,6 @@ export function extractLegacyWordText(bytes) {
 
   const flags = dv.getUint16(0x0a, true);
   if (flags & 0x0100) throw new Error('encrypted_doc');
-  const fComplex = !!(flags & 0x0004);
   const fExtChar = !!(flags & 0x1000);
   const tableName = (flags & 0x0200) ? '1Table' : '0Table';
   const table = streams.get(tableName) || streams.get('0Table') || streams.get('1Table') || new Uint8Array(0);
@@ -198,7 +202,7 @@ export function extractLegacyWordText(bytes) {
   const lcbClx = dv.getUint32(0x01a6, true);
 
   const pieces = [];
-  if (fComplex && tdv && lcbClx > 0 && fcClx + lcbClx <= table.length) {
+  if (tdv && lcbClx > 0 && fcClx + lcbClx <= table.length) {
     let p = fcClx;
     const end = fcClx + lcbClx;
     // Prc 结构：0x01 + cbGrpprl(u16) + 数据，可能连续多个
@@ -211,13 +215,26 @@ export function extractLegacyWordText(bytes) {
       const plc = p + 5;
       const count = Math.floor((lcb - 4) / 12);
       const pcdStart = plc + (count + 1) * 4;
-      for (let i = 0; i < count; i++) {
-        const cpStart = tdv.getUint32(plc + i * 4, true);
-        const cpEnd = tdv.getUint32(plc + (i + 1) * 4, true);
-        const fcRaw = tdv.getUint32(pcdStart + i * 8 + 2, true);
-        const compressed = !!(fcRaw & 0x40000000);
-        const fc = compressed ? (fcRaw & 0x3fffffff) >>> 1 : (fcRaw & 0x3fffffff);
-        if (cpEnd > cpStart) pieces.push({ cpStart, cpEnd, fc, compressed });
+      if (lcb > 0 && plc + lcb <= table.length && count > 0 && count <= 8000) {
+        for (let i = 0; i < count; i++) {
+          const cpStart = tdv.getUint32(plc + i * 4, true);
+          const cpEnd = tdv.getUint32(plc + (i + 1) * 4, true);
+          const fcRaw = tdv.getUint32(pcdStart + i * 8 + 2, true);
+          const compressed = !!(fcRaw & 0x40000000);
+          const fc = compressed ? (fcRaw & 0x3fffffff) >>> 1 : (fcRaw & 0x3fffffff);
+          if (cpEnd <= cpStart) { pieces.length = 0; break; }
+          const bytesNeeded = compressed ? cpEnd - cpStart : (cpEnd - cpStart) * 2;
+          if (fc + bytesNeeded > wd.length) { pieces.length = 0; break; }
+          pieces.push({ cpStart, cpEnd, fc, compressed });
+        }
+      }
+      // 分段必须无缝：从 0 开始、一段接一段；知道 ccpText 就要求正好收到最后一个字符。
+      if (pieces.length) {
+        if (pieces[0].cpStart !== 0) pieces.length = 0;
+        for (let i = 1; i < pieces.length && pieces.length; i++) {
+          if (pieces[i].cpStart !== pieces[i - 1].cpEnd) pieces.length = 0;
+        }
+        if (pieces.length && ccpText > 0 && pieces[pieces.length - 1].cpEnd !== ccpText) pieces.length = 0;
       }
     }
   }
