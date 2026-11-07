@@ -221,13 +221,11 @@
     return node;
   }
 
+  /* 只露外面真会调的那几个。建任务、按状态计数这些是面板自己的 internals，
+     模块内部已在用；再挂一份同名出口就是给同一个功能开第二个入口。 */
   window.UploadQueue = {
     UPLOAD_CONCURRENCY: UPLOAD_CONCURRENCY,
-    UPLOAD_CHAR_BUDGET: UPLOAD_CHAR_BUDGET,
     run: runUploadQueue,
-    toTasks: toUploadTasks,
-    pending: pendingUploadCount,
-    countByState: countByState,
     pickFailedFiles: pickFailedFiles,
     notice: uploadOutcomeNotice,
     stateLabel: uploadStateLabel,
