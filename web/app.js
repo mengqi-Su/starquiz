@@ -4666,7 +4666,7 @@ function renderAnsweredQuestion(q, res, mode) {
     optionsHtml = `
       <div class="answer-compare">
         <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}" data-no-i18n>${esc(res.answer || t('（空）'))}</b></div>
-        <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)" data-no-i18n>${esc(answerText(q))}</b></div>
+        <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)" data-no-i18n>${answerHtml(q)}</b></div>
       </div>`;
   } else if (q.type === 'code') {
     optionsHtml = renderCodeResult(q, res);
@@ -4693,30 +4693,31 @@ function renderCodeResult(q, res) {
   return html;
 }
 
-function answerText(q) {
-  if (q.type === 'tf') return q.answer ? '正确' : '错误';
-  if (q.type === 'fill') {
-    const arr = Array.isArray(q.answer) ? q.answer : [q.answer];
-    return arr.join(' / ');
-  }
-  if (q.type === 'single') return `${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer] ?? ''}`;
-  if (q.type === 'multi') {
-    const arr = Array.isArray(q.answer) ? q.answer : [];
-    return arr.map((i) => `${String.fromCharCode(65 + i)}`).join(', ');
-  }
-  if (q.type === 'code') return '见参考答案';
-  return '';
+/* 答案的两条文本线：SEC-05 的收口点。
+ * 以前它们叫 answerText / userAnswerText，返回裸字符串，三个调用点各自手动套 esc()——
+ * 「记得转义」这件事一旦散到调用方，漏一次就没人拦得住。现在只有 *Html 这两个名字可用，
+ * 转义在生产者内部完成，模板里直接拼也不会漏；界面拿不到未转义的答案文本。 */
+function answerHtml(q) {
+  let text = '';
+  if (q.type === 'tf') text = q.answer ? '正确' : '错误';
+  else if (q.type === 'fill') text = (Array.isArray(q.answer) ? q.answer : [q.answer]).join(' / ');
+  else if (q.type === 'single') text = `${String.fromCharCode(65 + q.answer)}. ${q.options[q.answer] ?? ''}`;
+  else if (q.type === 'multi') text = (Array.isArray(q.answer) ? q.answer : []).map((i) => `${String.fromCharCode(65 + i)}`).join(', ');
+  else if (q.type === 'code') text = '见参考答案';
+  return esc(text);
 }
 
-function userAnswerText(q, ans) {
+function userAnswerHtml(q, ans) {
   // 这些是界面兜底文案，不是用户作答内容：容器带 data-no-i18n 不参与翻译层，所以在这里按当前语言取值
-  if (ans == null || (Array.isArray(ans) && ans.length === 0) || ans === '') return t('（未作答）');
-  if (q.type === 'tf') return ans ? t('正确') : t('错误');
-  if (q.type === 'single') return `${String.fromCharCode(65 + ans)}. ${q.options[ans] ?? ''}`;
-  if (q.type === 'multi' && Array.isArray(ans)) return ans.map((i) => String.fromCharCode(65 + i)).join(', ');
-  if (q.type === 'fill') return String(ans);
-  if (q.type === 'code') return t('（代码见作答）');
-  return String(ans);
+  let text = '';
+  if (ans == null || (Array.isArray(ans) && ans.length === 0) || ans === '') text = t('（未作答）');
+  else if (q.type === 'tf') text = ans ? t('正确') : t('错误');
+  else if (q.type === 'single') text = `${String.fromCharCode(65 + ans)}. ${q.options[ans] ?? ''}`;
+  else if (q.type === 'multi' && Array.isArray(ans)) text = ans.map((i) => String.fromCharCode(65 + i)).join(', ');
+  else if (q.type === 'fill') text = String(ans);
+  else if (q.type === 'code') text = t('（代码见作答）');
+  else text = String(ans);
+  return esc(text);
 }
 
 function learningChoose(key, idx) {
@@ -5651,8 +5652,8 @@ function renderExamResult() {
               <span class="badge ${statusCls}">${status}</span>
             </div>
             <div class="review-question">${i + 1}. <span data-no-i18n>${esc(q.content)}</span></div>
-            <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}" data-no-i18n>${esc(userAnswerText(q, ans.userAnswer))}</span></div>
-            ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text" data-no-i18n>${esc(answerText(q))}</span></div>` : ''}
+            <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}" data-no-i18n>${userAnswerHtml(q, ans.userAnswer)}</span></div>
+            ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text" data-no-i18n>${answerHtml(q)}</span></div>` : ''}
             ${q.explanation ? `<div class="review-answer" data-no-i18n style="margin-top:8px;color:var(--text-secondary)">${esc(q.explanation)}</div>` : ''}
             ${q.type === 'code' && q.answer ? `<div class="code-output" style="margin-top:12px"><div class="output-label">参考答案</div><span data-no-i18n>${esc(q.answer)}</span></div>` : ''}
           </div>`;
