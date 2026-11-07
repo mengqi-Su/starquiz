@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <!-- 内容安全策略。Qoder Sites 的网关不给应用自定义响应头，所以能写进文档的部分只能写在这里；
        策略要挡的是「代码从别处来」：外部脚本、object/embed/iframe、<base> 与 <form> 劫持、跨源 connect。
-       script-src 里的 'unsafe-inline' 是现状妥协——站内 175 处 onclick 都靠它，去掉就是白屏。
+       script-src 里的 'unsafe-inline' 是现状妥协——站内 153 处 onclick（连同 change/input/keydown 等
+       共 176 处内联事件属性）都靠它，去掉就是整站按钮失灵。
        也就是说：这一条不能替转义兜底，注入防线仍然是 esc()，由 dev/xss-regression.html 守着。
-       HSTS、X-Content-Type-Options、X-Frame-Options / frame-ancestors 只能由平台侧加，meta 里写了浏览器也不认。 -->
+       HSTS、X-Content-Type-Options、X-Frame-Options / frame-ancestors 只能由平台侧加，meta 里写了浏览器也不认。
+       线上返回的 HTML 会比这份文件多一段托管侧注入的加载脚本，那是网关自己的行为，不是构建出错；
+       它能跑，正因为上面这条 'unsafe-inline'——所以这条妥协一旦去掉，要先确认网关那段怎么豁免。 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
   <!-- 跳转去备考规划时不带来源页地址：站点地址本身就是可猜的，没必要多告诉对方一层 -->
   <meta name="referrer" content="same-origin">
