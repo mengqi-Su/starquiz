@@ -432,6 +432,14 @@ const EN = Object.assign({
   'AI 服务暂时不可用，请稍后重试': 'The AI service is unavailable right now — try again shortly',
   '出题服务响应超时，请稍后重试或拆分资料': 'The question service timed out — retry later or split the material',
   'AI 调用太频繁了，等几秒再试': 'AI requests are being rate-limited — wait a few seconds',
+  /* 函数闸门（requestGuard.ts）的拒绝文案：出题与判题共用，所以句子不提「AI」 */
+  '请求太频繁了，请等一会儿再试': 'Too many requests — wait a moment and try again',
+  '今天的调用次数已用完，请明天再试': "You've used up today's requests — try again tomorrow",
+  '请求内容格式无效，请刷新页面后重试': 'The request was malformed — reload the page and try again',
+  '这个页面不能调用练习服务，请在正式站点内使用':
+    'This page cannot call the practice service — use it from the live site',
+  '上传太慢了，请检查网络，或减少资料量后重试':
+    'The upload was too slow — check your connection, or send less material',
   '站点刚更新完，服务还在重启，请等十几秒后刷新页面再试':
     'The site just updated and its services are restarting — wait about ten seconds, then reload',
 }, {

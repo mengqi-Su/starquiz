@@ -6495,7 +6495,34 @@ const AI_MAX_FILES = 24;
 const AI_PREVIEW_MAX_CHARS = 48000;
 const OFFICIAL_SITE_URL = 'https://starquiz-zfc3er164xi.qoder.zone';
 
+/* 函数闸门（functions/requestGuard.ts）的拒绝码：一句话说明「这次为什么没成」，
+   中英文都从这里出——服务端原文只有一种语言，直接印出来会让英文界面冒中文。
+   一个表，出题和判题两条路共用。 */
+const GATE_TEXT = {
+  body_too_large: '资料超过单次上限，请拆成两轮上传',
+  bad_body: '请求内容格式无效，请刷新页面后重试',
+  unsupported_media_type: '请求内容格式无效，请刷新页面后重试',
+  cross_origin: '这个页面不能调用练习服务，请在正式站点内使用',
+  rate_limited: '请求太频繁了，请等一会儿再试',
+  // 和上一行分开：那是等几分钟，值得自动重试；这是等明天，重试只是在耗用户。
+  daily_quota_reached: '今天的调用次数已用完，请明天再试',
+  body_timeout: '上传太慢了，请检查网络，或减少资料量后重试'
+};
+
+// 等一下就能过的两类：限流与上传超时。其余带 code 的错误直接告诉用户，不空转重试。
+const GATE_TRANSIENT = ['rate_limited', 'body_timeout'];
+
+function gateText(code) {
+  return (code && GATE_TEXT[code]) || '';
+}
+
+function gateCode(data) {
+  return (data && data.error && data.error.code) || '';
+}
+
 function aiErrorText(status, data) {
+  const gate = gateText(gateCode(data));
+  if (gate) return gate;
   const serverMsg = data && data.error && data.error.message;
   if (serverMsg) return serverMsg;
   if (status === 405) return `当前页面不支持后端服务（HTTP 405），AI 出题和判题需要在正式站点使用：${OFFICIAL_SITE_URL}`;
@@ -6532,8 +6559,11 @@ async function startAIBatches(payload, signal, onRetry) {
     }
     const data = await res.json().catch(() => null);
     if (res.ok && data && data.ok) return data;
-    // 网关返回的 HTML/空响应、5xx、部署窗口的 404 都值得再试；带业务错误的 4xx 直接报给用户
-    const retryable = !data || res.status >= 500 || res.status === 404 || res.status === 408;
+    // 网关返回的 HTML/空响应、5xx、部署窗口的 404 都值得再试；带业务错误的 4xx 直接报给用户。
+    // 闸门的 429 与上传超时也算「等一下就能过」：下面的退避最长等到 12 秒，够 Retry-After 用。
+    const code = gateCode(data);
+    const retryable = !data || res.status >= 500 || res.status === 404 || res.status === 408
+      || GATE_TRANSIENT.includes(code);
     lastMessage = aiErrorText(res.status, data);
     if (!retryable) throw new Error(lastMessage);
     if (onRetry && attempt < AI_START_RETRY_DELAYS.length) onRetry(attempt + 1);
@@ -6579,9 +6609,11 @@ async function requestAISyncJob(payload, jobIndex, signal) {
       continue;
     }
     if (res.ok && data && data.ok && data.set) return data;
-    // 一批失败多半是这一批太大或上游抖动：换个批次大小重跑没有意义，试两次就放弃这一批
+    // 一批失败多半是这一批太大或上游抖动：换个批次大小重跑没有意义，试两次就放弃这一批。
+    // 闸门的限流与上传超时是「等一下就能过」，这两类才值得把这 800ms / 2500ms 花掉。
     lastMessage = aiErrorText(res ? res.status : 0, data);
-    if (data && data.error && data.error.code) throw new Error(lastMessage);
+    const code = gateCode(data);
+    if (code && !GATE_TRANSIENT.includes(code)) throw new Error(lastMessage);
   }
   throw new Error(lastMessage || '这一批没有生成成功');
 }
@@ -8454,7 +8486,12 @@ async function judgeRun(language, source, stdin) {
       if (res.status === 405) {
         throw new Error(`当前页面不支持后端服务（HTTP 405），编程题判题需要在正式站点使用：${OFFICIAL_SITE_URL}`);
       }
-      throw new Error((data && data.error && data.error.message) || `判题服务暂不可用（HTTP ${res.status || '未知'}）`);
+      // 判题这条路不经过 aiErrorText，闸门文案同样要先于服务端原文：否则英文界面会印出中文兜底句
+      throw new Error(
+        gateText(gateCode(data))
+        || (data && data.error && data.error.message)
+        || `判题服务暂不可用（HTTP ${res.status || '未知'}）`
+      );
     }
     if (!data.result || typeof data.result !== 'object') {
       throw new Error('判题服务返回了异常结果，请稍后重试');

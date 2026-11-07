@@ -7,43 +7,49 @@
 // 站点网关在 60 秒断开单个请求，而上游是同步返回的：所以一次请求只出一小批
 // （不超过十余道题），批次由浏览器并发编排。
 // API Key 只存在于函数环境，绝不进入浏览器、提示词或日志。
+// 每个 POST 先过 requestGuard.ts 这道安检：同源校验、JSON Content-Type、按字节封顶的
+// 流式 body、按来源 IP 的令牌桶（出题与判题各一桶）。/health 例外——它是运维探活
+// 和发布后只读核对的入口。
 // ========================================
 
 import { completeJson, deepseekConfigured, LlmError } from './deepseek.ts';
+import { asRejection, checkAccess, readJsonBody } from './requestGuard.ts';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
   'Cache-Control': 'no-store'
 };
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
+function json(body: unknown, status = 200, headers?: Record<string, string>): Response {
+  return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, ...(headers || {}) } });
 }
 
-function fail(code: string, message: string, status = 400): Response {
-  return json({ ok: false, error: { code, message } }, status);
+function fail(code: string, message: string, status = 400, headers?: Record<string, string>): Response {
+  return json({ ok: false, error: { code, message } }, status, headers);
+}
+
+// 闸门的拒绝带 code 与状态码，原样透传：前端按 code 出文案，中文原文只是兜底。
+function reject(error: unknown): Response {
+  const rejection = asRejection(error);
+  if (!rejection) return fail('internal_error', '服务暂时不可用，请稍后重试', 500);
+  return fail(rejection.code, rejection.message, rejection.status, rejection.headers());
+}
+
+/**
+ * POST body 的唯一读取口。返回 Response 表示已被闸门拦下（过大 / 不是 JSON / 类型不对）。
+ * 三个路由不再各写一遍 try/catch，也不再各说各的「请求格式错误」。
+ */
+async function readBody(req: Request, maxBytes: number): Promise<Record<string, unknown> | Response> {
+  try {
+    return await readJsonBody(req, maxBytes);
+  } catch (error) {
+    if (asRejection(error)) return reject(error);
+    return fail('invalid_request', '请求格式错误');
+  }
 }
 
 // 出题只有一条通道：配了 Key 走同步批次，没配就明确告知未启用，不再退到别的服务
 const AI_NOT_CONFIGURED = 'AI 服务尚未启用，请在站点设置中配置 API Key。';
-
-async function readJsonBody(req: Request, maxBytes = 256 * 1024): Promise<Record<string, unknown>> {
-  const text = await req.text();
-  // 按参数名算的是字节：中文一字 3 字节，用 text.length 会把上限放宽三倍，
-  // 浏览器按字符定的上限就可能在这里先撞墙，两边说的就不是同一件事了。
-  if (new TextEncoder().encode(text).length > maxBytes) {
-    throw new Error('body_too_large');
-  }
-  try {
-    const parsed = JSON.parse(text);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('bad_body');
-    }
-    return parsed as Record<string, unknown>;
-  } catch {
-    throw new Error('bad_body');
-  }
-}
 
 /* ---------------- Judge0 ---------------- */
 
@@ -81,12 +87,9 @@ async function handleJudge(req: Request): Promise<Response> {
   // 未配置就先拒，连请求体都不必读
   if (!configured) return fail('judge_not_configured', JUDGE_NOT_CONFIGURED, 503);
 
-  let body: Record<string, unknown>;
-  try {
-    body = await readJsonBody(req, 128 * 1024);
-  } catch (e) {
-    return fail('invalid_request', e instanceof Error && e.message === 'body_too_large' ? '提交内容过大' : '请求格式错误');
-  }
+  const parsed = await readBody(req, 128 * 1024);
+  if (parsed instanceof Response) return parsed;
+  const body = parsed;
 
   const language = String(body.language || '');
   const source = String(body.source || '');
@@ -646,13 +649,9 @@ function sanitizeSet(raw: unknown): Record<string, unknown> {
 }
 
 async function handleAIStart(req: Request): Promise<Response> {
-  let body: Record<string, unknown>;
-  try {
-    body = await readJsonBody(req, 512 * 1024);
-  } catch (e) {
-    if (!(e instanceof Error) || e.message !== 'body_too_large') return fail('invalid_request', '请求格式错误');
-    return fail('invalid_request', '资料超过单次上限，请拆成两轮上传', 413);
-  }
+  const parsed = await readBody(req, 512 * 1024);
+  if (parsed instanceof Response) return parsed;
+  const body = parsed;
 
   // 只有一条通道：没配 Key 就是「未启用」，不再退到别的服务上悄悄跑一遍
   if (!deepseekConfigured()) return fail('ai_not_configured', AI_NOT_CONFIGURED, 503);
@@ -972,13 +971,9 @@ function syncStartResponse(plan: SyncPlan): Response {
 
 // 一个批次 = 一次同步补全：浏览器并发调用，函数不保存任何任务状态
 async function handleAIGenerate(req: Request): Promise<Response> {
-  let body: Record<string, unknown>;
-  try {
-    body = await readJsonBody(req, 512 * 1024);
-  } catch (e) {
-    if (!(e instanceof Error) || e.message !== 'body_too_large') return fail('invalid_request', '请求格式错误');
-    return fail('invalid_request', '资料超过单次上限，请拆成两轮上传', 413);
-  }
+  const parsed = await readBody(req, 512 * 1024);
+  if (parsed instanceof Response) return parsed;
+  const body = parsed;
 
   if (!deepseekConfigured()) return fail('ai_not_configured', AI_NOT_CONFIGURED, 503);
 
@@ -1040,12 +1035,17 @@ export async function handler(req: Request): Promise<Response> {
       return fail('method_not_allowed', '仅支持 POST 请求', 405);
     }
 
+    // 安检只在这里判一次：判题和出题各有各的额度，来源校验两者相同。
+    // 放在路由分发之前，被拒的请求连 body 都不会被读进来。
+    checkAccess(req, path.endsWith('/judge/run') ? 'judge' : 'ai');
+
     if (path.endsWith('/judge/run')) return await handleJudge(req);
     if (path.endsWith('/ai/generate')) return await handleAIGenerate(req);
     if (path.endsWith('/ai/start')) return await handleAIStart(req);
 
     return fail('not_found', '接口不存在', 404);
-  } catch {
-    return fail('internal_error', '服务暂时不可用，请稍后重试', 500);
+  } catch (error) {
+    // 闸门的拒绝带 code 与状态码，原样透传；其余才是真的服务端意外。
+    return reject(error);
   }
 }
