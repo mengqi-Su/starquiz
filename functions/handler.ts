@@ -29,7 +29,9 @@ function fail(code: string, message: string, status = 400): Response {
 
 async function readJsonBody(req: Request, maxBytes = 256 * 1024): Promise<Record<string, unknown>> {
   const text = await req.text();
-  if (text.length > maxBytes) {
+  // 按参数名算的是字节：中文一字 3 字节，用 text.length 会把上限放宽三倍，
+  // 浏览器按字符定的上限就可能在这里先撞墙，两边说的就不是同一件事了。
+  if (new TextEncoder().encode(text).length > maxBytes) {
     throw new Error('body_too_large');
   }
   try {
@@ -210,8 +212,12 @@ const EXAM_MIN_PART = 600;
 
 // 混合批量模式：笔记 + 真题一次上传，笔记切段出题、真题逐题整理，再合并成一个题库
 const NOTE_PART_TARGET = 12000;
-const NOTE_MAX_CHARS = 24000;
-const BATCH_EXAM_MAX_CHARS = 48000;
+// 单次上限按「函数请求体 512KB」和「一批提示词体积」倒推：
+// 中文字 3 字节，96,000 字约 290KB，笔记与真题两边合计再留出头名与 JSON 开销。
+// 上限不再是「一份教材读不完」，只是「一轮别再塞进几百 KB」，超了才要求拆两轮。
+const NOTE_MAX_CHARS = 96_000;
+const BATCH_EXAM_MAX_CHARS = 96_000;
+const BATCH_TOTAL_MAX_CHARS = 128_000;
 const BATCH_MAX_SESSIONS = 5;
 
 function examQuestionStarts(material: string): number[] {
@@ -298,18 +304,19 @@ function splitNoteParts(material: string): string[] {
   return parts.filter((part) => part.trim().length >= 50);
 }
 
-// 把总题量按篇幅比例分配到各段，每段至少 2 题
+// 把总题量按篇幅比例分配到各段，每段至少 1 题
+// （每段至少 2 题时，段数一多实际题量就会明显超出用户滑到的数字）
 function distributeCount(total: number, parts: string[]): number[] {
   const weights = parts.map((part) => Math.max(1, part.replace(/\s/g, '').length));
   const sum = weights.reduce((a, b) => a + b, 0) || 1;
-  const counts = weights.map((w) => Math.max(2, Math.floor((total * w) / sum)));
+  const counts = weights.map((w) => Math.max(1, Math.floor((total * w) / sum)));
   let diff = total - counts.reduce((a, b) => a + b, 0);
-  for (let guard = 0; diff !== 0 && guard < 200; guard++) {
+  for (let guard = 0; diff !== 0 && guard < 400; guard++) {
     const index = guard % counts.length;
     if (diff > 0) {
       counts[index] += 1;
       diff -= 1;
-    } else if (counts[index] > 2) {
+    } else if (counts[index] > 1) {
       counts[index] -= 1;
       diff += 1;
     }
@@ -326,7 +333,7 @@ interface BatchDoc {
 function parseBatchDocuments(body: Record<string, unknown>): BatchDoc[] {
   const raw = Array.isArray(body.documents) ? body.documents : [];
   return raw
-    .slice(0, 8)
+    .slice(0, 32)
     .map((item) => {
       const doc = (item || {}) as Record<string, unknown>;
       return {
@@ -843,7 +850,8 @@ async function handleAIStart(req: Request): Promise<Response> {
   try {
     body = await readJsonBody(req, 512 * 1024);
   } catch (e) {
-    return fail('invalid_request', e instanceof Error && e.message === 'body_too_large' ? '资料内容过大' : '请求格式错误');
+    if (!(e instanceof Error) || e.message !== 'body_too_large') return fail('invalid_request', '请求格式错误');
+    return fail('invalid_request', '资料超过单次上限，请拆成两轮上传', 413);
   }
 
   const modeRaw = String(body.mode || 'generate');
@@ -985,9 +993,15 @@ async function handleAIPoll(req: Request): Promise<Response> {
 // 批次划分是纯函数：同样的请求体 + 同样的 jobIndex 一定得到同样的提示词，
 // 因此函数不需要保存任何任务状态，也不会有「刷新页面就找不到会话」的问题。
 const SYNC_NOTE_QUESTIONS_PER_CALL = 6;
-const SYNC_NOTE_MAX_CHUNKS = 8;
+// 批次数同时受题量和资料体积驱动：单批提示词目标体积，资料再厚也不会把一批撑大
+const SYNC_NOTE_CHUNK_TARGET_CHARS = 4_500;
+const SYNC_NOTE_MAX_CHUNKS = 16;
 const SYNC_EXAM_QUESTIONS_PER_CALL = 8;
 const SYNC_EXAM_MAX_CHUNKS = 10;
+// 真题块除了题数上限，还有一条字数上限：题干很长的整卷（简答、编程题）不能靠题数压体积
+const SYNC_EXAM_CHUNK_MAX_CHARS = 6_000;
+// 一轮最多多少批：并发 3，超出就是资料本身该拆两轮
+const SYNC_MAX_JOBS = 24;
 
 interface SyncJob {
   index: number;
@@ -1023,19 +1037,42 @@ function syncMaxTokens(group: 'note' | 'exam', questions: number): number {
   return Math.min(7_000, 900 + perQuestion * Math.max(1, questions));
 }
 
-// 笔记按段落边界切成 desired 段：不同批次覆盖不同段落，
-// 比同一份资料反复要求「换角度出题」更不容易出重复题。
-function splitNoteChunks(material: string, desired: number): string[] {
-  const count = Math.max(1, Math.min(Number(desired) || 1, SYNC_NOTE_MAX_CHUNKS));
+// 批次边界分三级：段落之间 > 换行 > 句号。前一级切不出足够的刀数就降到下一级，
+// 否则「一份没有空行的长文」会一刀都切不开，整份资料挤进一个请求——那就是一次超时。
+function findBoundaries(material: string, level: number): number[] {
+  const out: number[] = [];
+  if (level === 0) {
+    for (let i = 0; i < material.length - 1; i++) {
+      if (material[i] === '\n' && material[i + 1] === '\n') out.push(i);
+    }
+  } else if (level === 1) {
+    for (let i = 0; i < material.length; i++) if (material[i] === '\n') out.push(i);
+  } else {
+    for (let i = 0; i < material.length - 1; i++) {
+      const ch = material[i];
+      if (ch === '。' || ch === '！' || ch === '？' || ch === '；' || ch === ';') out.push(i + 1);
+    }
+  }
+  return out;
+}
+
+function boundariesFor(material: string, want: number): number[] {
+  let best = findBoundaries(material, 0);
+  for (let level = 1; level <= 2 && best.length < want; level++) {
+    const next = findBoundaries(material, level);
+    if (next.length > best.length) best = next;
+  }
+  return best;
+}
+
+// 按段落边界把资料尽量等分，切不出来的边界就少切一刀：
+// 不同批次覆盖不同段落，比同一份资料反复要求「换角度出题」更不容易出重复题。
+function splitByBoundaries(material: string, desired: number, maxChunks: number): string[] {
+  const count = Math.max(1, Math.min(Number(desired) || 1, maxChunks));
   if (count === 1 || material.length < 1_200) return [material];
 
-  const boundaries: number[] = [];
-  for (let i = 0; i < material.length - 1; i++) {
-    if (material[i] === '\n' && material[i + 1] === '\n') boundaries.push(i);
-  }
-  if (!boundaries.length) {
-    for (let i = 0; i < material.length; i++) if (material[i] === '\n') boundaries.push(i);
-  }
+  const boundaries = boundariesFor(material, count - 1);
+  if (!boundaries.length) return [material];
 
   const minPart = Math.max(120, Math.floor(material.length / (count * 4)));
   const cuts: number[] = [];
@@ -1065,27 +1102,56 @@ function splitNoteChunks(material: string, desired: number): string[] {
   return parts.filter((part) => part.trim().length >= 40);
 }
 
-// 真题按题号切块：整理模式要求「一道都不能少」，所以只按题目边界下刀，
+// 笔记批数：题量要求切几刀、体积要求切几刀，取更多的那个。
+// 批数不超过题量（每批至少 1 题），也不超过一轮上限。
+function noteChunkCount(materialLength: number, total: number): number {
+  const questions = Math.max(1, Math.round(Number(total) || 1));
+  const byCount = Math.ceil(questions / SYNC_NOTE_QUESTIONS_PER_CALL);
+  const byVolume = Math.ceil(materialLength / SYNC_NOTE_CHUNK_TARGET_CHARS);
+  return Math.max(1, Math.min(SYNC_NOTE_MAX_CHUNKS, Math.max(byCount, Math.min(byVolume, questions))));
+}
+
+function splitNoteChunks(material: string, desired: number): string[] {
+  return splitByBoundaries(material, desired, SYNC_NOTE_MAX_CHUNKS);
+}
+
+// 真题按题号切块：整理模式要求「一道都不能少」，所以只在题目边界下刀，
 // 块首保留卷头标题，块间带上文尾巴用于跨块判读题号。
-function splitExamChunksByQuestions(material: string, perCall: number): string[] {
+// 题数和块内字数任一触顶就下刀：整卷全是简答/编程题时，光靠题数压不住提示词体积。
+function splitExamChunksByQuestions(material: string, perCall: number, maxChars = SYNC_EXAM_CHUNK_MAX_CHARS): string[] {
   const size = Math.max(1, Math.min(Number(perCall) || 1, 12));
   const starts = examQuestionStarts(material);
-  if (starts.length <= size) return [material];
+  if (!starts.length) return splitByBoundaries(material, Math.ceil(material.length / maxChars), SYNC_MAX_JOBS);
+  if (starts.length <= size && material.length <= maxChars) return [material];
 
   const preamble = starts[0] > 0 ? material.slice(0, starts[0]) : '';
   const chunks: string[] = [];
-  for (let i = 0; i < starts.length; i += size) {
-    const from = starts[i];
-    const to = i + size < starts.length ? starts[i + size] : material.length;
-    chunks.push(material.slice(from, to));
+  let blockStart = 0;
+  for (let i = 0; i < starts.length; i++) {
+    const end = i + 1 < starts.length ? starts[i + 1] : material.length;
+    const span = end - starts[blockStart];
+    const count = i - blockStart + 1;
+    if (i === starts.length - 1 || count >= size || span >= maxChars) {
+      chunks.push(material.slice(starts[blockStart], end));
+      blockStart = i + 1;
+    }
   }
   if (preamble && chunks.length) chunks[0] = preamble + chunks[0];
   return chunks.filter((chunk) => chunk.trim().length >= 40);
 }
 
+// 一轮批次数触顶：说明这份资料本身就该拆两轮，不能悄悄丢掉后面的批次
+function assertJobBudget(jobs: SyncJob[]): SyncJob[] {
+  if (jobs.length <= SYNC_MAX_JOBS) return jobs;
+  throw new SyncPlanError(
+    'invalid_request',
+    `这一轮需要分成 ${jobs.length} 批，超过单轮 ${SYNC_MAX_JOBS} 批，请拆成两轮上传`,
+    413
+  );
+}
+
 function noteSyncJobs(material: string, total: number, types: string, codeLanguage: string | null, focus: string): SyncJob[] {
-  const desired = Math.max(1, Math.ceil(Math.max(1, total) / SYNC_NOTE_QUESTIONS_PER_CALL));
-  const chunks = splitNoteChunks(material, desired);
+  const chunks = splitNoteChunks(material, noteChunkCount(material.length, total));
   const counts = chunks.length > 1 ? distributeCount(total, chunks) : [total];
 
   return chunks.map((chunk, index) => {
@@ -1127,6 +1193,15 @@ function examSyncJobs(material: string, collection: boolean, partOffsetLabel: (n
   });
 }
 
+// 超长只说差多少、下一步能做什么，和浏览器 gate 上那句是同一口径
+function overLimitError(label: string, chars: number, cap: number, tail = ''): SyncPlanError {
+  return new SyncPlanError(
+    'invalid_request',
+    `${label} ${chars.toLocaleString()} 字，超过单次上限 ${cap.toLocaleString()} 字，请拆成两轮上传${tail}`,
+    413
+  );
+}
+
 function planSyncJobs(body: Record<string, unknown>): SyncPlan {
   const modeRaw = String(body.mode || 'generate');
   const mode = modeRaw === 'exam' ? 'exam' : (modeRaw === 'batch' ? 'batch' : 'generate') as SyncPlan['mode'];
@@ -1147,11 +1222,11 @@ function planSyncJobs(body: Record<string, unknown>): SyncPlan {
     }
     const noteMaterial = joinBatchDocs(noteDocs, '笔记');
     const examMaterial = joinBatchDocs(examDocs, '试卷');
-    if (noteMaterial.length > NOTE_MAX_CHARS) {
-      throw new SyncPlanError('invalid_request', `笔记资料超过 ${NOTE_MAX_CHARS.toLocaleString()} 字符，请分两次上传`);
-    }
-    if (examMaterial.length > BATCH_EXAM_MAX_CHARS) {
-      throw new SyncPlanError('invalid_request', `真题资料超过 ${BATCH_EXAM_MAX_CHARS.toLocaleString()} 字符，请分两次上传`);
+    if (noteMaterial.length > NOTE_MAX_CHARS) throw overLimitError('笔记资料', noteMaterial.length, NOTE_MAX_CHARS);
+    if (examMaterial.length > BATCH_EXAM_MAX_CHARS) throw overLimitError('真题资料', examMaterial.length, BATCH_EXAM_MAX_CHARS);
+    const combined = noteMaterial.length + examMaterial.length;
+    if (combined > BATCH_TOTAL_MAX_CHARS) {
+      throw overLimitError('笔记和真题合计', combined, BATCH_TOTAL_MAX_CHARS);
     }
     if (noteMaterial.replace(/\s/g, '').length < 50) throw new SyncPlanError('invalid_request', '笔记内容太短（至少 50 字）');
     if (examMaterial.replace(/\s/g, '').length < 50) throw new SyncPlanError('invalid_request', '真题内容太短（至少 50 字）');
@@ -1165,23 +1240,23 @@ function planSyncJobs(body: Record<string, unknown>): SyncPlan {
     const focus = focusTopicFrom(body);
     const noteJobs = noteSyncJobs(noteMaterial, totalCount, types, codeLanguage, focus);
     const examJobs = examSyncJobs(examMaterial, examDocs.length > 1, (n) => (n ? `真题第 ${n} 批` : '真题整理'));
-    const jobs = [...noteJobs, ...examJobs].map((job, index) => ({ ...job, index }));
+    const jobs = assertJobBudget([...noteJobs, ...examJobs]).map((job, index) => ({ ...job, index }));
     return { mode: 'batch', count: totalCount, jobs };
   }
 
   const material = String(body.material || '').trim();
   if (mode === 'exam' && material.length > BATCH_EXAM_MAX_CHARS) {
-    throw new SyncPlanError('invalid_request', '真题资料过长，请拆分成 48000 字符以内再整理，避免漏题');
+    throw overLimitError('真题资料', material.length, BATCH_EXAM_MAX_CHARS, '，避免漏题');
   }
   if (mode === 'generate' && material.length > NOTE_MAX_CHARS) {
-    throw new SyncPlanError('invalid_request', `资料过长，请控制在 ${NOTE_MAX_CHARS.toLocaleString()} 字符以内`);
+    throw overLimitError('资料', material.length, NOTE_MAX_CHARS);
   }
 
   const range = countRangeFor(material);
   if (range.chars < 50) throw new SyncPlanError('invalid_request', '资料内容太短（至少 50 字）');
 
   if (mode === 'exam') {
-    const jobs = examSyncJobs(material, false, (n) => (n ? `真题第 ${n} 批` : '真题整理')).map((job, index) => ({ ...job, index }));
+    const jobs = assertJobBudget(examSyncJobs(material, false, (n) => (n ? `真题第 ${n} 批` : '真题整理'))).map((job, index) => ({ ...job, index }));
     return { mode: 'exam', count: 0, jobs };
   }
 
@@ -1191,7 +1266,7 @@ function planSyncJobs(body: Record<string, unknown>): SyncPlan {
     : range.recommended;
   // 联动聚焦出题只约束笔记生成：考点标题不可信，只进提示词
   const focus = focusTopicFrom(body);
-  const jobs = noteSyncJobs(material, count, types, codeLanguage, focus).map((job, index) => ({ ...job, index }));
+  const jobs = assertJobBudget(noteSyncJobs(material, count, types, codeLanguage, focus)).map((job, index) => ({ ...job, index }));
   return { mode: 'generate', count, jobs };
 }
 
@@ -1220,7 +1295,8 @@ async function handleAIGenerate(req: Request): Promise<Response> {
   try {
     body = await readJsonBody(req, 512 * 1024);
   } catch (e) {
-    return fail('invalid_request', e instanceof Error && e.message === 'body_too_large' ? '资料内容过大' : '请求格式错误');
+    if (!(e instanceof Error) || e.message !== 'body_too_large') return fail('invalid_request', '请求格式错误');
+    return fail('invalid_request', '资料超过单次上限，请拆成两轮上传', 413);
   }
 
   if (!deepseekConfigured()) {

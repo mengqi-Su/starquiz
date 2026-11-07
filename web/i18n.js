@@ -416,9 +416,7 @@ const EN = Object.assign({
   '考试正在进行中，退出后本次作答将丢失，确定退出吗？':
     'The exam is still running. Leaving now discards this attempt — leave anyway?',
   '确定要删除这个练习集吗？': 'Delete this question set?',
-  '资料超长，请拆分': 'Material is too long — split it first',
-  '资料内容过大，请拆分后重试': 'The material is too large — split it and try again',
-  '请先拆分资料': 'Split the material first',
+  '资料超过单次上限，请拆成两轮上传': 'That is over the limit for one round — split it across two rounds',
   '在正式站点打开': 'Open it on the live site',
   '登录已失效，请刷新页面后重试': 'Your session expired — reload the page and retry',
   '网络连接中断，请检查网络后再试': 'Network interrupted — check your connection and retry',
@@ -599,12 +597,14 @@ const EN = Object.assign({
   '出题方式': 'Question mode',
   '笔记出题 + 真题整理': 'Notes to questions + past papers tidied',
   '先填上练习科目名称': 'Type the new subject name first',
+  '选一个要保存到的练习科目': 'Pick which subject to save to',
   '目标练习科目还没定，请选一个练习科目或填新练习科目名称': 'Pick a subject or name the new one first',
 
   /* 资料来源卡住的原因：只说差什么，怎么补救交给同一行的动作按钮 */
   '资料还在解析中…': 'Still parsing…',
   '这一轮的内容不足 50 字': 'This round has under 50 characters',
   '粘贴文字': 'Paste text',
+  '清空粘贴文字': 'Clear the pasted text',
   '全部选上': 'Select all',
   '去练习科目页传': 'Upload on the subject page',
 
@@ -616,11 +616,6 @@ const EN = Object.assign({
   '生成超时了，请稍后重试，或减少题量': 'Generation timed out — retry shortly or ask for fewer questions',
   '生成超时了，请稍后重试，或减少题量、缩短资料':
     'Generation timed out — retry shortly, or use fewer questions and shorter material',
-  '笔记资料超过 24,000 字，请拆分后再上传': 'Notes exceed 24,000 characters — split them before uploading',
-  '真题资料超过 48,000 字，请拆分后再上传，避免漏题':
-    'Past papers exceed 48,000 characters — split them so none are missed',
-  '真题资料超过 48,000 字，请拆分后再整理，避免漏题':
-    'Past papers exceed 48,000 characters — split them before tidying so none are missed',
   '已放弃未完成的考试': 'Discarded the unfinished exam',
   '已放弃未完成的学习': 'Discarded the unfinished session',
   '未命名考试': 'Untitled exam',
@@ -708,6 +703,13 @@ const EN = Object.assign({
 /* 含数字、名称或语序变化的句子：正则 + 替换（替换里可以继续调用 t）。 */
 // 英文的「1 questions」是硬伤：所有带计数的短语统一走 pl()
 const pl = (n, one, many) => `${n} ${n === '1' ? one : many}`;
+// 超长提示的主语：浏览器和函数共用同一批标签词
+const LIMIT_LABEL = {
+  '笔记资料': 'Your notes',
+  '真题资料': 'The past papers',
+  '资料': 'The material',
+  '笔记和真题合计': 'Notes and past papers together'
+};
 
 const EN_PATTERNS = [
   /* 科目页头的「每日目标 20 题」：标签与取值是两个节点，这里只翻取值 */
@@ -830,7 +832,7 @@ const EN_PATTERNS = [
   [/^「(.+)」超过 30MB，请拆分后再上传$/, '"$1" is over 30 MB — split it before uploading'],
   [/^「(.+)」当前在「(.+)」。$/, (m) => `"${m[1]}" is currently in "${m[2]}".`],
   [/^(.+)：超过 30MB$/, '$1: over 30 MB'],
-  [/^最多一次添加 (\d+) 个文件$/, 'Up to $1 files at a time'],
+  [/^一次最多 (\d+) 份资料，剩下的拆成下一轮$/, (m) => `Up to ${m[1]} files per round — save the rest for the next one`],
   [/^(\d+) 份资料未能从资料库删除，刷新后可能仍会显示$/, '$1 files could not be removed from the store and may reappear after a reload'],
   [/^围绕(.+)出题练习：上传对应资料，AI 会生成题目并归入本练习科目。$/, (m) => `Practise ${m[1]}: upload its material and AI will generate questions for this subject.`],
   /* 考试级快照：随跳转一起带过来的资料与真题 */
@@ -888,6 +890,17 @@ const EN_PATTERNS = [
     (m) => `Cleaning in ${m[1]} parallel segments · ${m[2]}/${m[3]} done · ${m[4]}s elapsed`],
   [/^笔记出题 (\d+)\/(\d+)$/, 'Notes to questions $1/$2'],
   [/^真题整理 (\d+)\/(\d+) 段$/, 'Past papers cleaned $1/$2 segments'],
+  [/^分 (\d+) 批并行生成 · 已完成 (\d+)\/(\d+) 批 · 已用时 (\d+) 秒$/,
+    (m) => `Generating in ${m[1]} parallel batches · ${m[2]}/${m[3]} done · ${m[4]}s elapsed`],
+  /* 一轮装不下：浏览器和函数说同一句话，英文也只有一种说法 */
+  [/^(笔记资料|真题资料|资料|笔记和真题合计) ([\d,]+) 字，超过单次上限 ([\d,]+) 字，请拆成两轮上传(，避免漏题)?$/,
+    (m) => `${LIMIT_LABEL[m[1]]}: ${m[2]} characters — over the ${m[3]}-character limit for one round. ${m[4] ? 'Split it so no question is missed.' : 'Split it across two rounds.'}`],
+  [/^这一轮需要分成 (\d+) 批，超过单轮 (\d+) 批，请拆成两轮上传$/,
+    (m) => `This round needs ${m[1]} batches — over the ${m[2]}-batch limit for one round. Split it across two rounds.`],
+  [/^只保留 (\d+) 份$/, (m) => `Keep only ${pl(m[1], 'file', 'files')}`],
+  [/^跳过最后一份（留 (\d+) 份）$/, (m) => `Drop the last file (keep ${m[1]})`],
+  [/^已保留 (\d+) 份，跳过 (\d+) 份$/, (m) => `Kept ${m[1]}, skipped ${m[2]}`],
+  [/^已跳过「(.+?)」，可以再点一次生成$/, (m) => `Skipped "${m[1]}" — generate again`],
 
   /* 资料解析进度与文件条目 */
   [/^正在解析 (\d+) 个文件…$/, 'Parsing $1 files…'],
@@ -907,9 +920,6 @@ const EN_PATTERNS = [
     (m) => `${m[1]} characters · about ${m[2]} questions for that length, adjustable ${m[3]}–${m[4]}${m[5] ? ' (past papers are all kept and not counted here)' : ''}`],
   [/^([\d,]+) 字资料 · 用练习科目默认 (\d+) 题（按篇幅建议 (\d+)），可调 (\d+)–(\d+)(；真题部分全部保留，不计入此数量)?$/,
     (m) => `${m[1]} characters · this subject defaults to ${m[2]} (length suggests ${m[3]}), adjustable ${m[4]}–${m[5]}${m[6] ? ' (past papers are all kept and not counted here)' : ''}`],
-  [/^笔记资料 ([\d,]+) 字，超过 24,000 字，请拆分后再上传$/, 'Notes are $1 characters, over the 24,000 limit — split them before uploading'],
-  [/^真题资料超过 48,000 字，请拆分后再整理，避免漏题。$/, 'The past paper is over 48,000 characters — split it before cleaning so no question is missed.'],
-  [/^字，超过 24,000 字，请拆分后再上传$/, 'characters, over the 24,000 limit — split before uploading'],
   [/^；真题部分全部保留，不计入此数量$/, '(past papers are all kept and not counted here)'],
 
   /* 服务异常：带 HTTP 状态码 */

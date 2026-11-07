@@ -6226,7 +6226,19 @@ const AI_POLL_INTERVAL_MS = 1500;
 const AI_POLL_DEADLINE_MS = 360000;
 const AI_EXAM_DEADLINE_MS = 600000;
 const AI_SYNC_CONCURRENCY = 3;
+// 函数侧给自己留 46 秒（网关 60 秒掐断），浏览器就按 46 秒一批估时间预算
+const AI_SYNC_BATCH_BUDGET_MS = 46000;
+const AI_SYNC_DEADLINE_SLACK_MS = 40000;
 const AI_SYNC_RETRY_DELAYS = [800, 2500];
+// 单轮上限与 functions/handler.ts 同一组数字：这里是拦在弹窗里，那里是拦在函数里。
+// 上限只受请求体积约束，不再按「一次读得完多少资料」来定——批次切分负责覆盖整份资料。
+const AI_NOTE_MAX_CHARS = 96000;
+const AI_EXAM_MAX_CHARS = 96000;
+const AI_BATCH_TOTAL_MAX_CHARS = 128000;
+const AI_SYNC_MAX_JOBS = 24;
+const AI_MAX_FILES = 24;
+// 预览只用来确认「抓到的是不是这段文字」，不是给模型看的量，所以截得更早
+const AI_PREVIEW_MAX_CHARS = 48000;
 const OFFICIAL_SITE_URL = 'https://starquiz-zfc3er164xi.qoder.zone';
 
 function aiErrorText(status, data) {
@@ -6235,7 +6247,7 @@ function aiErrorText(status, data) {
   if (status === 405) return `当前页面不支持后端服务（HTTP 405），AI 出题和判题需要在正式站点使用：${OFFICIAL_SITE_URL}`;
   if (status === 404) return '站点刚更新完，服务还在重启，请等十几秒后刷新页面再试';
   if (status === 408 || status === 504) return '出题服务响应超时，请稍后重试或拆分资料';
-  if (status === 413) return '资料内容过大，请拆分后重试';
+  if (status === 413) return '资料超过单次上限，请拆成两轮上传';
   if (status === 429) return 'AI 调用太频繁了，等几秒再试';
   if (status === 401 || status === 403) return '登录已失效，请刷新页面后重试';
   if (status === 502 || status === 503) {
@@ -6336,7 +6348,9 @@ function updateAIGenerating(run, count, startedAt, doneParts = 0, totalParts = 1
       ? `分 ${totalParts} 段并行整理 · 已完成 ${doneParts}/${totalParts} 段 · 已用时 ${seconds} 秒`
       : `整理全部真题 · 已用时 ${seconds} 秒`;
   } else {
-    sub.textContent = `共 ${count} 题 · 已用时 ${seconds} 秒`;
+    sub.textContent = totalParts > 1
+      ? `分 ${totalParts} 批并行生成 · 已完成 ${doneParts}/${totalParts} 批 · 已用时 ${seconds} 秒`
+      : `共 ${count} 题 · 已用时 ${seconds} 秒`;
   }
 }
 
@@ -6390,6 +6404,8 @@ function collectAIGroups() {
 
   const docs = files.map((p) => ({ name: p.name, kind: aiFileKind(p), material: p.text }));
   if (manual) docs.push({ name: '粘贴的文字', kind: pasteKind, material: manual });
+  // 与 docs 一一对应的本轮条目 id（粘贴的那条固定叫 paste），跳过装不下的条目时用它回指 aiPieces
+  const ids = files.map((p) => p.id).concat(manual ? ['paste'] : []);
 
   const noteDocs = docs.filter((doc) => doc.kind === 'note');
   const examDocs = docs.filter((doc) => doc.kind === 'exam');
@@ -6400,7 +6416,7 @@ function collectAIGroups() {
   const noteText = join(noteDocs);
   const examText = join(examDocs);
   return {
-    docs, noteDocs, examDocs, hasFiles, pasteKind,
+    docs, ids, noteDocs, examDocs, hasFiles, pasteKind,
     noteText, examText,
     hasNotes: noteDocs.length > 0,
     hasExams: examDocs.length > 0,
@@ -6435,19 +6451,62 @@ function aiDestReady() {
   return !!subjectById(aiSubjectId);
 }
 
+// 三份上限（笔记 / 真题 / 两者合计）与 handler.ts 完全同口径；返回第一处超出的
+function aiLimitBreach(groups) {
+  const noteLen = groups.noteText.length;
+  const examLen = groups.examText.length;
+  if (noteLen > AI_NOTE_MAX_CHARS) return { label: '笔记资料', chars: noteLen, cap: AI_NOTE_MAX_CHARS };
+  if (examLen > AI_EXAM_MAX_CHARS) return { label: '真题资料', chars: examLen, cap: AI_EXAM_MAX_CHARS };
+  const total = noteLen + examLen;
+  if (groups.mixed && total > AI_BATCH_TOTAL_MAX_CHARS) {
+    return { label: '笔记和真题合计', chars: total, cap: AI_BATCH_TOTAL_MAX_CHARS };
+  }
+  return null;
+}
+
+// 这一轮装得下多少，浏览器只算字数；要切成几批是函数侧的批处理规则决定的，
+// 不在这里重算一遍。函数说「批数超了」时把那句原话记下来，贴在 gate 上，
+// 挂的是当次资料组合的签名——组合一变，这句话就自动失效。
+let aiStartBreach = { sig: '', line: '' };
+
+function aiGroupsSignature(groups) {
+  return groups.ids.map((id, i) => `${id}:${groups.docs[i] ? groups.docs[i].kind : '?'}`).join('|');
+}
+
+// 按顺序逐份装到上限为止：装得下的留下、装不下的跳过，绝不悄悄截断某一份的内容。
+// 资料只是这一轮不出题，仍留在练习科目库里。
+function aiFitPlan(groups) {
+  const used = { note: 0, exam: 0 };
+  const seen = { note: false, exam: false };
+  const kept = [];
+  const dropped = [];
+  groups.docs.forEach((doc, i) => {
+    const id = groups.ids[i];
+    const cap = doc.kind === 'exam' ? AI_EXAM_MAX_CHARS : AI_NOTE_MAX_CHARS;
+    // 多份才有的「【名称】\n」头名和段落间隔也要占体积
+    const cost = doc.material.length + (seen[doc.kind] ? doc.name.length + 4 : 0);
+    const combined = used.note + used.exam + cost;
+    if (used[doc.kind] + cost > cap || combined > AI_BATCH_TOTAL_MAX_CHARS) {
+      dropped.push({ id, doc });
+      return;
+    }
+    used[doc.kind] += cost;
+    seen[doc.kind] = true;
+    kept.push({ id, doc });
+  });
+  return { kept, dropped };
+}
+
 function aiStepReady(n) {
   if (aiParseBusy) return false;
   const groups = collectAIGroups();
   const noteChars = aiVisibleChars(groups.noteText);
   const examChars = aiVisibleChars(groups.examText);
   const hasMaterial = (groups.hasNotes && noteChars >= 50) || (groups.hasExams && examChars >= 50);
-  if (n === 1) return hasMaterial;
-  if (n === 2) {
-    if (!hasMaterial) return false;
-    if (groups.noteText.length > 24000 || groups.examText.length > 48000) return false;
-    return aiDestReady();
-  }
-  return hasMaterial && aiDestReady();
+  // 超长在第 1 层就该停下来：原因和「跳过哪一份」的出口就在同一行，不用先把用户放行再拒绝
+  if (!hasMaterial || aiLimitBreach(groups)) return false;
+  if (n === 1) return true;
+  return aiDestReady();
 }
 
 function renderAIRail() {
@@ -6457,13 +6516,54 @@ function renderAIRail() {
 
 // 「先建科目、资料回头再传」之后回到出题弹窗，下一步是灰的——灰按钮只说「不行」，
 // 不说差在哪一步。这里把卡住的原因和离它最近的一个入口写在同一行：只说差什么，不解释流程。
-// 原因口径与 aiStepReady(1) 完全一致，不另起一套判断；说法和 Exam Plan 的待办文案对齐。
+// 原因口径与 aiStepReady 共用同一份判断，不另起一套；说法和 Exam Plan 的待办文案对齐。
+// gate 三个层都要显示：哪一层按不下去，就在哪一层说清楚差什么。
 function aiSourceGateInfo() {
   if (aiParseBusy) return { line: '资料还在解析中…', actions: [] };
-  if (aiStepReady(1)) return null;
   const groups = collectAIGroups();
   const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
   const name = esc(subject.name);
+
+  const breach = aiLimitBreach(groups);
+  if (breach) {
+    const plan = aiFitPlan(groups);
+    const droppable = plan.dropped.filter((item) => item.id !== 'paste');
+    const actions = [];
+    // 「只保留 N 份」要有的可留才提；一份都装不下时按钮只会清空这一轮，那句话本身已经说了怎么办。
+    // 粘贴文字不同：它整段都是这一轮临时贴进来的，清掉它就是回到起点。
+    if (plan.kept.length && droppable.length) {
+      actions.push({ label: `只保留 ${plan.kept.length} 份`, fn: 'trimAIPiecesToLimit()' });
+    }
+    if (plan.dropped.some((item) => item.id === 'paste')) {
+      actions.push({ label: '清空粘贴文字', fn: 'clearAIPasteText()' });
+    }
+    return {
+      line: `${breach.label} ${breach.chars.toLocaleString()} 字，超过单次上限 ${breach.cap.toLocaleString()} 字，请拆成两轮上传`,
+      actions
+    };
+  }
+
+  if (aiStartBreach.line && aiStartBreach.sig === aiGroupsSignature(groups)) {
+    const droppable = groups.ids.filter((id) => id !== 'paste');
+    return {
+      line: aiStartBreach.line,
+      // 只剩一份时「跳过最后一份」等于清空这一轮，那就不算出口；那句话本身已经说了怎么拆
+      actions: droppable.length > 1
+        ? [{ label: `跳过最后一份（留 ${droppable.length - 1} 份）`, fn: 'dropLastAIPiece()' }]
+        : []
+    };
+  }
+
+  if (aiStepReady(1)) {
+    // 资料够了，剩下的门槛只在往下走那一层：保存位置还没定
+    if (aiStep >= 2 && !aiDestReady()) {
+      return aiDest === 'new'
+        ? { line: '先填上练习科目名称', actions: [] }
+        : { line: '选一个要保存到的练习科目', actions: [] };
+    }
+    return null;
+  }
+
   if (groups.hasFiles || groups.hasNotes || groups.hasExams) {
     return {
       line: '这一轮的内容不足 50 字',
@@ -6486,21 +6586,61 @@ function aiSourceGateInfo() {
   };
 }
 
-function renderAISourceGate() {
-  const wrap = document.getElementById('aiSourceGate');
-  if (!wrap) return;
-  const gate = aiSourceGateInfo();
-  if (!gate) {
-    wrap.innerHTML = '';
-    return;
+// 装不下的那几份由浏览器决定跳过谁：用户只要点一下，不用自己心算字数
+function trimAIPiecesToLimit() {
+  const groups = collectAIGroups();
+  const plan = aiFitPlan(groups);
+  const dropIds = new Set(plan.dropped.filter((item) => item.id !== 'paste').map((item) => item.id));
+  if (!plan.kept.length || !dropIds.size) return;
+  aiPieces = aiPieces.filter((p) => !dropIds.has(p.id));
+  renderAILibrary();
+  renderAIFileList();
+  refreshAIState();
+  syncAILayerState();
+  toast(`已保留 ${plan.kept.length} 份，跳过 ${dropIds.size} 份`, 'info', 4500);
+}
+
+// 函数说「批数超了」时的出口：去掉最后装进去的那一份再试，一轮一轮往里收。
+// 跳过谁由函数那句决定，浏览器不重算批数，只负责少给一份。
+function dropLastAIPiece() {
+  for (let i = aiPieces.length - 1; i >= 0; i--) {
+    if (aiPieces[i].status === 'ok') {
+      const [gone] = aiPieces.splice(i, 1);
+      renderAILibrary();
+      renderAIFileList();
+      refreshAIState();
+      syncAILayerState();
+      toast(`已跳过「${gone.name}」，可以再点一次生成`, 'info', 4500);
+      return;
+    }
   }
-  wrap.innerHTML = `
+}
+
+function clearAIPasteText() {
+  const box = document.getElementById('aiMaterial');
+  if (!box) return;
+  box.value = '';
+  refreshAIState();
+  syncAILayerState();
+}
+
+function renderAISourceGate() {
+  // 两个挂载点：资料来源层用它贴在文件列表旁边，另外两层用它顶在向导下面——
+  // 灰按钮在哪一层按不下去，就在哪一层把原因说出来。
+  const slots = [document.getElementById('aiSourceGate'), document.getElementById('aiGateTop')].filter(Boolean);
+  if (!slots.length) return;
+  const gate = aiSourceGateInfo();
+  const html = gate ? `
     <div class="ai-note ai-source-gate">
       <span class="ai-note-dot"></span>
       <span>${gate.line}${gate.actions.length
         ? ` ${gate.actions.map((a) => `<button type="button" class="link-btn" onclick="${a.fn}">${a.label}</button>`).join(' · ')}`
         : ''}</span>
-    </div>`;
+    </div>` : '';
+  slots.forEach((wrap, i) => {
+    wrap.innerHTML = html;
+    if (i === 1) wrap.hidden = aiStep === 1 || !gate;
+  });
 }
 
 function revealAIPaste() {
@@ -6569,6 +6709,7 @@ function showAILayer() {
     if (el) el.hidden = n !== aiStep;
   });
   renderAIRail();
+  renderAISourceGate();
   renderAIFooter();
   if (aiStep === 3) renderAIReview();
 }
@@ -6667,6 +6808,7 @@ function openAIModal(subjectId, materialIds) {
     </div>
     <div class="modal-body">
       <div id="aiRail">${aiRailHTML()}</div>
+      <div id="aiGateTop" hidden></div>
       <div id="aiFormWrap">
         ${renderPlanLinkNote()}
         <div id="aiErrorBox" class="feedback feedback-incorrect" hidden style="margin-bottom:14px"></div>
@@ -6789,7 +6931,6 @@ function openAIModal(subjectId, materialIds) {
           </div>
           <div class="ai-exam-note" id="aiExamNote" hidden>
             <b id="aiExamEstimate">将全部整理</b>
-            <span id="aiExamNoteText"></span>
           </div>
 
           <div class="ai-review">
@@ -7027,8 +7168,7 @@ function refreshAIState() {
   const { hasFiles, hasNotes, hasExams, mixed } = groups;
   const noteChars = aiVisibleChars(groups.noteText);
   const examChars = aiVisibleChars(groups.examText);
-  const noteOversize = groups.noteText.length > 24000;
-  const examOversize = groups.examText.length > 48000;
+  const noteOversize = groups.noteText.length > AI_NOTE_MAX_CHARS;
   const ready = (hasNotes || hasExams)
     && (!hasNotes || noteChars >= 50)
     && (!hasExams || examChars >= 50);
@@ -7097,11 +7237,12 @@ function refreshAIState() {
       aiLastRecommended = 0;
     }
 
-    valueEl.innerHTML = noteChars >= 50 ? `${range.value}<small>题</small>` : '—';
+    valueEl.innerHTML = noteChars >= 50 && !noteOversize ? `${range.value}<small>题</small>` : '—';
     if (aiParseBusy && !noteChars) {
       hintEl.textContent = '正在解析资料…';
     } else if (noteOversize) {
-      hintEl.textContent = `笔记资料 ${groups.noteText.length.toLocaleString()} 字，超过 24,000 字，请拆分后再上传`;
+      // 超过单次上限由 gate 那一行统一说明，这里不再重复一遍，也不给一个假数字
+      hintEl.textContent = '';
     } else if (noteChars >= 50) {
       const examTail = hasExams ? '；真题部分全部保留，不计入此数量' : '';
       const from = pref === rec ? `按篇幅建议 ${rec} 题` : `用练习科目默认 ${pref} 题（按篇幅建议 ${rec}）`;
@@ -7120,11 +7261,7 @@ function refreshAIState() {
     if (estEl) {
       estEl.textContent = aiParseBusy && !examChars ? '正在解析资料…' : (!examChars ? '等待资料' : (est > 0 ? `识别到约 ${est} 道题` : '将全部整理'));
     }
-    const noteText = document.getElementById('aiExamNoteText');
-    if (noteText) {
-      noteText.textContent = examOversize ? '真题资料超过 48,000 字，请拆分后再整理，避免漏题。' : '';
-    }
-    if (examNote) examNote.classList.toggle('is-warn', examOversize);
+    if (examNote) examNote.classList.toggle('is-warn', !!aiLimitBreach(groups));
   }
 
   const summary = document.getElementById('aiGroupSummary');
@@ -7162,20 +7299,16 @@ function refreshAIState() {
       : (groups.examText || groups.noteText);
     preview.hidden = !ready;
     if (ready) {
-      previewText.textContent = previewBody.slice(0, 48000);
+      previewText.textContent = previewBody.slice(0, AI_PREVIEW_MAX_CHARS);
       if (previewCount) previewCount.textContent = `（${(noteChars + examChars).toLocaleString()} 字）`;
     }
   }
 
-  const oversize = noteOversize || examOversize;
   const btn = document.getElementById('aiGenerateBtn');
   if (btn) {
-    btn.disabled = !ready || aiParseBusy || oversize;
-    btn.textContent = mixed
-      ? (oversize ? '资料超长，请拆分' : '开始整理')
-      : hasExams
-        ? (examOversize ? '请先拆分资料' : '整理全部真题')
-        : '生成题目';
+    // 超长只让按钮 disable，原因写在上面的 gate 那一行；按钮标签不再兼职当错误提示
+    btn.disabled = !ready || aiParseBusy || !!aiLimitBreach(groups);
+    btn.textContent = mixed ? '开始整理' : (hasExams ? '整理全部真题' : '生成题目');
   }
   syncAILayerState();
 }
@@ -7272,7 +7405,6 @@ function onAITypesChange() {
   if (types && group) group.style.display = types.value === 'with-code' ? '' : 'none';
 }
 
-const MATERIAL_LIMIT = 24000;
 const scriptCache = {};
 let pdfjsPromise = null;
 
@@ -7348,7 +7480,8 @@ async function parsePDF(file) {
     } else {
       emptyPages++;
     }
-    if (collected > MATERIAL_LIMIT * 4) break;
+    // 停手线就是这一轮能被接受的最大量：在触达上限前不去截断正文
+    if (collected > AI_BATCH_TOTAL_MAX_CHARS) break;
   }
 
   await doc.destroy().catch(() => {});
@@ -7608,10 +7741,9 @@ async function handleAIFileInput(input) {
 }
 
 async function handleAIFiles(files) {
-  const MAX_FILES = 8;
   for (const file of files) {
-    if (aiPieces.length >= MAX_FILES) {
-      toast(`最多一次添加 ${MAX_FILES} 个文件`, 'info');
+    if (aiPieces.length >= AI_MAX_FILES) {
+      toast(`一次最多 ${AI_MAX_FILES} 份资料，剩下的拆成下一轮`, 'info');
       break;
     }
     if (file.size > 30 * 1024 * 1024) {
@@ -7684,27 +7816,20 @@ async function generateQuestions() {
   const noteChars = aiVisibleChars(groups.noteText);
   const examChars = aiVisibleChars(groups.examText);
 
-  if (mixed) {
-    if (groups.noteText.length > 24000) {
-      toast('笔记资料超过 24,000 字，请拆分后再上传', 'error', 5000);
-      return;
-    }
-    if (groups.examText.length > 48000) {
-      toast('真题资料超过 48,000 字，请拆分后再上传，避免漏题', 'error', 5000);
-      return;
-    }
-    if (noteChars < 50 || examChars < 50) {
-      toast('笔记和真题都需要至少 50 字才能一起整理', 'info');
-      return;
-    }
-  } else if (runMode === 'exam' && groups.examText.length > 48000) {
-    toast('真题资料超过 48,000 字，请拆分后再整理，避免漏题', 'error', 5000);
+  const breach = aiLimitBreach(groups);
+  if (breach) {
+    toast(`${breach.label} ${breach.chars.toLocaleString()} 字，超过单次上限 ${breach.cap.toLocaleString()} 字，请拆成两轮上传`, 'error', 5000);
+    return;
+  }
+  if (mixed && (noteChars < 50 || examChars < 50)) {
+    toast('笔记和真题都需要至少 50 字才能一起整理', 'info');
     return;
   }
 
+  // 上限已在上面拦过一次，这里的截断只是最后一道保险，不留半句话
   const material = runMode === 'exam'
-    ? groups.examText.slice(0, 48000).trim()
-    : groups.noteText.slice(0, 24000).trim();
+    ? groups.examText.slice(0, AI_EXAM_MAX_CHARS).trim()
+    : groups.noteText.slice(0, AI_NOTE_MAX_CHARS).trim();
   if (!mixed && aiVisibleChars(material) < 50) {
     toast('请先上传资料或粘贴文字（至少 50 字）', 'info');
     return;
@@ -7723,6 +7848,7 @@ async function generateQuestions() {
   const focusTopic = wantFocus ? cleanFocusText(aiFocusText()) : '';
 
   state.genPreview = null;
+  aiStartBreach = { sig: '', line: '' };
   aiStep = 3;
   const rail = document.getElementById('aiRail');
   const form = document.getElementById('aiFormWrap');
@@ -7749,8 +7875,10 @@ async function generateQuestions() {
   if (footer) footer.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" disabled>${runMode === 'generate' ? '生成中…' : '整理中…'}</button>`;
 
   const controller = new AbortController();
-  const deadline = runMode === 'generate' ? AI_POLL_DEADLINE_MS : AI_EXAM_DEADLINE_MS;
-  const timer = setTimeout(() => controller.abort(), deadline + 10000);
+  // 时间预算先按最小值兜着，拿到批数之后按批数重算（见下方 runDeadline）
+  const baseDeadline = runMode === 'generate' ? AI_POLL_DEADLINE_MS : AI_EXAM_DEADLINE_MS;
+  let runDeadline = baseDeadline;
+  let timer = setTimeout(() => controller.abort(), baseDeadline + 10000);
 
   const payload = mixed
     ? { mode: 'batch', documents: groups.docs, count, types, codeLanguage, ...(focusTopic ? { focusTopic } : {}) }
@@ -7777,8 +7905,18 @@ async function generateQuestions() {
           .map((item) => ({ id: item.id, index: item.index, group: item.group, label: item.label, expected: item.expected, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }))
       : [{ id: sessionId, index: 0, group: defaultGroup, label: '', expected: 0, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }];
     const totalParts = parts.length;
+    // 批数决定时间预算：同步通道 3 路并发、每批最多占 46 秒，再加一轮重试和网络余量。
+    // 资料多→批次多，不能让原来按「一次请求」定的死线把正常的第一轮长任务掐掉。
+    runDeadline = Math.max(
+      baseDeadline,
+      Math.ceil(totalParts / AI_SYNC_CONCURRENCY) * AI_SYNC_BATCH_BUDGET_MS + AI_SYNC_DEADLINE_SLACK_MS
+    );
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), runDeadline + 10000);
 
     const startedAt = Date.now();
+    // 批数一定下来就把「约需多少时间」换成真实进度，别让旧估计陪用户等第一轮
+    updateAIGenerating(run, count, startedAt, 0, totalParts, runMode, parts);
     let set = null;
     // 合并已在浏览器里定稿的段：知识点重编号后必须重新验证目标考点与题目映射
     const mergeDoneParts = () => {
@@ -7811,7 +7949,7 @@ async function generateQuestions() {
       }
       set = mergeDoneParts();
     } else while (!set) {
-      if (Date.now() - startedAt > deadline) {
+      if (Date.now() - startedAt > runDeadline) {
         throw new Error(runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量' : '整理超时了，请拆分资料后重试');
       }
       await new Promise((resolve) => setTimeout(resolve, AI_POLL_INTERVAL_MS));
@@ -7911,6 +8049,11 @@ async function generateQuestions() {
     const message = e && e.name === 'AbortError'
       ? (runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量、缩短资料' : '整理超时了，请拆分资料后重试')
       : (e && e.message) || '请检查网络后重试';
+    // 函数说「这一轮装不下」：把那句原话挂回 gate，并记住是哪一组资料说的，
+    // 资料一变这句话就失效，不会出现「已经删掉了还在喊超长」。
+    if (/超过单轮|拆成两轮/.test(message)) {
+      aiStartBreach = { sig: aiGroupsSignature(groups), line: message };
+    }
     if (run) run.hidden = true;
     if (form) form.hidden = false;
     if (errBox) {
