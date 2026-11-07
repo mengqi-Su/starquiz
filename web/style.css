@@ -829,7 +829,7 @@ input[type="file"].form-input:active::file-selector-button {
   box-shadow: var(--shadow-sm);
 }
 
-.option-item:hover:not(.show-correct):not(.incorrect):not(.correct) {
+.option-item:hover:not(.show-correct):not(.incorrect):not(.correct):not([role="listitem"]) {
   box-shadow: none;
   border-color: var(--hover-line-strong);
   background: var(--surface-tint);
@@ -888,6 +888,22 @@ input[type="file"].form-input:active::file-selector-button {
 }
 
 .option-content { flex: 1; min-width: 0; word-break: break-word; padding-top: 3px; }
+
+/* 选项是可聚焦的 radio/checkbox，键盘焦点必须看得见；已作答的行只读，不给指针与悬停 */
+.option-item:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.option-item[role="listitem"] { cursor: default; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 .fill-input {
   width: 100%;
@@ -2437,7 +2453,7 @@ body {
   padding: 12px 14px;
 }
 
-.options-list .option-item:hover:not(.show-correct):not(.incorrect):not(.correct) {
+.options-list .option-item:hover:not(.show-correct):not(.incorrect):not(.correct):not([role="listitem"]) {
   transform: none;
   box-shadow: none;
   border-color: var(--ink);
@@ -2687,7 +2703,7 @@ body {
   align-items: center;
 }
 
-.options-list .option-item:hover:not(.show-correct):not(.incorrect):not(.correct) {
+.options-list .option-item:hover:not(.show-correct):not(.incorrect):not(.correct):not([role="listitem"]) {
   background: color-mix(in srgb, var(--lime) 12%, transparent);
   border-color: var(--ink);
   box-shadow: none;

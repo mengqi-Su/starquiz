@@ -4091,8 +4091,40 @@ function closeQnavAfterJump() {
   state.qnavOpen = false;
 }
 
+/* 选项的键盘操作只判一次：Enter/Space 等同点击；单选组里方向键移动即选中（标准 radio 行为），
+   多选组只移动焦点，由 Space 勾选。作答会整页重渲染，所以焦点按位置找回同一行。 */
+function optionKeydown(e) {
+  const row = e.target instanceof Element ? e.target.closest('.option-item[data-option-index]') : null;
+  if (!row || !row.parentElement) return;
+  const rows = [...row.parentElement.querySelectorAll('.option-item[data-option-index]')];
+  const i = rows.indexOf(row);
+  if (i < 0) return;
+  // 重渲染后节点全换了：单选还会变成没有序号属性的只读行，只能按位置找回，否则焦点掉回 body
+  const focusBack = (idx) => {
+    const list = document.querySelector('.options-list');
+    const now = list ? [...list.children].filter((el) => el.classList.contains('option-item')) : [];
+    const el = now[idx] || now[i];
+    if (el && el.isConnected) el.focus();
+  };
+  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    row.click();
+    focusBack(i);
+    return;
+  }
+  let next = -1;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (i + 1) % rows.length;
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (i - 1 + rows.length) % rows.length;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = rows.length - 1;
+  if (next < 0 || next === i) return;
+  e.preventDefault();
+  if (row.parentElement.getAttribute('role') === 'radiogroup') rows[next].click();
+  focusBack(next);
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
+  if (e.key !== 'Escape') { optionKeydown(e); return; }
   const modal = document.getElementById('modalContainer');
   if (modal && modal.innerHTML.trim()) { closeModal(); return; }
   if (state.qnavOpen) toggleQnav(false);
@@ -4328,7 +4360,7 @@ function renderLearning() {
         </span>
       </div>
 
-      <div class="question-text" data-no-i18n>${esc(q.content)}</div>
+      <div class="question-text" id="questionText" data-no-i18n>${esc(q.content)}</div>
 
       ${bodyHtml}
 
@@ -4354,6 +4386,32 @@ function renderLearning() {
     </div>`;
 }
 
+/* 选项行只由这一处生成：单选/判断是 radiogroup 里的 radio，多选是 group 里的 checkbox。
+   语义、焦点序号和点击行为都从这里出，学习与考试四处渲染不再各写一套。
+   roving 表示本组还没有选中项，此时把第一个选项放进 Tab 顺序（标准 radiogroup 行为）。 */
+function optionRowHtml({ kind, index, selected, action, marker, content, roving }) {
+  const multi = kind === 'multi';
+  const tab = multi || selected || (roving && index === 0) ? 0 : -1;
+  return `<div class="option-item${selected ? ' selected' : ''}" role="${multi ? 'checkbox' : 'radio'}" tabindex="${tab}" aria-checked="${selected ? 'true' : 'false'}" data-option-index="${index}" onclick="${action}">
+        <span class="option-marker${multi ? ' checkbox' : ''}" aria-hidden="true">${marker}</span>
+        <span class="option-content" data-no-i18n>${esc(content)}</span>
+      </div>`;
+}
+
+function optionListHtml(kind, rows) {
+  return `<div class="options-list" role="${kind === 'multi' ? 'group' : 'radiogroup'}" aria-labelledby="questionText">${rows.join('')}</div>`;
+}
+
+// 已作答的选项只读：不进 Tab 顺序，正确项与自己的错选各带一句读屏说明。
+// tabindex="-1" 是为了让键盘作答后焦点能落回同一行——没有它，div 无法被程序聚焦，焦点会掉回 body。
+function answeredOptionRowHtml({ kind, index, cls, marker, content, note }) {
+  return `<div class="option-item ${cls}" role="listitem" tabindex="-1">
+        <span class="option-marker${kind === 'multi' ? ' checkbox' : ''}" aria-hidden="true">${marker}</span>
+        <span class="option-content" data-no-i18n>${esc(content)}</span>
+        ${note ? `<span class="sr-only">${note}</span>` : ''}
+      </div>`;
+}
+
 function renderAnswerableQuestion(q, l, mode, key) {
   const k = strOf(key, 200) || strOf(q.id, 64);
   if (q.type === 'code') return renderCodeQuestion(q, l, mode, k);
@@ -4361,18 +4419,26 @@ function renderAnswerableQuestion(q, l, mode, key) {
   let html = '';
   if (q.type === 'single' || q.type === 'tf') {
     const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
-    html += `<div class="options-list">${opts.map((o, idx) => `
-      <div class="option-item" onclick="learningChoose('${k}', ${idx})">
-        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content" data-no-i18n>${esc(o)}</span>
-      </div>`).join('')}</div>`;
+    const cur = q.type === 'tf' ? (l.answers[k] === undefined ? -1 : (l.answers[k] ? 0 : 1)) : l.answers[k];
+    html += optionListHtml('single', opts.map((o, idx) => optionRowHtml({
+      kind: 'single',
+      index: idx,
+      selected: cur === idx,
+      roving: !(cur >= 0),
+      action: `learningChoose('${k}', ${idx})`,
+      marker: String.fromCharCode(65 + idx),
+      content: o
+    })));
   } else if (q.type === 'multi') {
     const sel = l.answers[k] || [];
-    html += `<div class="options-list">${q.options.map((o, idx) => `
-      <div class="option-item ${sel.includes(idx) ? 'selected' : ''}" onclick="learningToggleMulti('${k}', ${idx})">
-        <span class="option-marker checkbox">${sel.includes(idx) ? '✓' : ''}</span>
-        <span class="option-content" data-no-i18n>${esc(o)}</span>
-      </div>`).join('')}</div>
+    html += optionListHtml('multi', q.options.map((o, idx) => optionRowHtml({
+      kind: 'multi',
+      index: idx,
+      selected: sel.includes(idx),
+      action: `learningToggleMulti('${k}', ${idx})`,
+      marker: sel.includes(idx) ? '✓' : '',
+      content: o
+    }))) + `
       <button class="btn btn-primary" onclick="learningSubmitMulti('${k}')" ${sel.length === 0 ? 'disabled' : ''}>提交答案</button>`;
   } else if (q.type === 'fill') {
     html += `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(l.answers[k] || '')}" oninput="learningInput('${k}', this.value)">
@@ -4390,28 +4456,31 @@ function renderAnsweredQuestion(q, res, mode) {
     const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
     const correctIdx = q.type === 'tf' ? (q.answer ? 0 : 1) : q.answer;
     const userIdx = q.type === 'tf' ? (res.answer ? 0 : 1) : res.answer;
-    optionsHtml = `<div class="options-list">${opts.map((o, idx) => {
+    optionsHtml = `<div class="options-list" role="list">${opts.map((o, idx) => {
       let cls = '';
-      if (idx === correctIdx) cls = 'show-correct';
-      else if (idx === userIdx) cls = 'incorrect';
-      return `<div class="option-item ${cls}">
-        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content" data-no-i18n>${esc(o)}</span>
-      </div>`;
+      let note = '';
+      if (idx === correctIdx) { cls = 'show-correct'; note = '正确答案'; }
+      else if (idx === userIdx) { cls = 'incorrect'; note = '你的答案'; }
+      return answeredOptionRowHtml({ kind: 'single', index: idx, cls, marker: String.fromCharCode(65 + idx), content: o, note });
     }).join('')}</div>`;
   } else if (q.type === 'multi') {
     const correctArr = Array.isArray(q.answer) ? q.answer : [];
     const userArr = Array.isArray(res.answer) ? res.answer : [];
-    optionsHtml = `<div class="options-list">${q.options.map((o, idx) => {
+    optionsHtml = `<div class="options-list" role="list">${q.options.map((o, idx) => {
       const isCorrect = correctArr.includes(idx);
       const isUser = userArr.includes(idx);
       let cls = '';
-      if (isCorrect) cls = 'show-correct';
-      else if (isUser) cls = 'incorrect';
-      return `<div class="option-item ${cls}">
-        <span class="option-marker checkbox">${isCorrect ? '✓' : (isUser ? '✗' : '')}</span>
-        <span class="option-content" data-no-i18n>${esc(o)}</span>
-      </div>`;
+      let note = '';
+      if (isCorrect) { cls = 'show-correct'; note = '正确答案'; }
+      else if (isUser) { cls = 'incorrect'; note = '你的答案'; }
+      return answeredOptionRowHtml({
+        kind: 'multi',
+        index: idx,
+        cls,
+        marker: isCorrect ? '✓' : (isUser ? '✗' : ''),
+        content: o,
+        note
+      });
     }).join('')}</div>`;
   } else if (q.type === 'fill') {
     optionsHtml = `
@@ -4641,13 +4710,15 @@ function renderCodeQuestion(q, l, mode, key) {
   const value = l.cache[k] ?? (l.answers[k] || q.template || '');
   const lang = q.language || 'javascript';
   const tests = (q.testCases || []).slice(0, 4);
+  const judgeOff = serviceStatus.judge === false;
 
   return `
     <div class="code-editor-wrapper">
       <div class="code-editor-toolbar">
         <label>${LANG_LABEL[lang] || lang}</label>
-        <button class="btn btn-sm" onclick="learningRunCode('${k}')" id="runCodeBtn">运行测试</button>
+        <button class="btn btn-sm" onclick="learningRunCode('${k}')" id="runCodeBtn" ${judgeOff ? 'disabled' : ''}>运行测试</button>
       </div>
+      ${judgeGateHtml(!judgeOff)}
       <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="learningCodeInput('${k}', this.value)">${esc(value)}</textarea>
       ${tests.length ? `
         <div class="test-cases">
@@ -4685,6 +4756,10 @@ async function learningRunCode(key) {
   }
   const btn = document.getElementById('runCodeBtn');
   const out = document.getElementById('codeOutputArea');
+  if (serviceStatus.judge === false) {
+    if (out) out.innerHTML = judgeGateHtml(false);
+    return;
+  }
   if (btn) { btn.disabled = true; btn.textContent = '运行中...'; }
   if (out) out.innerHTML = `<div class="code-output running"><div class="output-label run">正在运行测试用例...</div></div>`;
 
@@ -4993,8 +5068,8 @@ function renderExam() {
       <div class="code-editor-wrapper">
         <div class="code-editor-toolbar">
           <label>${LANG_LABEL[q.language || 'javascript'] || q.language}</label>
-          <span style="font-size:12px">交卷后自动运行测试用例评分</span>
         </div>
+        ${judgeGateHtml(serviceStatus.judge !== false)}
         <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="examCodeInput(${ex.current}, this.value)">${esc(ex.answers[ex.current] || q.template || '')}</textarea>
         ${(q.testCases || []).length ? `
           <div class="test-cases">
@@ -5009,22 +5084,26 @@ function renderExam() {
   } else if (q.type === 'single' || q.type === 'tf') {
     const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
     const cur = ex.answers[ex.current];
-    bodyHtml = `<div class="options-list">${opts.map((o, idx) => {
-      let selected = false;
-      if (q.type === 'tf') selected = cur === (idx === 0);
-      else selected = cur === idx;
-      return `<div class="option-item ${selected ? 'selected' : ''}" onclick="examChoose(${idx})">
-        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content" data-no-i18n>${esc(o)}</span>
-      </div>`;
-    }).join('')}</div>`;
+    const selectedIdx = q.type === 'tf' ? (cur === undefined ? -1 : (cur ? 0 : 1)) : cur;
+    bodyHtml = optionListHtml('single', opts.map((o, idx) => optionRowHtml({
+      kind: 'single',
+      index: idx,
+      selected: selectedIdx === idx,
+      roving: !(selectedIdx >= 0),
+      action: `examChoose(${idx})`,
+      marker: String.fromCharCode(65 + idx),
+      content: o
+    })));
   } else if (q.type === 'multi') {
     const cur = Array.isArray(ex.answers[ex.current]) ? ex.answers[ex.current] : [];
-    bodyHtml = `<div class="options-list">${q.options.map((o, idx) => `
-      <div class="option-item ${cur.includes(idx) ? 'selected' : ''}" onclick="examToggleMulti(${idx})">
-        <span class="option-marker checkbox">${cur.includes(idx) ? '✓' : ''}</span>
-        <span class="option-content" data-no-i18n>${esc(o)}</span>
-      </div>`).join('')}</div>`;
+    bodyHtml = optionListHtml('multi', q.options.map((o, idx) => optionRowHtml({
+      kind: 'multi',
+      index: idx,
+      selected: cur.includes(idx),
+      action: `examToggleMulti(${idx})`,
+      marker: cur.includes(idx) ? '✓' : '',
+      content: o
+    })));
   } else if (q.type === 'fill') {
     bodyHtml = `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(ex.answers[ex.current] || '')}" oninput="examFillInput(${ex.current}, this.value)">`;
   }
@@ -5051,7 +5130,7 @@ function renderExam() {
         </span>
       </div>
 
-      <div class="question-text" data-no-i18n>${esc(q.content)}</div>
+      <div class="question-text" id="questionText" data-no-i18n>${esc(q.content)}</div>
       ${bodyHtml}
 
       <div class="nav-buttons">
@@ -5206,6 +5285,12 @@ async function confirmSubmitExam() {
         gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: false });
         continue;
       }
+      // 判题没启用就不必逐题去撞 503：直接记为未评分，交卷照常完成
+      if (serviceStatus.judge === false) {
+        judgeFailed = true;
+        gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: null });
+        continue;
+      }
       try {
         const tests = (q.testCases || []).slice(0, 3);
         if (!tests.length) {
@@ -5278,7 +5363,7 @@ async function confirmSubmitExam() {
   state.examResult = result;
   state.view = 'examResult';
   render();
-  if (judgeFailed) toast('部分编程题因判题服务不可用而未评分', 'info', 4000);
+  if (judgeFailed) toast(serviceStatus.judge === false ? JUDGE_OFF_TEXT : '部分编程题因判题服务不可用而未评分', 'info', 4000);
   if (!historySaved) toast('这次成绩未能写入本地存储，建议先导出备份', 'error', 5000);
 }
 
@@ -8012,6 +8097,41 @@ function importGenerated() {
   if (body) body.scrollTop = 0;
 }
 
+/* 后端就绪状态只取一次：判题与出题共用同一份 health，页面不再各自猜服务能不能用。
+   null 表示还没拿到（网络异常或静态预览），此时不拦操作，让真实请求自己报错。 */
+const JUDGE_OFF_TEXT = '代码判题尚未启用，编程题不计分。';
+const serviceStatus = { ai: null, judge: null };
+let serviceStatusPromise = null;
+
+function refreshServiceStatus() {
+  if (!serviceStatusPromise) {
+    serviceStatusPromise = fetch('/functions/v1/app/health')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        serviceStatus.ai = data && data.ai ? !!data.ai.configured : null;
+        serviceStatus.judge = data && data.judge ? !!data.judge.configured : null;
+        syncJudgeGate();
+      })
+      .catch(() => { serviceStatusPromise = null; });
+  }
+  return serviceStatusPromise;
+}
+
+function judgeGateHtml(hidden) {
+  return `<div class="ai-note ai-source-gate" data-judge-gate${hidden ? ' hidden' : ''}>
+      <span class="ai-note-dot"></span>
+      <span>${JUDGE_OFF_TEXT}</span>
+    </div>`;
+}
+
+// 状态回来时就地把运行按钮变灰、把原因贴出来，不整页重渲染打断正在写的代码
+function syncJudgeGate() {
+  const off = serviceStatus.judge === false;
+  const btn = document.getElementById('runCodeBtn');
+  if (btn) btn.disabled = off;
+  document.querySelectorAll('[data-judge-gate]').forEach((el) => { el.hidden = !off; });
+}
+
 async function judgeRun(language, source, stdin) {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = controller ? setTimeout(() => controller.abort(), 25000) : null;
@@ -8156,6 +8276,8 @@ window.addEventListener('pagehide', () => {
   if (materialsUnavailable) bootNotes.push('当前浏览器无法打开本地资料库，上传的资料这次不会保留');
   loadResumeSessions();
   render();
+  // 判题/出题是否就绪只问一次，回来后就地更新代码题的门禁，不阻塞首屏
+  refreshServiceStatus();
   // 联动入站要算考点钥匙（Web Crypto 异步），放在首屏渲染之后，不阻塞页面
   await applyPlanDeepLink();
 

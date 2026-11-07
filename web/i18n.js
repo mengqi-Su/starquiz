@@ -208,7 +208,7 @@ const EN = Object.assign({
   '正在评分...': 'Grading…',
   '编程题正在运行测试用例，请稍候': 'Coding questions are still running their tests',
   '考试时长': 'Duration',
-  '交卷后自动运行测试用例评分': 'Coding questions are graded by tests after you submit',
+  '代码判题尚未启用，编程题不计分。': 'Code judging is not enabled — programming questions are not scored.',
   '没有结果': 'No result yet',
   '没有进行中的考试': 'No exam in progress',
   '这场考试没有可答的题目': 'This exam has no answerable questions',

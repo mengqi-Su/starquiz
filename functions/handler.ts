@@ -54,11 +54,15 @@ const JUDGE0_LANG_IDS: Record<string, number> = {
   java: 62        // Java (OpenJDK 13)
 };
 
+// 判题只走站点自己配置的实例：地址与凭证都由站点显式提供，缺一个就不跑，
+// 绝不把用户代码默认送到公共实例上。
+const JUDGE_NOT_CONFIGURED = '代码判题尚未启用，编程题不计分。';
+
 function judge0Config() {
-  const base = (Deno.env.get('JUDGE0_URL') || 'https://ce.judge0.com').replace(/\/+$/, '');
+  const base = (Deno.env.get('JUDGE0_URL') || '').replace(/\/+$/, '');
   const key = Deno.env.get('JUDGE0_KEY') || '';
   const token = Deno.env.get('JUDGE0_TOKEN') || '';
-  return { base, key, token };
+  return { base, key, token, configured: !!base && !!(key || token) };
 }
 
 function judge0Headers(base: string, key: string, token: string): Record<string, string> {
@@ -73,6 +77,10 @@ function judge0Headers(base: string, key: string, token: string): Record<string,
 }
 
 async function handleJudge(req: Request): Promise<Response> {
+  const { base, key, token, configured } = judge0Config();
+  // 未配置就先拒，连请求体都不必读
+  if (!configured) return fail('judge_not_configured', JUDGE_NOT_CONFIGURED, 503);
+
   let body: Record<string, unknown>;
   try {
     body = await readJsonBody(req, 128 * 1024);
@@ -89,8 +97,6 @@ async function handleJudge(req: Request): Promise<Response> {
   if (!source.trim()) return fail('invalid_request', '代码不能为空');
   if (source.length > 100_000) return fail('invalid_request', '代码过长');
   if (stdin.length > 10_000) return fail('invalid_request', '输入过长');
-
-  const { base, key, token } = judge0Config();
 
   let resp: Response;
   try {
@@ -1019,11 +1025,11 @@ export async function handler(req: Request): Promise<Response> {
 
   try {
     if (req.method === 'GET' && (path === '/' || path.endsWith('/health'))) {
-      const { base, key, token } = judge0Config();
+      // 只报「能不能用」，不报地址与凭证细节
       return json({
         ok: true,
         service: 'starquiz',
-        judge: { base, hasKey: !!(key || token) },
+        judge: { configured: judge0Config().configured },
         ai: { configured: deepseekConfigured() }
       });
     }
