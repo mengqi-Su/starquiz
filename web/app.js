@@ -5610,17 +5610,6 @@ function renderSettings() {
     </div>
 
     <div class="settings-section">
-      <h3>AI 出题</h3>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-title">出题引擎</div>
-          <div class="text-sm text-muted">Qoder AI</div>
-        </div>
-        <span class="badge badge-success">已内置</span>
-      </div>
-    </div>
-
-    <div class="settings-section">
       <h3>数据管理</h3>
       <div class="settings-row">
         <div>
@@ -6218,17 +6207,14 @@ let aiSubjectId = null;
 let aiDest = 'existing';
 let aiFocus = false;
 
-// 出题任务有两条通道：
-//   同步批次（站点配了 DeepSeek Key）：一次请求只出一小批，浏览器并发编排；
-//   Qoder AI 会话（兜底）：start / poll 两步，单个请求都很短。
-// 网关约 60 秒掐断单个请求，所以两条通道都不让一次请求扛整份资料。
-const AI_POLL_INTERVAL_MS = 1500;
-const AI_POLL_DEADLINE_MS = 360000;
-const AI_EXAM_DEADLINE_MS = 600000;
+// 出题只有一条通道：/ai/start 拿批次清单，浏览器按批次并发调 /ai/generate。
+// 网关约 60 秒掐断单个请求，所以一次请求只出一小批，整份资料由批次覆盖。
 const AI_SYNC_CONCURRENCY = 3;
 // 函数侧给自己留 46 秒（网关 60 秒掐断），浏览器就按 46 秒一批估时间预算
 const AI_SYNC_BATCH_BUDGET_MS = 46000;
 const AI_SYNC_DEADLINE_SLACK_MS = 40000;
+// 批数确定前的兜底时限：批次拿不到就靠它中止，拿到了也只是给重试和合并留余量
+const AI_RUN_BASE_DEADLINE_MS = 480000;
 const AI_SYNC_RETRY_DELAYS = [800, 2500];
 // 单轮上限与 functions/handler.ts 同一组数字：这里是拦在弹窗里，那里是拦在函数里。
 // 上限只受请求体积约束，不再按「一次读得完多少资料」来定——批次切分负责覆盖整份资料。
@@ -6257,9 +6243,9 @@ function aiErrorText(status, data) {
   return `网络或服务异常（HTTP ${status || '未知'}），没拿到出题结果，请重试`;
 }
 
-// 启动出题会话：发布站点时后端会短暂重启（约半分钟），这里用退避重试撑过去
+// 拿批次清单：发布站点时后端会短暂重启（约半分钟），这里用退避重试撑过去
 const AI_START_RETRY_DELAYS = [600, 1200, 2500, 5000, 8000, 12000, 12000];
-async function startAISession(payload, signal, onRetry) {
+async function startAIBatches(payload, signal, onRetry) {
   let lastMessage = '';
   for (let attempt = 0; attempt <= AI_START_RETRY_DELAYS.length; attempt++) {
     if (attempt) await new Promise((resolve) => setTimeout(resolve, AI_START_RETRY_DELAYS[attempt - 1]));
@@ -7860,7 +7846,7 @@ async function generateQuestions() {
   if (form) form.hidden = true;
   if (run) {
     run.hidden = false;
-    const title = mixed ? 'Qoder AI 正在整理笔记和真题…' : (runMode === 'exam' ? 'Qoder AI 正在整理真题…' : 'Qoder AI 正在出题…');
+    const title = mixed ? '正在整理笔记和真题…' : (runMode === 'exam' ? '正在整理真题…' : '正在生成题目…');
     const sub = mixed
       ? `笔记生成 ${count} 题 · 真题${estimate > 0 ? `约 ${estimate} 题` : ''}全部原样保留`
       : runMode === 'exam'
@@ -7875,40 +7861,35 @@ async function generateQuestions() {
   if (footer) footer.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" disabled>${runMode === 'generate' ? '生成中…' : '整理中…'}</button>`;
 
   const controller = new AbortController();
-  // 时间预算先按最小值兜着，拿到批数之后按批数重算（见下方 runDeadline）
-  const baseDeadline = runMode === 'generate' ? AI_POLL_DEADLINE_MS : AI_EXAM_DEADLINE_MS;
-  let runDeadline = baseDeadline;
-  let timer = setTimeout(() => controller.abort(), baseDeadline + 10000);
+  // 拿到批次清单之前先按兜底时限中止；拿到之后按批数重算（见下方 runDeadline）
+  let runDeadline = AI_RUN_BASE_DEADLINE_MS;
+  let timer = setTimeout(() => controller.abort(), runDeadline + 10000);
 
   const payload = mixed
     ? { mode: 'batch', documents: groups.docs, count, types, codeLanguage, ...(focusTopic ? { focusTopic } : {}) }
     : { material, count, types, codeLanguage, mode: runMode, ...(focusTopic ? { focusTopic } : {}) };
 
   try {
-    const startData = await startAISession(payload, controller.signal, (n) => {
+    const startData = await startAIBatches(payload, controller.signal, (n) => {
       const sub = run && run.querySelector('.ai-generating-sub');
       if (sub) sub.textContent = `服务正在更新，自动重连中（第 ${n} 次）…`;
     });
-    const sessionId = startData.sessionId;
     const defaultGroup = runMode === 'exam' ? 'exam' : 'note';
-    const parts = Array.isArray(startData.sessions) && startData.sessions.length
-      ? startData.sessions
-          .map((item, i) => ({
-            id: String((item && item.id) || ''),
-            index: Number(item && item.index) || i,
-            group: item && item.group === 'exam' ? 'exam' : (item && item.group === 'note' ? 'note' : defaultGroup),
-            label: String((item && item.label) || ''),
-            expected: Number(item && item.expected) || 0
-          }))
-          .filter((item) => item.id)
-          .sort((a, b) => a.index - b.index)
-          .map((item) => ({ id: item.id, index: item.index, group: item.group, label: item.label, expected: item.expected, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }))
-      : [{ id: sessionId, index: 0, group: defaultGroup, label: '', expected: 0, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }];
+    // 一批只由序号标识：函数不保存任务状态，浏览器要做的就是把同一份请求体按序号发出去
+    const parts = (Array.isArray(startData.sessions) ? startData.sessions : [])
+      .map((item, i) => ({
+        index: Number.isFinite(Number(item && item.index)) ? Number(item.index) : i,
+        group: item && item.group === 'exam' ? 'exam' : defaultGroup,
+        label: String((item && item.label) || ''),
+        expected: Number(item && item.expected) || 0,
+        set: null
+      }))
+      .sort((a, b) => a.index - b.index);
     const totalParts = parts.length;
-    // 批数决定时间预算：同步通道 3 路并发、每批最多占 46 秒，再加一轮重试和网络余量。
-    // 资料多→批次多，不能让原来按「一次请求」定的死线把正常的第一轮长任务掐掉。
+    // 批数决定时间预算：3 路并发、每批最多占 46 秒，再加一轮重试和网络余量。
+    // 资料多→批次多，预算跟着涨，不会把正常的第一轮长任务掐掉。
     runDeadline = Math.max(
-      baseDeadline,
+      AI_RUN_BASE_DEADLINE_MS,
       Math.ceil(totalParts / AI_SYNC_CONCURRENCY) * AI_SYNC_BATCH_BUDGET_MS + AI_SYNC_DEADLINE_SLACK_MS
     );
     clearTimeout(timer);
@@ -7917,7 +7898,6 @@ async function generateQuestions() {
     const startedAt = Date.now();
     // 批数一定下来就把「约需多少时间」换成真实进度，别让旧估计陪用户等第一轮
     updateAIGenerating(run, count, startedAt, 0, totalParts, runMode, parts);
-    let set = null;
     // 合并已在浏览器里定稿的段：知识点重编号后必须重新验证目标考点与题目映射
     const mergeDoneParts = () => {
       const doneParts = parts.filter((part) => part.set);
@@ -7930,93 +7910,23 @@ async function generateQuestions() {
       return merged;
     };
 
-    if (startData.sync) {
-      // 同步批次通道：3 路并发把每批题目拉回来。某一批失败只少这一批的题，
-      // 其余批次照常入库，比整次生成失败重来划算。
-      const failures = [];
-      await mapLimit(parts, AI_SYNC_CONCURRENCY, async (part) => {
-        try {
-          const data = await requestAISyncJob(payload, part.index, controller.signal);
-          if (data && data.set) part.set = normalizeSet(data.set);
-        } catch (error) {
-          if (error && error.name === 'AbortError') throw error;
-          failures.push((error && error.message) || '这一批没有生成成功');
-        }
-        updateAIGenerating(run, count, startedAt, parts.filter((item) => item.set).length, totalParts, runMode, parts);
-      });
-      if (!parts.some((part) => part.set)) {
-        throw new Error(failures[0] || 'AI 没有返回题目，请重试');
+    // 3 路并发把每批题目拉回来。某一批失败只少这一批的题，
+    // 其余批次照常入库，比整次生成失败重来划算。
+    const failures = [];
+    await mapLimit(parts, AI_SYNC_CONCURRENCY, async (part) => {
+      try {
+        const data = await requestAISyncJob(payload, part.index, controller.signal);
+        if (data && data.set) part.set = normalizeSet(data.set);
+      } catch (error) {
+        if (error && error.name === 'AbortError') throw error;
+        failures.push((error && error.message) || '这一批没有生成成功');
       }
-      set = mergeDoneParts();
-    } else while (!set) {
-      if (Date.now() - startedAt > runDeadline) {
-        throw new Error(runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量' : '整理超时了，请拆分资料后重试');
-      }
-      await new Promise((resolve) => setTimeout(resolve, AI_POLL_INTERVAL_MS));
-
-      const results = await Promise.all(parts.filter((part) => !part.set).map(async (part) => {
-        try {
-          const res = await fetch('/functions/v1/app/ai/poll', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: part.id }),
-            signal: controller.signal
-          });
-          const data = await res.json().catch(() => null);
-          return { part, res, data };
-        } catch (e) {
-          if (e && e.name === 'AbortError') throw e;
-          return { part, res: null, data: null };
-        }
-      }));
-
-      let failure = null;
-      for (const { part, res, data } of results) {
-        const partNo = part.label || (totalParts > 1 ? `第 ${parts.indexOf(part) + 1} 段` : '');
-        // 网络抖动、网关 5xx、部署窗口的 HTML 响应：连续多次才判定失败，能撑过发布时的后端重启
-        if (!res || !data || res.status >= 500) {
-          part.netErrors = (part.netErrors || 0) + 1;
-          if (part.netErrors < 20) continue;
-          failure = failure || (res ? aiErrorText(res.status, data) : '网络连接中断，请检查网络后再试');
-          continue;
-        }
-        part.netErrors = 0;
-        if (!res.ok) {
-          const code = data && data.error && data.error.code;
-          const message = data && data.error && data.error.message;
-          if (code === 'ai_bad_output' && part.badOutput < 2) {
-            part.badOutput += 1;
-            continue;
-          }
-          failure = failure || (partNo && message ? `${partNo}失败：${message}` : aiErrorText(res.status, data));
-          continue;
-        }
-        if (data.done && data.set) {
-          if (!part.set) part.set = normalizeSet(data.set);
-          continue;
-        }
-        for (const status of data.statuses || []) {
-          if (!status || typeof status.type !== 'string') continue;
-          if (status.type === 'session.status_running') part.running = true;
-          if (status.type === 'session.status_idle') part.idle = true;
-        }
-        // 新会话可能先发一次 idle，等运行状态出现或过了 8 秒才当成真正的结束
-        if (part.idle && !part.set && (part.running || Date.now() - startedAt > 8000)) {
-          const errors = Array.isArray(data.errors) && data.errors.length;
-          failure = failure || (partNo
-            ? `${partNo}没有返回题目，请重试`
-            : (errors ? 'AI 本次没有生成内容，请重试' : 'AI 没有返回题目，请重试'));
-        }
-      }
-      if (failure) throw new Error(failure);
-
-      const doneParts = parts.filter((part) => part.set).length;
-      if (doneParts === totalParts) {
-        set = mergeDoneParts();
-        break;
-      }
-      updateAIGenerating(run, count, startedAt, doneParts, totalParts, runMode, parts);
+      updateAIGenerating(run, count, startedAt, parts.filter((item) => item.set).length, totalParts, runMode, parts);
+    });
+    if (!parts.some((part) => part.set)) {
+      throw new Error(failures[0] || 'AI 没有返回题目，请重试');
     }
+    const set = mergeDoneParts();
     state.genPreview = set;
 
     const examQuestions = parts.filter((part) => part.group === 'exam' && part.set)

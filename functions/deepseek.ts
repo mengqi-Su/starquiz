@@ -163,7 +163,8 @@ async function requestOnce(
   if (variant.fullParams) {
     const requested = Number(opts.maxTokens) || DEFAULT_MAX_TOKENS;
     body.max_tokens = Math.min(HARD_MAX_TOKENS, Math.max(256, Math.round(requested)));
-    body.temperature = Number.isFinite(opts.temperature) ? Math.min(1, Math.max(0, opts.temperature)) : 0.3;
+    const temperature = Number(opts.temperature);
+    body.temperature = Number.isFinite(temperature) ? Math.min(1, Math.max(0, temperature)) : 0.3;
   }
 
   const serialized = JSON.stringify(body);

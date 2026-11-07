@@ -280,8 +280,6 @@ const EN = Object.assign({
   '界面语言': 'Language',
   '显示语言': 'Display language',
   'AI 出题 · 真题整理': 'AI questions · past-paper cleanup',
-  '出题引擎': 'Question engine',
-  '已内置': 'Built in',
   '用 AI 新建练习集': 'Create a set with AI',
   '判题服务': 'Judge service',
   '数据管理': 'Data',
@@ -473,10 +471,9 @@ const EN = Object.assign({
   '输入你的答案…': 'Type your answer…',
 
   /* 出题进行中的状态文案 */
-  'Qoder AI 正在出题…': 'Qoder AI is writing questions…',
-  'Qoder AI 正在出题...': 'Qoder AI is writing questions…',
-  'Qoder AI 正在整理真题…': 'Qoder AI is cleaning the past paper…',
-  'Qoder AI 正在整理笔记和真题…': 'Qoder AI is processing notes and past papers…',
+  '正在生成题目…': 'Writing questions…',
+  '正在整理真题…': 'Cleaning the past paper…',
+  '正在整理笔记和真题…': 'Cleaning notes and past papers…',
   'AI 正在出题…': 'AI is writing questions…',
   '正在出题…': 'Writing questions…',
   '正在整理…': 'Cleaning up…',
@@ -609,7 +606,7 @@ const EN = Object.assign({
   '去练习科目页传': 'Upload on the subject page',
 
   /* 失败与兜底文案 */
-  'AI 本次没有生成内容，请重试': 'AI returned nothing this time — try again',
+  'AI 服务尚未启用，请在站点设置中配置 API Key。': 'Question generation is not enabled yet — add an API key in Site Settings.',
   'AI 没有返回题目': 'AI returned no questions',
   'AI 没有返回题目，请重试': 'AI returned no questions — try again',
   '整理超时了，请拆分资料后重试': 'Tidying timed out — split the material and retry',

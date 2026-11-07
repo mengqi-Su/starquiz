@@ -2,16 +2,13 @@
 // StarQuiz 后端函数（Deno Edge Function）
 // 能力：
 //   POST /judge/run     编程题代码运行（Judge0 代理）
-//   POST /ai/start      学习资料 -> 出题计划：配置了 DeepSeek Key 时返回批次清单（同步通道），
-//                       否则按站点内置 Qoder AI 建会话，返回会话 ID
-//   POST /ai/generate   一个批次 -> 该批次题目（DeepSeek 同步补全，不保存任务状态）
-//   POST /ai/poll       轮询 Qoder AI 会话，拿到完整题目后返回题库
-// 站点网关在 60 秒断开单个请求，而两个上游都是同步返回的：所以一次请求只做
-// 一小批（不超过十余道题），批次由浏览器并发编排。
+//   POST /ai/start      学习资料 -> 出题批次清单（纯函数规划，不保存任务状态）
+//   POST /ai/generate   批次序号 -> 该批次题目（同步补全）
+// 站点网关在 60 秒断开单个请求，而上游是同步返回的：所以一次请求只出一小批
+// （不超过十余道题），批次由浏览器并发编排。
 // API Key 只存在于函数环境，绝不进入浏览器、提示词或日志。
 // ========================================
 
-import { MAX_AI_OUTPUT_CHARS, pollQoderGeneration, QcaError, qoderConfigured, startQoderGeneration } from './qca-ai.ts';
 import { completeJson, deepseekConfigured, LlmError } from './deepseek.ts';
 
 const JSON_HEADERS = {
@@ -26,6 +23,9 @@ function json(body: unknown, status = 200): Response {
 function fail(code: string, message: string, status = 400): Response {
   return json({ ok: false, error: { code, message } }, status);
 }
+
+// 出题只有一条通道：配了 Key 走同步批次，没配就明确告知未启用，不再退到别的服务
+const AI_NOT_CONFIGURED = 'AI 服务尚未启用，请在站点设置中配置 API Key。';
 
 async function readJsonBody(req: Request, maxBytes = 256 * 1024): Promise<Record<string, unknown>> {
   const text = await req.text();
@@ -204,21 +204,12 @@ ${outputSchema(codeLang)}
 `;
 }
 
-// 真题模式：忠实还原原题，不生成、不改写，题量不设上限
-// 资料较长时按题目起始位置切段并行整理，避免单次输出过长导致等待数分钟
-const EXAM_PART_TARGET = 9000;
-const EXAM_MAX_PARTS = 3;
-const EXAM_MIN_PART = 600;
-
-// 混合批量模式：笔记 + 真题一次上传，笔记切段出题、真题逐题整理，再合并成一个题库
-const NOTE_PART_TARGET = 12000;
 // 单次上限按「函数请求体 512KB」和「一批提示词体积」倒推：
 // 中文字 3 字节，96,000 字约 290KB，笔记与真题两边合计再留出头名与 JSON 开销。
 // 上限不再是「一份教材读不完」，只是「一轮别再塞进几百 KB」，超了才要求拆两轮。
 const NOTE_MAX_CHARS = 96_000;
 const BATCH_EXAM_MAX_CHARS = 96_000;
 const BATCH_TOTAL_MAX_CHARS = 128_000;
-const BATCH_MAX_SESSIONS = 5;
 
 function examQuestionStarts(material: string): number[] {
   const starts: number[] = [];
@@ -231,78 +222,6 @@ function examQuestionStarts(material: string): number[] {
   return starts;
 }
 
-function splitExamParts(material: string, maxParts = EXAM_MAX_PARTS): string[] {
-  const len = material.length;
-  const starts = examQuestionStarts(material);
-  // 生成耗时主要取决于题目数量（输出长度），所以按题数估算分段，而不只看字符数
-  const byCount = starts.length >= 18 ? Math.ceil(starts.length / 14) : 0;
-  const byChars = Math.ceil(len / EXAM_PART_TARGET);
-  const desired = Math.min(Math.max(2, maxParts), Math.max(2, byCount, byChars));
-  if (starts.length < desired || len < EXAM_MIN_PART * desired) return [material];
-
-  const cuts: number[] = [];
-  let cursor = 0;
-  for (let i = 1; i < desired; i++) {
-    const reserve = EXAM_MIN_PART * (desired - i);
-    const target = starts[Math.round((starts.length * i) / desired)] ?? Math.round((len * i) / desired);
-    let best = -1;
-    for (const start of starts) {
-      if (start < cursor + EXAM_MIN_PART || start > len - reserve) continue;
-      if (best < 0 || Math.abs(start - target) < Math.abs(best - target)) best = start;
-    }
-    if (best < 0) continue;
-    cuts.push(best);
-    cursor = best;
-  }
-  if (!cuts.length) return [material];
-
-  const parts: string[] = [];
-  let prev = 0;
-  for (const cut of cuts) {
-    parts.push(material.slice(prev, cut));
-    prev = cut;
-  }
-  parts.push(material.slice(prev));
-  return parts.filter((part) => part.trim().length >= 50);
-}
-
-// 笔记按段落切成不超过 12000 字的两段，分别出题，避免单次输出过长
-function splitNoteParts(material: string): string[] {
-  if (material.length <= NOTE_PART_TARGET) return [material];
-  const boundaries: number[] = [];
-  for (let i = 0; i < material.length - 1; i++) {
-    if (material[i] === '\n' && material[i + 1] === '\n') boundaries.push(i);
-  }
-  if (!boundaries.length) {
-    for (let i = 0; i < material.length; i++) if (material[i] === '\n') boundaries.push(i);
-  }
-
-  const desired = Math.min(2, Math.ceil(material.length / NOTE_PART_TARGET));
-  const cuts: number[] = [];
-  let cursor = 0;
-  for (let i = 1; i < desired; i++) {
-    const target = Math.round((material.length * i) / desired);
-    let best = -1;
-    for (const b of boundaries) {
-      if (b < cursor + 800 || b > material.length - 500) continue;
-      if (best < 0 || Math.abs(b - target) < Math.abs(best - target)) best = b;
-    }
-    if (best >= 0) {
-      cuts.push(best);
-      cursor = best;
-    }
-  }
-  if (!cuts.length) return [material];
-
-  const parts: string[] = [];
-  let prev = 0;
-  for (const cut of cuts) {
-    parts.push(material.slice(prev, cut));
-    prev = cut;
-  }
-  parts.push(material.slice(prev));
-  return parts.filter((part) => part.trim().length >= 50);
-}
 
 // 把总题量按篇幅比例分配到各段，每段至少 1 题
 // （每段至少 2 题时，段数一多实际题量就会明显超出用户滑到的数字）
@@ -720,131 +639,6 @@ function sanitizeSet(raw: unknown): Record<string, unknown> {
   };
 }
 
-interface BatchJob {
-  group: 'note' | 'exam';
-  label: string;
-  prompt: string;
-  expected: number;
-}
-
-interface BatchJobPlan {
-  noteParts: string[];
-  counts: number[];
-  types: string;
-  codeLanguage: string | null;
-  examParts: string[];
-  examSplit: boolean;
-  multiExamDocs: boolean;
-  focus: string;
-}
-
-/**
- * 把混合资料排成实际发给 AI 的任务列表。
- *
- * 抽成纯函数是为了能直接断言联动约束的落点：focusTopic 只进笔记段，
- * 真题段永远走原样整理提示词，绝不为了归属到某个考点而改写或强行归类原题。
- */
-function planBatchJobs(plan: BatchJobPlan): BatchJob[] {
-  const jobs: BatchJob[] = [];
-  plan.noteParts.forEach((part, index) => {
-    jobs.push({
-      group: 'note',
-      label: plan.noteParts.length > 1 ? `笔记第 ${index + 1} 段` : '笔记出题',
-      // 聚焦只作用于笔记生成的那几段：每段都用同一条考点约束
-      prompt: buildPrompt(part, plan.counts[index], plan.types, plan.codeLanguage, plan.focus),
-      expected: 0
-    });
-  });
-  plan.examParts.forEach((part, index) => {
-    jobs.push({
-      group: 'exam',
-      label: plan.examSplit ? `真题第 ${index + 1} 段` : '真题整理',
-      expected: examQuestionStarts(part).length,
-      // 真题原文整理不受联动考点影响：不能为了归属而改写或强行归类原题
-      prompt: buildExamPrompt(
-        part,
-        plan.examSplit
-          ? {
-              index: index + 1,
-              total: plan.examParts.length,
-              overlap: index > 0 ? plan.examParts[index - 1].slice(-600) : ''
-            }
-          : undefined,
-        plan.multiExamDocs
-      )
-    });
-  });
-  return jobs;
-}
-
-async function handleAIBatch(
-  body: Record<string, unknown>,
-  types: string,
-  codeLanguage: string | null,
-  focus = ''
-): Promise<Response> {
-  const docs = parseBatchDocuments(body);
-  const noteDocs = docs.filter((doc) => doc.kind === 'note');
-  const examDocs = docs.filter((doc) => doc.kind === 'exam');
-  if (!noteDocs.length || !examDocs.length) {
-    return fail('invalid_request', '混合整理需要同时包含笔记和真题');
-  }
-
-  const noteMaterial = joinBatchDocs(noteDocs, '笔记');
-  const examMaterial = joinBatchDocs(examDocs, '试卷');
-  if (noteMaterial.length > NOTE_MAX_CHARS) {
-    return fail('invalid_request', `笔记资料超过 ${NOTE_MAX_CHARS.toLocaleString()} 字符，请分两次上传`);
-  }
-  if (examMaterial.length > BATCH_EXAM_MAX_CHARS) {
-    return fail('invalid_request', `真题资料超过 ${BATCH_EXAM_MAX_CHARS.toLocaleString()} 字符，请分两次上传`);
-  }
-  if (noteMaterial.replace(/\s/g, '').length < 50) return fail('invalid_request', '笔记内容太短（至少 50 字）');
-  if (examMaterial.replace(/\s/g, '').length < 50) return fail('invalid_request', '真题内容太短（至少 50 字）');
-
-  const range = countRangeFor(noteMaterial);
-  const requested = Number(body.count);
-  const totalCount = Number.isFinite(requested) && requested > 0
-    ? Math.min(range.max, Math.max(range.min, Math.round(requested)))
-    : range.recommended;
-
-  let noteParts = splitNoteParts(noteMaterial);
-  if (noteParts.length > 1 && totalCount < 6) noteParts = [noteMaterial];
-  const counts = distributeCount(totalCount, noteParts);
-
-  // 全部会话控制在 5 个以内，避免并发过多反而被上游排队拖慢
-  const examBudget = Math.max(2, Math.min(EXAM_MAX_PARTS, BATCH_MAX_SESSIONS - noteParts.length));
-  const examParts = splitExamParts(examMaterial, examBudget);
-  const examSplit = examParts.length > 1;
-
-  const jobs = planBatchJobs({
-    noteParts,
-    counts,
-    types,
-    codeLanguage,
-    examParts,
-    examSplit,
-    multiExamDocs: examDocs.length > 1,
-    focus
-  });
-
-  try {
-    const ids = await Promise.all(jobs.map((job) => startQoderGeneration(job.prompt)));
-    return json({
-      ok: true,
-      mode: 'batch',
-      sessionId: ids[0],
-      sessions: jobs.map((job, index) => ({ id: ids[index], index, group: job.group, label: job.label, expected: job.expected })),
-      parts: ids.length,
-      noteParts: noteParts.length,
-      examParts: examParts.length,
-      count: totalCount
-    });
-  } catch (error) {
-    if (error instanceof QcaError) return fail(error.code, error.message, error.status);
-    return fail('ai_unavailable', 'Qoder AI 暂时不可用，请稍后重试', 502);
-  }
-}
-
 async function handleAIStart(req: Request): Promise<Response> {
   let body: Record<string, unknown>;
   try {
@@ -854,138 +648,19 @@ async function handleAIStart(req: Request): Promise<Response> {
     return fail('invalid_request', '资料超过单次上限，请拆成两轮上传', 413);
   }
 
-  const modeRaw = String(body.mode || 'generate');
-  const mode = modeRaw === 'exam' ? 'exam' : (modeRaw === 'batch' ? 'batch' : 'generate');
-  const types = String(body.types || 'mixed');
-  const codeLanguage = types === 'with-code' ? String(body.codeLanguage || 'python') : null;
+  // 只有一条通道：没配 Key 就是「未启用」，不再退到别的服务上悄悄跑一遍
+  if (!deepseekConfigured()) return fail('ai_not_configured', AI_NOT_CONFIGURED, 503);
 
-  if (!(types in TYPE_RULES)) return fail('invalid_request', '不支持的题型设置');
-  if (codeLanguage && codeLanguage !== 'python' && codeLanguage !== 'javascript') {
-    return fail('invalid_request', '不支持的编程语言');
-  }
-
-  // 配置了 DeepSeek Key 就走同步批次通道：不建会话、不轮询，由浏览器按批次并发拉取
-  if (deepseekConfigured()) {
-    try {
-      return syncStartResponse(planSyncJobs(body));
-    } catch (error) {
-      if (error instanceof SyncPlanError) return fail(error.code, error.message, error.status);
-      return fail('invalid_request', '请求格式错误');
-    }
-  }
-
-  if (mode === 'batch') return await handleAIBatch(body, types, codeLanguage, focusTopicFrom(body));
-
-  // 真题模式没有 focusTopic：原样整理不允许为了联动考点而改写或强行归类
-  const focus = mode === 'exam' ? '' : focusTopicFrom(body);
-
-  const material = String(body.material || '').trim();
-  if (mode === 'exam' && material.length > 48000) {
-    return fail('invalid_request', '真题资料过长，请拆分成 48000 字符以内再整理，避免漏题');
-  }
-  if (mode === 'generate' && material.length > 24000) {
-    return fail('invalid_request', '资料过长，请控制在 24000 字符以内');
-  }
-
-  const range = countRangeFor(material);
-  if (range.chars < 50) return fail('invalid_request', '资料内容太短（至少 50 字）');
-
-  // 出题模式：题量与资料篇幅挂钩；真题模式：由 AI 按原文逐题整理，不设题量上限
-  let count = 0;
-  if (mode === 'generate') {
-    const requested = Number(body.count);
-    count = Number.isFinite(requested) && requested > 0
-      ? Math.min(range.max, Math.max(range.min, Math.round(requested)))
-      : range.recommended;
-  }
-
-  const prompt = mode === 'exam' ? buildExamPrompt(material) : buildPrompt(material, count, types, codeLanguage, focus);
-
+  // 题型、语言、字数与批次上限都归 planSyncJobs 判定；这里只把它排好的批次告诉浏览器
   try {
-    // 真题较长时切段并行整理：每段一个会话同时跑，墙钟时间约为单段的耗时
-    if (mode === 'exam') {
-      const parts = splitExamParts(material);
-      if (parts.length > 1) {
-        const prompts = parts.map((part, index) =>
-          buildExamPrompt(part, {
-            index: index + 1,
-            total: parts.length,
-            overlap: index > 0 ? parts[index - 1].slice(-600) : ''
-          })
-        );
-        const ids = await Promise.all(prompts.map((item) => startQoderGeneration(item)));
-        return json({
-          ok: true,
-          sessionId: ids[0],
-          sessions: ids.map((id, index) => ({
-            id,
-            index,
-            group: 'exam',
-            label: `真题第 ${index + 1} 段`,
-            expected: examQuestionStarts(parts[index]).length
-          })),
-          parts: ids.length,
-          count: 0,
-          mode
-        });
-      }
-    }
-
-    const sessionId = await startQoderGeneration(prompt);
-    return json({
-      ok: true,
-      sessionId,
-      sessions: [{
-        id: sessionId,
-        index: 0,
-        group: mode === 'exam' ? 'exam' : 'note',
-        label: mode === 'exam' ? '真题整理' : '',
-        expected: mode === 'exam' ? examQuestionStarts(material).length : 0
-      }],
-      parts: 1,
-      count,
-      mode
-    });
+    return syncStartResponse(planSyncJobs(body));
   } catch (error) {
-    if (error instanceof QcaError) return fail(error.code, error.message, error.status);
-    return fail('ai_unavailable', 'Qoder AI 暂时不可用，请稍后重试', 502);
-  }
-}
-
-// 轮询接口：函数不保存任务状态，只把会话里的增量事件转成结果返回
-async function handleAIPoll(req: Request): Promise<Response> {
-  let body: Record<string, unknown>;
-  try {
-    body = await readJsonBody(req, 4 * 1024);
-  } catch {
+    if (error instanceof SyncPlanError) return fail(error.code, error.message, error.status);
     return fail('invalid_request', '请求格式错误');
   }
-
-  try {
-    const snapshot = await pollQoderGeneration(String(body.sessionId || ''));
-    if (!snapshot.messages.length) {
-      return json({ ok: true, done: false, statuses: snapshot.statuses, errors: snapshot.errors });
-    }
-
-    const output = snapshot.messages[snapshot.messages.length - 1].text;
-    if (output.length > MAX_AI_OUTPUT_CHARS) {
-      return fail('ai_bad_output', 'AI 返回内容过大，请减少题量后重试', 502);
-    }
-
-    let set: Record<string, unknown>;
-    try {
-      set = sanitizeSet(extractJson(output));
-    } catch {
-      return fail('ai_bad_output', 'AI 返回的题目格式不正确，请重试', 502);
-    }
-    return json({ ok: true, done: true, set });
-  } catch (error) {
-    if (error instanceof QcaError) return fail(error.code, error.message, error.status);
-    return fail('ai_unavailable', 'Qoder AI 暂时不可用，请稍后重试', 502);
-  }
 }
 
-/* ---------------- DeepSeek 同步出题 ---------------- */
+/* ---------------- 同步批次出题 ---------------- */
 
 // DeepSeek 是同步补全，一次调用只适合出少量题；站点网关又会在 60 秒掐断请求。
 // 所以把一次生成拆成若干「批次」：每个批次一份小提示词，浏览器并发调用
@@ -1002,6 +677,8 @@ const SYNC_EXAM_MAX_CHUNKS = 10;
 const SYNC_EXAM_CHUNK_MAX_CHARS = 6_000;
 // 一轮最多多少批：并发 3，超出就是资料本身该拆两轮
 const SYNC_MAX_JOBS = 24;
+// 一批的返回体积上限：正常一批只有几道题，超出说明上游输出跑飞了，别拿去解析
+const MAX_AI_OUTPUT_CHARS = 200_000;
 
 interface SyncJob {
   index: number;
@@ -1273,12 +950,8 @@ function planSyncJobs(body: Record<string, unknown>): SyncPlan {
 function syncStartResponse(plan: SyncPlan): Response {
   return json({
     ok: true,
-    sync: true,
-    provider: 'deepseek',
     mode: plan.mode,
-    sessionId: `sync-0`,
     sessions: plan.jobs.map((job) => ({
-      id: `sync-${job.index}`,
       index: job.index,
       group: job.group,
       label: job.label,
@@ -1299,9 +972,7 @@ async function handleAIGenerate(req: Request): Promise<Response> {
     return fail('invalid_request', '资料超过单次上限，请拆成两轮上传', 413);
   }
 
-  if (!deepseekConfigured()) {
-    return fail('ai_not_configured', 'AI 服务尚未启用，请在站点设置中配置 API Key。', 503);
-  }
+  if (!deepseekConfigured()) return fail('ai_not_configured', AI_NOT_CONFIGURED, 503);
 
   const jobIndex = Math.round(Number(body.jobIndex));
   if (!Number.isFinite(jobIndex) || jobIndex < 0) return fail('invalid_request', '缺少要生成的批次序号');
@@ -1333,7 +1004,6 @@ async function handleAIGenerate(req: Request): Promise<Response> {
     });
   } catch (error) {
     if (error instanceof LlmError) return fail(error.code, error.message, error.status);
-    if (error instanceof QcaError) return fail(error.code, error.message, error.status);
     return fail('ai_bad_output', 'AI 返回的题目格式不正确，请重试', 502);
   }
 }
@@ -1341,7 +1011,7 @@ async function handleAIGenerate(req: Request): Promise<Response> {
 /* ---------------- 路由 ---------------- */
 
 // 供本地测试直接调用的纯函数（生产路径不依赖这些导出）
-export { buildExamPrompt, buildPrompt, examQuestionStarts, extractJson, focusTopicFrom, isNearDuplicate, normalizeForDedupe, planBatchJobs, planSyncJobs, sanitizeSet, splitExamChunksByQuestions, splitNoteChunks };
+export { buildExamPrompt, buildPrompt, examQuestionStarts, extractJson, focusTopicFrom, isNearDuplicate, normalizeForDedupe, planSyncJobs, sanitizeSet, splitExamChunksByQuestions, splitNoteChunks };
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -1354,11 +1024,7 @@ export async function handler(req: Request): Promise<Response> {
         ok: true,
         service: 'starquiz',
         judge: { base, hasKey: !!(key || token) },
-        ai: {
-          provider: deepseekConfigured() ? 'deepseek' : 'qoder',
-          configured: deepseekConfigured() || qoderConfigured(),
-          sync: deepseekConfigured()
-        }
+        ai: { configured: deepseekConfigured() }
       });
     }
 
@@ -1369,7 +1035,6 @@ export async function handler(req: Request): Promise<Response> {
     if (path.endsWith('/judge/run')) return await handleJudge(req);
     if (path.endsWith('/ai/generate')) return await handleAIGenerate(req);
     if (path.endsWith('/ai/start')) return await handleAIStart(req);
-    if (path.endsWith('/ai/poll')) return await handleAIPoll(req);
 
     return fail('not_found', '接口不存在', 404);
   } catch {
