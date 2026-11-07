@@ -877,10 +877,12 @@ function examSyncJobs(material: string, collection: boolean, partOffsetLabel: (n
 }
 
 // 超长只说差多少、下一步能做什么，和浏览器 gate 上那句是同一口径
+// 这里说「字符」（含空白的原始长度）：上限管的就是这个数。界面上别处的「字」都不数空白，
+// 两端算出同一个数字，用户看到的才不是两套字数。
 function overLimitError(label: string, chars: number, cap: number, tail = ''): SyncPlanError {
   return new SyncPlanError(
     'invalid_request',
-    `${label} ${chars.toLocaleString()} 字，超过单次上限 ${cap.toLocaleString()} 字，请拆成两轮上传${tail}`,
+    `${label} ${chars.toLocaleString()} 字符，超过单次上限 ${cap.toLocaleString()} 字符，请拆成两轮上传${tail}`,
     413
   );
 }

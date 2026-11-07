@@ -96,11 +96,13 @@ function difficultyDots(n) {
   return `<span class="difficulty" aria-label="难度 ${level}">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>`;
 }
 
+// 「今日目标」数的是今天真正判过的题：做 1 题记 1，不是把整套题的量算进来。
+// 用 graded 而不是 total——total 是这套题有多少题，用户只答了三分之一时它照样是满的。
 function todayAnswered() {
   const key = todayStr();
   return history
     .filter((a) => todayStrOf(a.finishedAt) === key)
-    .reduce((n, a) => n + (a.total || 0), 0);
+    .reduce((n, a) => n + (a.graded || 0), 0);
 }
 
 function todayStr() {
@@ -581,8 +583,40 @@ function sanitizeMaterialMeta(raw) {
     chars: Math.max(0, Number(raw.chars) || aiVisibleChars(text)),
     addedAt: Number(raw.addedAt) || Date.now(),
     hasBlob: raw.hasBlob === true,
+    // 正文指纹：去重看它，不看文件名。老资料（去重上线前存的）没有这个字段，留空即可，
+    // 比对会退回逐字比正文——绝不因为缺指纹就把一份资料当成新的收两遍。
+    hash: /^[0-9a-f]{64}$/.test(String(raw.hash || '')) ? String(raw.hash) : '',
     text
   };
+}
+
+/* 资料去重只认正文：换个文件名、重存一次格式，同一份内容还是同一份资料；
+   同名同大小但内容不同，那就是两份，不该被挡住。
+   指纹算在解析出来的正文上，不算在文件字节上——字节会随导出格式变，正文不会。
+   钥匙用的就是联动那边同一个 SHA-256（topicKey.js），全站不另起一套哈希。 */
+async function materialTextHash(text) {
+  const api = globalThis.StarQuizTopicKey;
+  if (!api || typeof api.sha256Hex !== 'function') return '';
+  try {
+    return await api.sha256Hex(String(text || ''));
+  } catch {
+    // 非 HTTPS/localhost 的环境没有 Web Crypto：没有指纹也得让用户存资料
+    return '';
+  }
+}
+
+function findSameMaterial(held, hash, text) {
+  const body = String(text || '');
+  return (held || []).find((m) => (hash && m.hash ? m.hash === hash : String(m.text || '') === body)) || null;
+}
+
+function isSameMaterialContent(held, hash, text) {
+  return !!findSameMaterial(held, hash, text);
+}
+
+/* 跳过几份要说得清是「内容重复」，不再用一句「已存在」把改名重传的那种含糊过去。 */
+function duplicateMaterialNotice(count) {
+  return `已跳过 ${count} 份内容重复的资料`;
 }
 
 function repairHistory(raw) {
@@ -1249,7 +1283,11 @@ function sanitizePlanLink(raw) {
   const planId = strOf(src.planId, PLAN_PARAM_LIMITS.plan).trim();
   const topicKey = strOf(src.topicKey, 40).trim();
   if (!path || !PLAN_ID_RE.test(planId) || !PLAN_TOPIC_KEY_RE.test(topicKey)) return null;
-  const linkId = `${planId}:${topicKey}`;
+  // linkId 只有一个拼法：和入站那条走的是同一个 composeLinkId（planId 会先归一化成小写）。
+  // 在这里自己拼一遍就等于给 planId 的大小写留了两套规矩——那边归一化了、这边没有，
+  // 带大写字母的 planId 永远对不上自己算出来的 key，这条联动关系谁都存不进去。
+  const keyApi = globalThis.StarQuizTopicKey;
+  const linkId = keyApi && keyApi.composeLinkId ? keyApi.composeLinkId(planId, topicKey) : `${planId.toLowerCase()}:${topicKey}`;
   if (src.linkId && strOf(src.linkId, 200).trim() && strOf(src.linkId, 200).trim() !== linkId) return null;
   const ctx = objOf(src.sourceContext);
   const date = strOf(ctx.date, 20).trim();
@@ -1284,19 +1322,21 @@ function sanitizePlanLinks(raw) {
   return { schemaVersion: PLAN_LINK_SCHEMA_VERSION, links: out };
 }
 
-// 写入前先读磁盘最新值再合并：本页内存里的旧状态不能覆盖别的记录
+// 写入前先读磁盘最新值再合并：本页内存里的旧状态不能覆盖别的记录。
+// 交回去的是「为什么没存上」：一条认不出的记录（脏输入）和磁盘写不进去（配额）是两件事，
+// 让人去清存储来修一条脏记录，等于指他做一个没用的动作。
 function putPlanLink(link) {
   const clean = sanitizePlanLink(link);
-  if (!clean) return false;
+  if (!clean) return 'invalid';
   const fresh = sanitizePlanLinks(readStored(STORAGE.planLinks).value);
   const prev = fresh.links[clean.linkId];
   if (prev && String(prev.updatedAt) > String(clean.updatedAt)) {
     planLinkStore = fresh;
-    return true;
+    return 'saved';
   }
   fresh.links[clean.linkId] = clean;
   planLinkStore = fresh;
-  return saveJSON(STORAGE.planLinks, fresh);
+  return saveJSON(STORAGE.planLinks, fresh) ? 'saved' : 'storage';
 }
 
 function transientPlanLink(link, subject) {
@@ -1484,6 +1524,12 @@ function planReturnHref(link) {
   return link ? planReturnUrl(link) : `${EXAM_PLAN_URL}/`;
 }
 
+// 当前页面的「返回备考规划」只有一个拼法：认得出联动关系就回到原考点，认不出就回站点首页。
+// 以前科目页横幅用这个、AI 弹窗里另写了一个裸 EXAM_PLAN_URL，两处返回的不是同一个地方。
+function planBackHref() {
+  return planReturnHref(planLink ? planLinkStore.links[planLink.linkId] : null);
+}
+
 function planCompletedTimeLabel(finishedAt) {
   const d = new Date(finishedAt);
   if (!Number.isFinite(d.getTime())) return '';
@@ -1620,7 +1666,8 @@ function sanitizeExamHandoff(raw) {
     if (!name) return;
     const chars = aiVisibleChars(text);
     if (chars < HANDOFF_LIMITS.minVisibleChars) return;
-    const key = `${norm(name)}|${chars}`;
+    // 快照内部也按正文去重：同一份正文带两个名字进来只算一份，和资料库那条规则同一个口径
+    const key = text;
     if (seen.has(key)) return;
     seen.add(key);
     // 类型以 Exam Plan 的标签为准（真题/笔记是用户在 Plan 里选的），缺标签才本地猜一次
@@ -1643,7 +1690,7 @@ function sanitizeExamHandoff(raw) {
   };
 }
 
-// 按「文件名 + 有效字数」去重：重复进入同一场考试不会把资料灌第二遍
+// 按正文指纹去重：重复进入同一场考试不会把资料灌第二遍，改了名字的同一份正文也一样拦得住
 // （和 M2 回执「重复返回不重复记录」是同一条原则）。
 async function importExamHandoffMaterials(subject, expectedPlanId) {
   const snap = examHandoff;
@@ -1653,11 +1700,11 @@ async function importExamHandoffMaterials(subject, expectedPlanId) {
   if (expectedPlanId && snap.planId !== expectedPlanId) return result;
   examHandoff = null;
 
-  const existing = new Set(subjectMaterials(subject.id).map((m) => `${norm(m.name)}|${m.chars}`));
+  const held = subjectMaterials(subject.id);
   let stamp = Date.now();
   for (const piece of snap.materials) {
-    const key = `${norm(piece.name)}|${piece.chars}`;
-    if (existing.has(key)) { result.skipped++; continue; }
+    const hash = await materialTextHash(piece.text);
+    if (isSameMaterialContent(held, hash, piece.text)) { result.skipped++; continue; }
     const record = {
       id: 'mat-' + stamp.toString(36) + Math.random().toString(36).slice(2, 5),
       subjectId: subject.id,
@@ -1668,13 +1715,14 @@ async function importExamHandoffMaterials(subject, expectedPlanId) {
       pages: 0,
       chars: piece.chars,
       addedAt: stamp,
+      hash,
       text: piece.text
     };
     stamp += 1;
     try {
       const saved = await saveMaterialRecord(record, null);
       materials.unshift(saved);
-      existing.add(key);
+      held.push(saved);
       result.added.push(saved);
     } catch (e) {
       console.warn('[StarQuiz] 考试快照的资料没有写入本地资料库', piece.name, e);
@@ -1804,11 +1852,18 @@ async function applyPlanDeepLink() {
     updatedAt: now
   };
 
-  // 先持久化，成功后才清理地址栏：存储失败时保留可重试的联动上下文
-  if (!putPlanLink(link)) {
+  // 先持久化，成功后才清理地址栏：没存上时保留可重试的联动上下文
+  const stored = putPlanLink(link);
+  if (stored !== 'saved') {
     planLink = transientPlanLink(link, subject);
     openSubject(subject.id);
-    toast('联动关系没有保存成功，请检查浏览器本地存储空间后重新进入', 'error', 6000);
+    toast(
+      stored === 'storage'
+        ? '联动关系没有保存成功，请检查浏览器本地存储空间后重新进入'
+        : '这条联动关系的参数不完整，只按一次性跳转处理：回到备考规划再点一次即可',
+      'error',
+      6000
+    );
     return;
   }
 
@@ -1825,6 +1880,19 @@ async function applyPlanDeepLink() {
   openPractice(subject);
   toast(planHandoffToast(imported, subject), 'info', 6000);
   planHandoffWarnings(imported).forEach((note) => toast(note, 'info', 6000));
+}
+
+// 刷新后接着认得这条联动关系：深链进来时地址栏就被清干净了，query 里什么都没有，
+// 所以从 sq_plan_links_v1 挑最近用过的一条接回来。科目被删了就不接——没有科目就没有横幅该待的地方。
+function restorePlanLinkFromStore() {
+  if (planLink) return false;
+  const links = Object.values(planLinkStore.links);
+  if (!links.length) return false;
+  const newest = links.reduce((best, item) => (String(item.updatedAt) > String(best.updatedAt) ? item : best), links[0]);
+  const subject = subjectById(newest.subjectId);
+  if (!subject) return false;
+  planLink = transientPlanLink(newest, subject);
+  return true;
 }
 
 // 资料夹里的内容按类型说一句「笔记 X 份、真题 Y 份」：与出题向导里的说法保持一致
@@ -1850,7 +1918,7 @@ function renderPlanLinkBanner(subjectId) {
     ? `围绕${ctx}出题练习：这场考试的资料已在这个练习科目里（${held}），可直接出题。`
     : `围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本练习科目。`;
   // 横幅只负责带回原考点，不带任何成绩：这里没有「本次练习」可依附
-  const back = planReturnHref(planLinkStore.links[planLink.linkId]);
+  const back = planBackHref();
   return `
     <div class="plan-link-banner" role="note">
       <div class="plan-link-main">
@@ -1881,7 +1949,7 @@ function renderPlanLinkNote() {
   return `
     <div class="ai-note plan-link-note">
       <span class="ai-note-dot"></span>
-      <span>${line} <a class="link-btn" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">返回备考规划 ↗</a></span>
+      <span>${line} <a class="link-btn" href="${planBackHref()}" target="_blank" rel="noopener noreferrer">返回备考规划 ↗</a></span>
     </div>`;
 }
 
@@ -2024,10 +2092,10 @@ function overallStats() {
   const count = history.length;
   const graded = history.reduce((n, a) => n + (a.graded || 0), 0);
   const correct = history.reduce((n, a) => n + (a.correct || 0), 0);
-  const answered = history.reduce((n, a) => n + (a.total || 0), 0);
   const avg = count ? Math.round(history.reduce((n, a) => n + (a.score || 0), 0) / count) : null;
   const totalQ = allSets().reduce((n, s) => n + s.questions.length, 0);
-  return { count, graded, correct, answered, avg, accuracy: graded ? Math.round((correct / graded) * 100) : null, totalQ };
+  // 没有 answered：按 total 累加出来的是「这套题有多少」，不是「答了多少」，留着只会被误用
+  return { count, graded, correct, avg, accuracy: graded ? Math.round((correct / graded) * 100) : null, totalQ };
 }
 
 /* 进度口径全站只用这一个：历史 attempt 的 answers[].qid 是唯一来源，
@@ -3602,7 +3670,9 @@ async function nsUpload(files) {
   }
   const status = document.getElementById('nsUploadStatus');
   nsDraft.parsing = true;
-  const existing = new Set(subjectMaterials(nsDraft.subjectId).map((m) => `${m.name}|${m.size}`));
+  // 和科目页那条路同一套规则：先解析，再按正文判断是不是已经有了
+  const held = subjectMaterials(nsDraft.subjectId);
+  let skipped = 0;
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     const label = file.name || `文件 ${i + 1}`;
@@ -3614,15 +3684,16 @@ async function nsUpload(files) {
       nsDraft.failed.push(`${label}：超过 30MB`);
       continue;
     }
-    if (existing.has(`${file.name}|${file.size}`)) {
-      nsDraft.failed.push(`${label}：已存在`);
-      continue;
-    }
     try {
       const { text, meta } = await extractMaterial(file);
       const clean = cleanMaterialText(text);
       const chars = aiVisibleChars(clean);
       if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版');
+      const hash = await materialTextHash(clean);
+      if (isSameMaterialContent(held, hash, clean)) {
+        skipped++;
+        continue;
+      }
       const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
       const pageMatch = String(meta || '').match(/(\d+)/);
       const record = {
@@ -3635,6 +3706,7 @@ async function nsUpload(files) {
         pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
         chars,
         addedAt: Date.now(),
+        hash,
         text: clean
       };
       let saved = null;
@@ -3644,7 +3716,7 @@ async function nsUpload(files) {
         saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
       }
       materials.unshift(saved);
-      existing.add(`${file.name}|${file.size}`);
+      held.push(saved);
       nsDraft.added += 1;
     } catch (e) {
       nsDraft.failed.push(`${label}：${(e && e.message) || '解析失败'}`);
@@ -3654,6 +3726,7 @@ async function nsUpload(files) {
     if (sum) sum.innerHTML = nsSummaryBits();
   }
   nsDraft.parsing = false;
+  if (skipped) toast(duplicateMaterialNotice(skipped), 'info', 4500);
   if (nsDraft.step === 2) nsRender();
   const foot = document.getElementById('nsFooter');
   if (foot) foot.innerHTML = nsFooter();
@@ -3760,7 +3833,8 @@ async function uploadSubjectFiles(subjectId, files) {
   const status = document.getElementById('subjectUploadStatus');
   const body = $('.main-body');
   const scroll = body ? body.scrollTop : 0;
-  const existing = new Set(subjectMaterials(subjectId).map((m) => `${m.name}|${m.size}`));
+  // 去重要比正文，所以手里拿的是已有资料本身，不是「文件名|大小」那种字符串
+  const held = subjectMaterials(subjectId);
   let added = 0;
   let skipped = 0;
   const failed = [];
@@ -3772,11 +3846,6 @@ async function uploadSubjectFiles(subjectId, files) {
       failed.push(`${label}：超过 30MB`);
       continue;
     }
-    const key = `${file.name}|${file.size}`;
-    if (existing.has(key)) {
-      skipped++;
-      continue;
-    }
     if (status) {
       status.hidden = false;
       status.textContent = `正在解析 ${i + 1}/${files.length}：${label}`;
@@ -3786,6 +3855,11 @@ async function uploadSubjectFiles(subjectId, files) {
       const clean = cleanMaterialText(text);
       const chars = aiVisibleChars(clean);
       if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版文件');
+      const hash = await materialTextHash(clean);
+      if (isSameMaterialContent(held, hash, clean)) {
+        skipped++;
+        continue;
+      }
       const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
       const pageMatch = String(meta || '').match(/(\d+)/);
       const record = {
@@ -3798,6 +3872,7 @@ async function uploadSubjectFiles(subjectId, files) {
         pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
         chars,
         addedAt: Date.now(),
+        hash,
         text: clean
       };
       let saved = null;
@@ -3808,7 +3883,7 @@ async function uploadSubjectFiles(subjectId, files) {
         saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
       }
       materials.unshift(saved);
-      existing.add(key);
+      held.push(saved);
       added++;
     } catch (e) {
       failed.push(`${label}：${(e && e.message) || '解析失败'}`);
@@ -3822,7 +3897,7 @@ async function uploadSubjectFiles(subjectId, files) {
 
   const bits = [];
   if (added) bits.push(`已存入 ${added} 份资料`);
-  if (skipped) bits.push(`跳过 ${skipped} 份重复文件`);
+  if (skipped) bits.push(duplicateMaterialNotice(skipped));
   if (failed.length) bits.push(`${failed.length} 份失败`);
   toast(bits.length ? bits.join('，') : '没有新增资料', added ? 'success' : 'info', 4500);
   if (failed.length) {
@@ -6535,6 +6610,12 @@ function aiLimitBreach(groups) {
   return null;
 }
 
+/* 上限比的是原始长度（含空白），所以这句话用「字符」；界面别处的「字」都不数空白。
+   函数侧 overLimitError 是同一个句式，两端各写一遍迟早会写歪，这里只留这一份。 */
+function aiBreachLine(breach) {
+  return `${breach.label} ${breach.chars.toLocaleString()} 字符，超过单次上限 ${breach.cap.toLocaleString()} 字符，请拆成两轮上传`;
+}
+
 // 这一轮装得下多少，浏览器只算字数；要切成几批是函数侧的批处理规则决定的，
 // 不在这里重算一遍。函数说「批数超了」时把那句原话记下来，贴在 gate 上，
 // 挂的是当次资料组合的签名——组合一变，这句话就自动失效。
@@ -6609,7 +6690,7 @@ function aiSourceGateInfo() {
       actions.push({ label: '清空粘贴文字', fn: 'clearAIPasteText()' });
     }
     return {
-      line: `${breach.label} ${breach.chars.toLocaleString()} 字，超过单次上限 ${breach.cap.toLocaleString()} 字，请拆成两轮上传`,
+      line: aiBreachLine(breach),
       actions
     };
   }
@@ -7036,7 +7117,8 @@ function renderAISubjectOptions() {
 function addMaterialsToAI(ids) {
   const wanted = new Set(ids);
   materials.filter((m) => wanted.has(m.id)).forEach((m) => {
-    if (aiPieces.some((p) => p.materialId === m.id || (p.name === m.name && p.size === m.size))) return;
+    // 已经在清单里就不再排一份：同一条记录认 id，换了入口进来的那份认正文
+    if (aiPieces.some((p) => p.materialId === m.id || isSameMaterialContent([p], m.hash, m.text))) return;
     aiPieces.push({
       id: 'm' + m.id,
       materialId: m.id,
@@ -7139,11 +7221,11 @@ function aiFocusText() {
   return cleanFocusText(nsField('aiFocusTopic'));
 }
 
-// 上传解析成功后自动归档到当前练习科目：同名同大小视为已有
+// 上传解析成功后自动归档到当前练习科目：按正文认领已有那条
 async function autoStoreAIPiece(piece) {
   if (!piece || piece.fromMaterial || !piece.text || materialsUnavailable) return;
   const subjectId = aiSubjectId || 'sub-inbox';
-  const dup = materials.find((m) => m.subjectId === subjectId && m.name === piece.name && m.size === piece.size);
+  const dup = findSameMaterial(materials.filter((m) => m.subjectId === subjectId), piece.hash, piece.text);
   if (dup) {
     piece.materialId = dup.id;
     piece.savedTo = subjectId;
@@ -7159,6 +7241,7 @@ async function autoStoreAIPiece(piece) {
     pages: piece.pages || 0,
     chars: piece.chars || aiVisibleChars(piece.text),
     addedAt: Date.now(),
+    hash: piece.hash || '',
     text: piece.text
   };
   try {
@@ -7661,6 +7744,12 @@ function looksLikeOle(bytes) {
     bytes[4] === 0xa1 && bytes[5] === 0xb1 && bytes[6] === 0x1a && bytes[7] === 0xe1;
 }
 
+// ZIP（PK\x03\x04）就是 OOXML 的容器：Word 的 .docx 和 PPT 的 .pptx 都是压缩包
+function looksLikeZip(bytes) {
+  return !!bytes && bytes.length >= 4 &&
+    bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+}
+
 async function parseLegacyDOC(file) {
   const mod = await loadDocText();
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -7752,6 +7841,32 @@ async function parsePPTX(file) {
   return { text: chunks.join('\n\n'), meta: `${slides.length} 页` };
 }
 
+/* 压缩包到底是 Word 还是 PPT，由里面有什么决定，不由扩展名决定：
+   WPS 和老版 Office 会把 docx 存成 .doc，也会把 pptx 改名成 .docx。后缀只决定先试哪一个，
+   读不出正文再试另一个——按后缀一路走到底，最多拿到一份空正文。 */
+async function parseOoxml(file, wantsSlides) {
+  const order = wantsSlides ? [parsePPTX, parseDOCX] : [parseDOCX, parsePPTX];
+  let fallbackError = null;
+  let sparsest = null;
+  for (const parse of order) {
+    let out = null;
+    try {
+      out = await parse(file);
+    } catch (e) {
+      if (!fallbackError) fallbackError = e;
+      continue;
+    }
+    // 30 个可见字是这两条解析路径本来就有的地板，够地板就是它了，不必再试第二种
+    if (aiVisibleChars(out.text) >= 30) return out;
+    if (!sparsest || aiVisibleChars(out.text) > aiVisibleChars(sparsest.text)) sparsest = out;
+  }
+  if (sparsest && aiVisibleChars(sparsest.text) > 0) return sparsest;
+  // 两条路都没拿到正文：给用户的那句要能照着做，解析器自己的报错（找不到压缩包结尾之类）只留着调试
+  const error = new Error('这个压缩包里读不到正文，可能是改了扩展名的其他文件');
+  if (fallbackError) error.cause = fallbackError;
+  throw error;
+}
+
 // 文本文件编码兜底：UTF-16 BOM → 严格 UTF-8 → GB18030（兼容 GBK）
 async function parseText(file) {
   const buf = new Uint8Array(await file.arrayBuffer());
@@ -7786,7 +7901,7 @@ function detectMaterialExt(file) {
 
 async function extractMaterial(file) {
   const ext = detectMaterialExt(file);
-  // 扩展名不可靠：WPS/老版 Office 常把 .doc 存成 .docx，先看文件头（OLE 复合文档）
+  // 扩展名不可靠：WPS/老版 Office 常把 .docx 存成 .doc。先看文件头，由容器决定用哪个解析器
   if (['pdf', 'docx', 'doc', 'pptx', 'ppt'].includes(ext)) {
     const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
     if (looksLikeOle(head)) {
@@ -7795,6 +7910,7 @@ async function extractMaterial(file) {
       }
       return parseLegacyDOC(file);
     }
+    if (looksLikeZip(head)) return parseOoxml(file, ext === 'pptx' || ext === 'ppt');
   }
   if (ext === 'pdf') return parsePDF(file);
   if (ext === 'docx') return parseDOCX(file);
@@ -7821,6 +7937,8 @@ async function handleAIFiles(files) {
       toast(`「${file.name}」超过 30MB，请拆分后再上传`, 'error');
       continue;
     }
+    // 这条只管「同一个文件别在同一次排队里排两遍」——此刻还没解析，手上只有名字和大小；
+    // 正文级的去重在解析完之后（autoStoreAIPiece / 资料库那两条上传路径）
     if (aiPieces.some((p) => p.name === file.name && p.size === file.size)) {
       toast(`「${file.name}」已在列表中`, 'info');
       continue;
@@ -7835,6 +7953,7 @@ async function handleAIFiles(files) {
       chars: 0,
       pages: 0,
       text: '',
+      hash: '',
       error: '',
       file
     });
@@ -7858,6 +7977,8 @@ async function parseAIQueue() {
         if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版文件，请先 OCR 或直接粘贴文字');
         piece.text = clean;
         piece.chars = chars;
+        // 指纹算在清洗过的正文上：和资料库里那条记录同一口径，之后归档才认得出是同一份
+        piece.hash = await materialTextHash(clean);
         piece.meta = meta || '';
         const m = String(meta || '').match(/(\d+)/);
         piece.pages = m ? parseInt(m[1], 10) : 0;
@@ -7889,7 +8010,7 @@ async function generateQuestions() {
 
   const breach = aiLimitBreach(groups);
   if (breach) {
-    toast(`${breach.label} ${breach.chars.toLocaleString()} 字，超过单次上限 ${breach.cap.toLocaleString()} 字，请拆成两轮上传`, 'error', 5000);
+    toast(aiBreachLine(breach), 'error', 5000);
     return;
   }
   if (mixed && (noteChars < 50 || examChars < 50)) {
@@ -8280,6 +8401,8 @@ window.addEventListener('pagehide', () => {
   refreshServiceStatus();
   // 联动入站要算考点钥匙（Web Crypto 异步），放在首屏渲染之后，不阻塞页面
   await applyPlanDeepLink();
+  // 刷新（地址栏已经没有联动参数）时把上下文接回来，接住了才重画一次当前页
+  if (restorePlanLinkFromStore()) render();
 
   if (bootNotes.length) {
     const notes = [...new Set(bootNotes)];

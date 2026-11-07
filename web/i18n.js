@@ -635,6 +635,8 @@ const EN = Object.assign({
   '文件解析失败': 'File parsing failed',
   'PPT 解析组件加载失败': 'The PPT parser failed to load',
   '没有在 PPT 中找到幻灯片内容': 'No slides found in that PPT',
+  '这个压缩包里读不到正文，可能是改了扩展名的其他文件':
+    'No document text in that archive — the file extension may not match what it really is',
   '旧版 .ppt 暂不支持，请另存为 .pptx 后上传': 'Legacy .ppt is not supported — save it as .pptx first',
   '这是旧版 PowerPoint（.ppt）文件，请用 PowerPoint/WPS 另存为 .pptx 后上传':
     'This is a legacy PowerPoint (.ppt) file — save it as .pptx in PowerPoint or WPS first',
@@ -649,6 +651,8 @@ const EN = Object.assign({
   '请检查网络后重试': 'Check your network and try again',
   '联动关系没有保存成功，请检查浏览器本地存储空间后重新进入':
     'The topic link was not saved — free up local storage and open it again',
+  '这条联动关系的参数不完整，只按一次性跳转处理：回到备考规划再点一次即可':
+    'This topic link is missing part of its context, so it only worked once — open it again from your study plan',
   '这一批没有生成成功': 'This batch was not generated',
   '没有新增资料': 'No new materials added',
   '没有可新增的数据，备份内容已全部存在': 'Nothing new to add — everything in the backup is already here',
@@ -890,7 +894,8 @@ const EN_PATTERNS = [
   [/^分 (\d+) 批并行生成 · 已完成 (\d+)\/(\d+) 批 · 已用时 (\d+) 秒$/,
     (m) => `Generating in ${m[1]} parallel batches · ${m[2]}/${m[3]} done · ${m[4]}s elapsed`],
   /* 一轮装不下：浏览器和函数说同一句话，英文也只有一种说法 */
-  [/^(笔记资料|真题资料|资料|笔记和真题合计) ([\d,]+) 字，超过单次上限 ([\d,]+) 字，请拆成两轮上传(，避免漏题)?$/,
+  // 中文用「字符」：这里比的是含空白的原始长度，和上限同一个数；别处的「字」都不数空白
+  [/^(笔记资料|真题资料|资料|笔记和真题合计) ([\d,]+) 字符，超过单次上限 ([\d,]+) 字符，请拆成两轮上传(，避免漏题)?$/,
     (m) => `${LIMIT_LABEL[m[1]]}: ${m[2]} characters — over the ${m[3]}-character limit for one round. ${m[4] ? 'Split it so no question is missed.' : 'Split it across two rounds.'}`],
   [/^这一轮需要分成 (\d+) 批，超过单轮 (\d+) 批，请拆成两轮上传$/,
     (m) => `This round needs ${m[1]} batches — over the ${m[2]}-batch limit for one round. Split it across two rounds.`],
@@ -981,7 +986,8 @@ const EN_PATTERNS = [
   [/^忽略 (\d+) 道异常题目$/, 'Ignored $1 invalid questions'],
   [/^跳过 (\d+) 个已存在的练习集$/, 'Skipped $1 sets already imported'],
   [/^跳过 (\d+) 份已存在的资料$/, 'Skipped $1 materials already imported'],
-  [/^跳过 (\d+) 份重复文件$/, 'Skipped $1 duplicate files'],
+  // 去重现在只看正文，话术也跟着改口径：不是「文件重名」，是「内容一样」
+  [/^已跳过 (\d+) 份内容重复的资料$/, 'Skipped $1 materials with the same content'],
   [/^(\d+) 个文件解析失败$/, '$1 files failed to parse'],
   [/^文件 (\d+)$/, 'File $1'],
   [/^(\d+) 份失败$/, '$1 failed'],
@@ -1000,7 +1006,6 @@ const EN_PATTERNS = [
   [/^跨段重复，已合并$/, 'duplicated across segments and merged'],
   [/^(.+)跨段重复，已合并$/, (m) => `${m[1]} duplicated across segments and merged`],
   [/^(.+)没有返回题目，请重试$/, (m) => `${m[1]} returned no questions — try again`],
-  [/^(.+)：已存在$/, (m) => `${m[1]}: already there`],
   [/^(.+)逐题保留，不改写不删减$/, (m) => `${m[1]} every question kept verbatim, nothing rewritten or dropped`],
   [/^原文识别到约 (\d+) 道题号，本次整理出 (\d+) 道，可能有漏题$/,
     'About $1 question numbers found in the source; $2 were tidied this time — some may be missing'],
