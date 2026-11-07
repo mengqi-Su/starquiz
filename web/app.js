@@ -2548,6 +2548,7 @@ function render() {
   }
   // 英文模式在渲染完成后就地替换文案；中文是源语言，applyLang 内部直接返回
   if (typeof applyLang === 'function') applyLang(document.documentElement);
+  repaintUploadQueues();
 }
 
 function renderCrash(err) {
@@ -3258,7 +3259,7 @@ function renderSubject() {
         </div>
         ${materialsUnavailable
           ? `<div class="feedback feedback-incorrect">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
-          : '<div class="upload-status" id="subjectUploadStatus" hidden></div>'}`
+          : '<div class="upload-queue" id="subjectUploadQueue" role="status" aria-live="polite"></div>'}`
     })}`;
 }
 
@@ -3276,6 +3277,13 @@ let nsDraft = nsBlank();
 
 function nsReset() {
   nsDraft = nsBlank();
+  // 上一轮的进度列表、失败名单跟着草稿一起清掉：
+  // 新开向导第一眼就看见「这一批读了 3 份」，等于说上次那些文件还在。
+  const st = uploadBatchState('ns');
+  st.files = [];
+  st.tasks = [];
+  st.failed = {};
+  st.cancel = false;
 }
 
 function nsField(id) {
@@ -3473,7 +3481,7 @@ function nsLayerBody() {
         <span class="ai-dropzone-icon">${ICON.upload}</span>
         <span class="ai-dropzone-title">把资料放进「${subjectName}」</span>
       </label>
-      <div class="upload-status" id="nsUploadStatus"${nsDraft.parsing ? '' : ' hidden'}>${nsDraft.parsing ? '正在解析资料…' : ''}</div>
+      <div class="upload-queue" id="nsUploadQueue" role="status" aria-live="polite"></div>
       <div class="wiz-summary" id="nsSummary">${nsSummaryBits()}</div>`;
   }
   const subject = subjectById(nsDraft.subjectId) || {};
@@ -3511,9 +3519,12 @@ function nsSummaryBits() {
   const subject = subjectById(nsDraft.subjectId) || {};
   const mats = subjectMaterials(subject.id || '');
   const bits = [];
-  if (mats.length) bits.push(`<span class="wiz-chip"><b>${mats.length}</b> 份资料已存入</span>`);
+  /* 数字和「份资料已存入」留在同一个文本节点里：拆成 <b>2</b> + 后半句时，
+     词典只看得见后半句，英文就永远是 materials saved（1 materials saved）。
+     旁边几枚片本来也是整句写，这里跟着同一写法。 */
+  if (mats.length) bits.push(`<span class="wiz-chip">${mats.length} 份资料已存入</span>`);
   if (mats.length) bits.push(`<span class="wiz-chip is-soft">${mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')} 字</span>`);
-  nsDraft.failed.slice(0, 3).forEach((msg) => bits.push(`<span class="wiz-chip is-soft">${esc(msg)}</span>`));
+  nsDraft.failed.slice(0, 3).forEach((f) => bits.push(`<span class="wiz-chip is-soft">${esc(failureLine(f.name, f.reason))}</span>`));
   if (nsDraft.failed.length > 3) bits.push(`<span class="wiz-chip is-soft">另有 ${nsDraft.failed.length - 3} 份失败</span>`);
   return bits.join('');
 }
@@ -3668,69 +3679,7 @@ async function nsUpload(files) {
     toast('当前浏览器无法保存资料，请更换浏览器或关闭无痕模式', 'error', 5000);
     return;
   }
-  const status = document.getElementById('nsUploadStatus');
-  nsDraft.parsing = true;
-  // 和科目页那条路同一套规则：先解析，再按正文判断是不是已经有了
-  const held = subjectMaterials(nsDraft.subjectId);
-  let skipped = 0;
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const label = file.name || `文件 ${i + 1}`;
-    if (status) {
-      status.hidden = false;
-      status.textContent = `正在解析 ${i + 1}/${files.length}：${label}`;
-    }
-    if (file.size > MATERIAL_MAX_BYTES) {
-      nsDraft.failed.push(`${label}：超过 30MB`);
-      continue;
-    }
-    try {
-      const { text, meta } = await extractMaterial(file);
-      const clean = cleanMaterialText(text);
-      const chars = aiVisibleChars(clean);
-      if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版');
-      const hash = await materialTextHash(clean);
-      if (isSameMaterialContent(held, hash, clean)) {
-        skipped++;
-        continue;
-      }
-      const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
-      const pageMatch = String(meta || '').match(/(\d+)/);
-      const record = {
-        id: 'mat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-        subjectId: nsDraft.subjectId,
-        name: String(file.name || '未命名资料').slice(0, 160),
-        size: file.size,
-        ext,
-        kind: aiGuessFileKind(clean, file.name),
-        pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
-        chars,
-        addedAt: Date.now(),
-        hash,
-        text: clean
-      };
-      let saved = null;
-      try {
-        saved = await saveMaterialRecord(record, file.size <= MATERIAL_BLOB_LIMIT ? file : null);
-      } catch {
-        saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
-      }
-      materials.unshift(saved);
-      held.push(saved);
-      nsDraft.added += 1;
-    } catch (e) {
-      nsDraft.failed.push(`${label}：${(e && e.message) || '解析失败'}`);
-    }
-    materials.sort((a, b) => b.addedAt - a.addedAt);
-    const sum = document.getElementById('nsSummary');
-    if (sum) sum.innerHTML = nsSummaryBits();
-  }
-  nsDraft.parsing = false;
-  if (skipped) toast(duplicateMaterialNotice(skipped), 'info', 4500);
-  if (nsDraft.step === 2) nsRender();
-  const foot = document.getElementById('nsFooter');
-  if (foot) foot.innerHTML = nsFooter();
-  render();
+  await runMaterialBatch('ns', nsDraft.subjectId, Array.from(files || []));
 }
 
 
@@ -3810,6 +3759,230 @@ function cleanMaterialText(text) {
     .trim();
 }
 
+/* ---------------- 资料读取队列（新建向导 / 科目页 / AI 弹窗共用 upload-queue.js） ----------------
+   这里只管两件事：一份文件读出来之后怎么入库，以及一批跑完之后怎么把结果说清楚。
+   并发、进度、取消、重试、预算都在队列那一份实现里，不在三个入口各写一遍。 */
+const uploadBatches = {};
+
+function uploadBatchState(scope) {
+  if (!uploadBatches[scope]) uploadBatches[scope] = { files: [], tasks: [], failed: {}, running: false, cancel: false };
+  return uploadBatches[scope];
+}
+
+function isZhUi() {
+  return !(typeof isEn === 'function' && isEn());
+}
+
+/* 并发读、串行存。查重看的是「库里此刻有没有同一份正文」：两份同正文的文件同时读完，
+   各自都看见「没有」，就会各存一份——去重失效的正是这个窗口。所以排队的是入库这一步，
+   解析照样两份一起跑（那才是慢活）。 */
+let materialStoreTail = Promise.resolve();
+function serializeStore(fn) {
+  const result = materialStoreTail.then(fn, fn);
+  materialStoreTail = result.then(() => undefined, () => undefined);
+  return result;
+}
+
+/* 正文地板：三个上传入口（新建向导、科目页、AI 弹窗）共用这一句说法。
+   同一件事不该因为从哪个门进来就换一句话，之前两处一个只说「可能是扫描版」、
+   一个带上了「请先 OCR 或直接粘贴文字」。 */
+const MATERIAL_MIN_CHARS = 50;
+function requireReadableText(chars) {
+  if (chars < MATERIAL_MIN_CHARS) {
+    throw new Error('几乎没有提取到文字，可能是扫描版文件，请先 OCR 或直接粘贴文字');
+  }
+}
+
+/* 一份文件读进来之后的事：清洗正文、按正文指纹查重、入库。
+   {duplicate:true} 表示库里已有同一份正文——那不是失败，不该和「读不出」混进同一句话。 */
+async function importOneMaterial(file, subjectId, held) {
+  if (file.size > MATERIAL_MAX_BYTES) throw new Error('超过 30MB');
+  const { text, meta } = await extractMaterial(file);
+  const clean = cleanMaterialText(text);
+  const chars = aiVisibleChars(clean);
+  requireReadableText(chars);
+  const hash = await materialTextHash(clean);
+  return serializeStore(async () => {
+    if (isSameMaterialContent(held, hash, clean)) return { text: clean, duplicate: true };
+    const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
+    const pageMatch = String(meta || '').match(/(\d+)/);
+    const record = {
+      id: 'mat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      subjectId,
+      name: String(file.name || '未命名资料').slice(0, 160),
+      size: file.size,
+      ext,
+      kind: aiGuessFileKind(clean, file.name),
+      pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
+      chars,
+      addedAt: Date.now(),
+      hash,
+      text: clean
+    };
+    let saved = null;
+    try {
+      saved = await saveMaterialRecord(record, file.size <= MATERIAL_BLOB_LIMIT ? file : null);
+    } catch {
+      // 原始文件写不下时退一步：只保留提取出来的文字，资料本身不丢
+      saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
+    }
+    materials.unshift(saved);
+    held.push(saved);
+    return { text: clean, saved };
+  });
+}
+
+function paintUploadQueue(scope) {
+  const st = uploadBatchState(scope);
+  const box = document.getElementById(st.containerId || '');
+  if (!box) return;
+  window.UploadQueue.render(box, st.tasks, st.running, {
+    onCancel: () => { st.cancel = true; paintUploadQueue(scope); },
+    onRetry: () => { void retryFailedUploadBatch(scope); },
+    onDismiss: () => dismissUploadBatch(scope)
+  });
+  if (typeof applyLang === 'function') applyLang(box);
+}
+
+/* 只重来这一批里读不出的那几份：沿用同一本失败账（keepKeys 非空即「还在同一批里」），
+   成功过的不重读，也不会被再存一遍。 */
+function retryFailedUploadBatch(scope) {
+  const st = uploadBatchState(scope);
+  const picked = window.UploadQueue.pickFailedFiles(st.files, st.tasks);
+  if (!picked.files.length) return null;
+  return runMaterialBatch(scope, st.subjectId, picked.files, picked.keepKeys);
+}
+
+/* 「收起」= 这一批的结果我看完了：进度列表和失败名单一起清零。
+   以前只清列表，页脚那几枚写着上一批「某某读不出」的片子会一直挂到下次重开向导，
+   说的却是早就被换掉的文件。 */
+function dismissUploadBatch(scope) {
+  const st = uploadBatchState(scope);
+  st.tasks = [];
+  st.failed = {};
+  if (scope === 'ns') {
+    nsDraft.failed = [];
+    const sum = document.getElementById('nsSummary');
+    if (sum) sum.innerHTML = nsSummaryBits();
+  }
+  paintUploadQueue(scope);
+}
+
+/* 整页重渲染（切语言、切视图）会把进度容器换成一个空的：
+   这一批还在读、或刚读完还没收起，就照原样画回去，别让它凭空消失。 */
+function repaintUploadQueues() {
+  Object.keys(uploadBatches).forEach((scope) => {
+    if (uploadBatches[scope].tasks.length) paintUploadQueue(scope);
+  });
+}
+
+/** 一批资料的读取；跑完把「存了几份 / 几份重复 / 几份读不出 / 预算或取消」一次说清。 */
+async function runMaterialBatch(scope, subjectId, files, keepKeys, containerId) {
+  const st = uploadBatchState(scope);
+  if (st.running || !files || !files.length) return null;
+  st.running = true;
+  st.cancel = false;
+  st.files = files;
+  st.subjectId = subjectId;
+  st.containerId = containerId || st.containerId || (scope === 'ns' ? 'nsUploadQueue' : 'subjectUploadQueue');
+  /* 新挑一批就重开一本失败账：这批读成什么样，页脚和 toast 就说什么样。
+     跨批累计会把上一批早就被换掉的文件一直挂在「另有 2 份失败」里——
+     用户看到的是这一批全成功，那句却在说别的文件。
+     只有「重试」(带 keepKeys) 沿用旧账：那时同一批里修好的和还坏的必须分得清。 */
+  if (!keepKeys) st.failed = {};
+  if (scope === 'ns') nsDraft.parsing = true;
+  const held = subjectMaterials(subjectId);
+  const outcome = await window.UploadQueue.run(files, {
+    run: (file) => importOneMaterial(file, subjectId, held),
+    keepKeys,
+    onTasks: (tasks) => { st.tasks = tasks; paintUploadQueue(scope); },
+    isCancelled: () => st.cancel,
+    countChars: aiVisibleChars
+  });
+  st.running = false;
+  if (scope === 'ns') nsDraft.parsing = false;
+  materials.sort((a, b) => b.addedAt - a.addedAt);
+  finishMaterialBatch(scope, subjectId, outcome);
+  // 收尾那几句会重渲染界面，容器可能是刚建出来的：进度列表要在重渲染之后再画一次
+  paintUploadQueue(scope);
+  return outcome;
+}
+
+/* 失败名单只记「眼前这一批」：新批次开头会重开一本账（见 runMaterialBatch）。
+   同名文件一旦读出来就销掉旧账，否则重试之后还挂着两份未成功，
+   等于让用户去找那个其实已经好了的文件。 */
+function rememberBatchFailures(st, outcome) {
+  if (!st.failed) st.failed = {};
+  outcome.done.forEach((item) => { delete st.failed[item.name]; });
+  outcome.failed.forEach((task) => { st.failed[task.name] = task.error || '解析失败'; });
+  /* 只留「哪个文件 + 为什么」，句子留给渲染时按当前语言拼。
+     在这儿提前粘成「名字：原因」，切到英文后词典查不到那半句，
+     页脚和 toast 就各剩一截中文。 */
+  return Object.keys(st.failed).map((name) => ({ name, reason: st.failed[name] }));
+}
+
+/* 一句「某个文件为什么没读出来」：文件名是用户数据不翻，原因走词典。
+   页脚那几枚片和 toast 用的是同一份拼法，切语言不会一边英文一边中文。
+   返回未转义的原文，交给调用方按各自出口（innerHTML / toast）转一次。 */
+function failureLine(name, reason) {
+  return `${name}${isZhUi() ? '：' : ': '}${t(reason || '解析失败')}`;
+}
+
+function finishMaterialBatch(scope, subjectId, outcome) {
+  const st = uploadBatchState(scope);
+  const added = outcome.done.filter((item) => item.value && item.value.saved).length;
+  const skipped = outcome.done.filter((item) => item.value && item.value.duplicate).length;
+  // 失败名单只有一个来源：这里累计的那份。之前 nsDraft.failed 另记一遍，重试一次就数重了。
+  const failedEntries = rememberBatchFailures(st, outcome);
+  const failedCount = failedEntries.length;
+  if (scope === 'ns') {
+    nsDraft.added += added;
+    nsDraft.failed = failedEntries;
+    const sum = document.getElementById('nsSummary');
+    if (sum) sum.innerHTML = nsSummaryBits();
+    const foot = document.getElementById('nsFooter');
+    if (foot) foot.innerHTML = nsFooter();
+    if (nsDraft.step === 2) nsRender();
+    render();
+  } else {
+    render();
+  }
+
+  const zh = isZhUi();
+  /* 逐句翻译再拼：toast 的翻译层认得整句，认不得「A；B」这种拼起来的串，
+     留一句中文在中间就会把整条 toast 拖回中文。 */
+  const bits = [];
+  if (added) bits.push(t(`${added} 份资料已存入`));
+  if (skipped) bits.push(t(duplicateMaterialNotice(skipped)));
+  const queueNotice = window.UploadQueue.notice(outcome);
+  if (queueNotice) bits.push(queueNotice);
+  if (failedCount) bits.push(t(`${failedCount} 份读不出`));
+  // 上限比的是原始长度，和点「生成」那条判断同一份代码：这里提前说，不留到生成时才撞
+  const breach = subjectRoundBreach(subjectId);
+  if (breach) bits.push(t(aiBreachLine(breach)));
+  if (bits.length) toast(bits.join(zh ? '；' : '; '), failedCount ? 'error' : 'info', 6000);
+  if (outcome.failed.length) {
+    setTimeout(() => outcome.failed.slice(0, 3).forEach((task) => toast(failureLine(task.name, task.error), 'error', 5000)), 350);
+  }
+}
+
+/* 这一轮装不装得下，按资料库里现有的笔记 / 真题算：拼接口径与 collectAIGroups 一致，
+   所以这句话和生成时那句永远是一个数。 */
+function subjectRoundBreach(subjectId) {
+  const mats = subjectMaterials(subjectId).filter((m) => m && m.text);
+  if (!mats.length) return null;
+  const join = (list) => list
+    .map((m) => (list.length > 1 ? `【${m.name}】\n${m.text}` : m.text))
+    .join('\n\n');
+  const notes = mats.filter((m) => m.kind !== 'exam');
+  const exams = mats.filter((m) => m.kind === 'exam');
+  return aiLimitBreach({
+    noteText: join(notes),
+    examText: join(exams),
+    mixed: notes.length > 0 && exams.length > 0
+  });
+}
+
 function pickSubjectFiles() {
   const input = document.getElementById('subjectFileInput');
   if (!input) return;
@@ -3830,79 +4003,11 @@ async function handleSubjectFileInput(input) {
 async function uploadSubjectFiles(subjectId, files) {
   const subject = subjectById(subjectId);
   if (!subject) return;
-  const status = document.getElementById('subjectUploadStatus');
   const body = $('.main-body');
   const scroll = body ? body.scrollTop : 0;
-  // 去重要比正文，所以手里拿的是已有资料本身，不是「文件名|大小」那种字符串
-  const held = subjectMaterials(subjectId);
-  let added = 0;
-  let skipped = 0;
-  const failed = [];
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const label = file.name || `文件 ${i + 1}`;
-    if (file.size > MATERIAL_MAX_BYTES) {
-      failed.push(`${label}：超过 30MB`);
-      continue;
-    }
-    if (status) {
-      status.hidden = false;
-      status.textContent = `正在解析 ${i + 1}/${files.length}：${label}`;
-    }
-    try {
-      const { text, meta } = await extractMaterial(file);
-      const clean = cleanMaterialText(text);
-      const chars = aiVisibleChars(clean);
-      if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版文件');
-      const hash = await materialTextHash(clean);
-      if (isSameMaterialContent(held, hash, clean)) {
-        skipped++;
-        continue;
-      }
-      const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
-      const pageMatch = String(meta || '').match(/(\d+)/);
-      const record = {
-        id: 'mat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-        subjectId,
-        name: String(file.name || '未命名资料').slice(0, 160),
-        size: file.size,
-        ext,
-        kind: aiGuessFileKind(clean, file.name),
-        pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
-        chars,
-        addedAt: Date.now(),
-        hash,
-        text: clean
-      };
-      let saved = null;
-      try {
-        saved = await saveMaterialRecord(record, file.size <= MATERIAL_BLOB_LIMIT ? file : null);
-      } catch (e) {
-        // 原始文件写不下时退一步：只保留提取的文字
-        saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
-      }
-      materials.unshift(saved);
-      held.push(saved);
-      added++;
-    } catch (e) {
-      failed.push(`${label}：${(e && e.message) || '解析失败'}`);
-    }
-  }
-
-  materials.sort((a, b) => b.addedAt - a.addedAt);
-  render();
+  await runMaterialBatch('subject', subjectId, Array.from(files || []));
   const restored = $('.main-body');
   if (restored) restored.scrollTop = scroll;
-
-  const bits = [];
-  if (added) bits.push(`已存入 ${added} 份资料`);
-  if (skipped) bits.push(duplicateMaterialNotice(skipped));
-  if (failed.length) bits.push(`${failed.length} 份失败`);
-  toast(bits.length ? bits.join('，') : '没有新增资料', added ? 'success' : 'info', 4500);
-  if (failed.length) {
-    setTimeout(() => failed.slice(0, 3).forEach((msg) => toast(msg, 'error', 5000)), 350);
-  }
 }
 
 function previewMaterial(id) {
@@ -6360,6 +6465,9 @@ function renderQuality(set) {
 let aiPieces = [];
 let aiSeq = 0;
 let aiParseBusy = false;
+// 取消标记 + 这一批正在读的那几份：队列按下停要前者，进度回填要后者
+let aiParseCancel = false;
+let aiParseBatch = null;
 let aiLastRecommended = 0;
 let aiMode = 'generate';
 let aiSubjectId = null;
@@ -7224,6 +7332,11 @@ function aiFocusText() {
 // 上传解析成功后自动归档到当前练习科目：按正文认领已有那条
 async function autoStoreAIPiece(piece) {
   if (!piece || piece.fromMaterial || !piece.text || materialsUnavailable) return;
+  // 解析可以并发，查重 + 入库排队走：和资料库那两条上传路径同一个规矩（见 serializeStore）
+  return serializeStore(() => storeAIPieceToLibrary(piece));
+}
+
+async function storeAIPieceToLibrary(piece) {
   const subjectId = aiSubjectId || 'sub-inbox';
   const dup = findSameMaterial(materials.filter((m) => m.subjectId === subjectId), piece.hash, piece.text);
   if (dup) {
@@ -7476,6 +7589,11 @@ function renderAIFileList() {
       let meta;
       if (p.status === 'parsing') {
         meta = `<span class="spinner" style="width:11px;height:11px;border-width:2px;display:inline-block;vertical-align:-1px"></span> 正在解析…`;
+      } else if (p.status === 'queued') {
+        meta = '<span class="file-wait">排队中</span>';
+      } else if (p.status === 'not-read') {
+        // 没轮到 ≠ 读不出：这两句是这一批的边界，红字留给真正失败的那几份
+        meta = `<span class="file-wait">${p.taskState === 'over-budget' ? '留到下一批' : '还没读'}</span>`;
       } else if (p.status === 'error') {
         meta = `<span class="file-err">✕ ${esc(p.error || '解析失败')}</span>`;
       } else {
@@ -7509,8 +7627,11 @@ function renderAIFileSummary() {
   const ok = aiPieces.filter((p) => p.status === 'ok');
   const failed = aiPieces.filter((p) => p.status === 'error');
   const parsing = aiPieces.filter((p) => p.status === 'parsing');
+  // 只有原件还在手上的才谈得上「继续」：正文已经提取完的那份不需要重来
+  const waiting = aiPieces.filter((p) => (p.status === 'queued' || p.status === 'not-read') && p.file);
+  const retryable = failed.filter((p) => p.file);
   const parts = [];
-  const aggregate = ok.length > 1 || parsing.length > 0 || failed.length > 0;
+  const aggregate = ok.length > 1 || parsing.length > 0 || failed.length > 0 || waiting.length > 0;
   if (ok.length && aggregate) {
     const pages = ok.reduce((n, p) => n + (p.pages || 0), 0);
     const chars = ok.reduce((n, p) => n + p.chars, 0);
@@ -7522,8 +7643,19 @@ function renderAIFileSummary() {
     parts.push(`<span class="file-ok">✓ 已提取 ${ok.length} 个文件${pages ? ` · ${pages} 页` : ''} · ${chars.toLocaleString()} 字${kindText}</span>`);
   }
   if (parsing.length) parts.push(`正在解析 ${parsing.length} 个文件…`);
+  if (waiting.length) parts.push(`<span class="file-wait">还有 ${waiting.length} 份没读</span>`);
   if (failed.length) parts.push(`<span class="file-err">${failed.length} 个文件解析失败</span>`);
-  el.innerHTML = parts.join(' · ');
+  /* 停下来之后还要接得回去：以前一批开始就只能等它跑完，中途想停只能刷新页面，
+     把已经读好的那份也一起丢掉；失败的那几份同理，只能整批重传。 */
+  const actions = [];
+  if (aiParseBusy) {
+    const left = aiPieces.filter((p) => p.status === 'queued' || p.status === 'parsing').length;
+    actions.push(`<button type="button" class="uq-btn" onclick="cancelAIParse()">取消（还剩 ${left} 份）</button>`);
+  } else {
+    if (waiting.length) actions.push(`<button type="button" class="uq-btn" onclick="parseRemainingAIFiles()">继续读取 ${waiting.length} 份</button>`);
+    if (retryable.length) actions.push(`<button type="button" class="uq-btn" onclick="retryFailedAIFiles()">重试失败的 ${retryable.length} 份</button>`);
+  }
+  el.innerHTML = parts.join(' · ') + (actions.length ? `<span class="uq-inline">${actions.join('')}</span>` : '');
 }
 
 function toggleAIFileKind(id) {
@@ -7949,7 +8081,7 @@ async function handleAIFiles(files) {
       name: file.name,
       size: file.size,
       ext,
-      status: 'parsing',
+      status: 'queued',
       chars: 0,
       pages: 0,
       text: '',
@@ -7962,41 +8094,95 @@ async function handleAIFiles(files) {
   await parseAIQueue();
 }
 
-async function parseAIQueue() {
+/* 三个上传入口共用 web/upload-queue.js 那一份队列：并发 2、每份状态看得见、
+   能停下、失败的那几份能单独重来、读满预算就停。
+   以前这里是 for 循环一份份解析：第 3 份卡住时界面只会转圈，既停不下来，
+   也不知道后面还有几份没读，只能刷新页面把整批丢掉。 */
+async function parseAIQueue(pieces) {
   if (aiParseBusy) return;
+  const queue = (pieces || aiPieces).filter((p) => p.file && p.status !== 'ok');
+  if (!queue.length) return;
   aiParseBusy = true;
+  aiParseCancel = false;
+  aiParseBatch = queue;
+  // 先把上一轮的结论收掉：重来的那几份从「排队中」开始，别顶着一句旧错误转圈
+  queue.forEach((p) => { p.status = 'queued'; p.error = ''; p.taskState = 'queued'; });
+  renderAIFileList();
   refreshAIState();
   try {
-    for (;;) {
-      const piece = aiPieces.find((p) => p.status === 'parsing' && p.file);
-      if (!piece) break;
-      try {
-        const { text, meta } = await extractMaterial(piece.file);
-        const clean = cleanMaterialText(text);
-        const chars = aiVisibleChars(clean);
-        if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版文件，请先 OCR 或直接粘贴文字');
-        piece.text = clean;
-        piece.chars = chars;
-        // 指纹算在清洗过的正文上：和资料库里那条记录同一口径，之后归档才认得出是同一份
-        piece.hash = await materialTextHash(clean);
-        piece.meta = meta || '';
-        const m = String(meta || '').match(/(\d+)/);
-        piece.pages = m ? parseInt(m[1], 10) : 0;
-        if (!piece.kindTouched) piece.kind = aiGuessFileKind(clean, piece.name);
-        piece.status = 'ok';
-        await autoStoreAIPiece(piece);
-      } catch (e) {
-        piece.status = 'error';
-        piece.error = e && e.message ? e.message : '文件解析失败';
-      }
-      piece.file = null;
-      renderAIFileList();
-      refreshAIState();
-    }
+    await window.UploadQueue.run(queue, {
+      run: parseOneAIPiece,
+      countChars: aiVisibleChars,
+      isCancelled: () => aiParseCancel,
+      onTasks: syncAIParseTasks
+    });
   } finally {
     aiParseBusy = false;
+    aiParseBatch = null;
+    renderAIFileList();
     refreshAIState();
   }
+}
+
+/** 停下这一批：已经着手的这份会读完，排在后面的不再开始。 */
+function cancelAIParse() {
+  if (!aiParseBusy) return;
+  aiParseCancel = true;
+  renderAIFileSummary();
+}
+
+/** 取消或装不下之后接着读剩下的那几份。 */
+async function parseRemainingAIFiles() {
+  await parseAIQueue(aiPieces.filter((p) => (p.status === 'queued' || p.status === 'not-read') && p.file));
+}
+
+/** 只重来读不出那几份：成功的不该被再读一遍，那既慢又会在资料库里造出双胞胎。 */
+async function retryFailedAIFiles() {
+  await parseAIQueue(aiPieces.filter((p) => p.status === 'error' && p.file));
+}
+
+/* 队列任务状态回填到文件列表：AI 弹窗里这份列表本身就是进度面板，
+   不再另挂一块 UploadQueue.render——同一件事说两遍就是第二个轮子。
+   按下标对齐：run 收到的就是 queue 这批，任务顺序与它一致。 */
+function syncAIParseTasks(tasks) {
+  const queue = aiParseBatch || [];
+  tasks.forEach((task, index) => {
+    const piece = queue[index];
+    if (!piece) return;
+    piece.taskState = task.state;
+    if (task.state === 'done') piece.status = 'ok';
+    else if (task.state === 'failed') {
+      piece.status = 'error';
+      piece.error = task.error || '文件解析失败';
+    } else if (task.state === 'working') piece.status = 'parsing';
+    else if (task.state === 'queued') piece.status = 'queued';
+    // 被取消的和给预算让路的：都只是没轮到，不该穿红字
+    else piece.status = 'not-read';
+  });
+  renderAIFileList();
+  refreshAIState();
+}
+
+/* 一份文件的读取全过程：解析 → 清洗 → 指纹 → 归档。抛错就交给队列记成「读不出」。
+   成功之后才放下原件；失败或没轮到的那份必须留着它，否则「重试」无从谈起——
+   以前读完即置 null，界面上一句「重新上传」其实是把整批推倒重来。 */
+async function parseOneAIPiece(piece) {
+  const { text, meta } = await extractMaterial(piece.file);
+  const clean = cleanMaterialText(text);
+  const chars = aiVisibleChars(clean);
+  requireReadableText(chars);
+  piece.text = clean;
+  piece.chars = chars;
+  // 指纹算在清洗过的正文上：和资料库里那条记录同一口径，之后归档才认得出是同一份
+  piece.hash = await materialTextHash(clean);
+  piece.meta = meta || '';
+  const m = String(meta || '').match(/(\d+)/);
+  piece.pages = m ? parseInt(m[1], 10) : 0;
+  if (!piece.kindTouched) piece.kind = aiGuessFileKind(clean, piece.name);
+  piece.status = 'ok';
+  await autoStoreAIPiece(piece);
+  piece.file = null;
+  return { text: clean };
 }
 
 async function generateQuestions() {

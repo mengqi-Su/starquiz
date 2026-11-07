@@ -1740,6 +1740,53 @@ input[type="file"].form-input:active::file-selector-button {
 .ai-file-summary { margin-top: 8px; font-size: 12px; line-height: 1.5; color: var(--ink-mute); }
 .ai-file-summary:empty { display: none; }
 
+/* 一批资料的读取进度：新建向导 / 科目页 / AI 弹窗三个入口共用这一套。
+   纸底状态条而不是红底告警——「没轮到」「留到下一批」不是失败。 */
+.upload-queue { margin-top: 10px; }
+.upload-queue[hidden] { display: none; }
+.uq-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.uq-title { font-family: var(--display); font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.uq-actions { display: inline-flex; gap: 6px; flex-shrink: 0; }
+.uq-list {
+  list-style: none;
+  margin: 7px 0 0;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-2);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 156px;
+  overflow-y: auto;
+}
+.uq-row { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
+.uq-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: var(--hover-line-strong); }
+.uq-dot.done { background: var(--green); }
+.uq-dot.failed { background: var(--red); }
+.uq-dot.working { background: var(--brand); }
+.uq-dot.queued { opacity: 0.45; }
+.uq-dot.cancelled, .uq-dot.over-budget { opacity: 0.6; }
+.uq-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.uq-state { font-size: 11px; color: var(--ink-mute); flex-shrink: 0; }
+.uq-state.failed { color: var(--red); font-weight: 600; }
+.uq-btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+}
+.uq-btn:hover { border-color: var(--hover-line); color: var(--ink); }
+.uq-inline { display: inline-flex; gap: 6px; margin-left: 8px; vertical-align: -1px; }
+.file-wait { color: var(--ink-mute); font-weight: 600; }
+
 .ai-paste-toggle {
   margin-top: 9px;
   padding: 0;
