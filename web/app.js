@@ -59,16 +59,28 @@ const ICON = {
   play: `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>`,
   card: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>`,
   arrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h15M13.5 6l6 6-6 6"/></svg>`,
-  trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4.5v2A3.5 3.5 0 0 0 8 10.5M16 5h3.5v2a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 13v4M8.5 21h7M10 17h4l.5 4h-5z"/></svg>`
+  trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4.5v2A3.5 3.5 0 0 0 8 10.5M16 5h3.5v2a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 13v4M8.5 21h7M10 17h4l.5 4h-5z"/></svg>`,
+  // 导航图标只在这里定义一次，桌面侧栏和移动端底栏共用
+  navHome: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5 12 3.5l8.5 7v9a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z"/></svg>`,
+  navFolder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2h7.4a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
+  navChart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="M8.5 16v-4.5M13 16V7.5M17.5 16v-6.5"/></svg>`,
+  navGear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h9M18 7h1M5 12h4M13 12h6M5 17h9M18 17h1"/><circle cx="16" cy="7" r="2"/><circle cx="11" cy="12" r="2"/><circle cx="16" cy="17" r="2"/></svg>`,
+  navWrong: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12.5a8 8 0 1 1-2.6-5.9"/><path d="M20 4.5V9h-4.5"/><path d="M9.5 11.5l5 5M14.5 11.5l-5 5"/></svg>`,
+  plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  // 练习科目收纳卡组与侧栏分组用的三个线性图标，规格同 Exam Plan（lucide 16px / 行内 14px）
+  trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9.5 7V4.8h5V7M6.6 7l.8 12.1a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4L17.4 7"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5 12 15.5l6-6"/></svg>`,
+  calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>`
 };
 
+// bar 用于练习科目/练习集卡左侧的 3px 色条：需要在白卡上可读，所以用实色而不是淡底。
 const SET_ACCENTS = [
-  { bg: 'var(--lime)', fg: 'var(--ink)' },
-  { bg: 'var(--coral)', fg: 'var(--ink)' },
-  { bg: 'var(--lime-soft)', fg: 'var(--ink)' },
-  { bg: 'var(--coral-soft)', fg: 'var(--ink)' },
-  { bg: 'var(--paper-2)', fg: 'var(--ink)' },
-  { bg: 'var(--ink)', fg: 'var(--lime)' }
+  { bg: 'var(--lime-soft)', fg: 'var(--ink)', bar: '#1c1b1a' },
+  { bg: 'var(--coral-soft)', fg: 'var(--coral)', bar: '#b42318' },
+  { bg: 'var(--sun-soft)', fg: 'var(--sun)', bar: '#8a5a00' },
+  { bg: 'var(--mint-soft)', fg: 'var(--green)', bar: '#3f6b4f' },
+  { bg: 'var(--paper-2)', fg: 'var(--ink)', bar: '#a39e97' },
+  { bg: 'var(--ink)', fg: 'var(--paper)', bar: '#1c1b1a' }
 ];
 
 function setAccent(set) {
@@ -102,20 +114,55 @@ const STORAGE = {
   history: 'sq_history_v1',
   wrong: 'sq_wrong_v1',
   settings: 'sq_settings_v1',
-  subjects: 'sq_subjects_v1'
+  subjects: 'sq_subjects_v1',
+  planLinks: 'sq_plan_links_v1'
 };
 const SESSION_KEYS = { exam: 'sq_exam_v1', learning: 'sq_learning_v1' };
 
-// 内置学科固定存在，自建学科存在 sq_subjects_v1；未归档的题库进入「未分类」
-const BUILTIN_SUBJECTS = [
-  { id: 'sub-history', name: '历史', icon: '史', builtin: true },
-  { id: 'sub-bio', name: '生物', icon: '生', builtin: true },
-  { id: 'sub-code', name: '编程', icon: '码', builtin: true }
-];
-const INBOX_SUBJECT = { id: 'sub-inbox', name: '未分类', icon: '杂', builtin: true, inbox: true };
+// 起始不预置任何练习科目：练习科目由用户新建或在 AI 生成时自动创建；未归档的练习集进入「未分类」
+const BUILTIN_SUBJECTS = [];
+// 「未分类」是系统收纳位，不是用户取的名字：名字跟着界面语言走，这样英文界面里不会漏出中文。
+// 用户自建练习科目的 name 仍然是数据，渲染处一律 data-no-i18n，不进词典。切语言会整页重渲染，getter 取值即最新。
+const INBOX_SUBJECT = {
+  id: 'sub-inbox',
+  icon: '杂',
+  builtin: true,
+  inbox: true,
+  get name() {
+    return typeof isEn === 'function' && isEn() ? 'Unfiled' : '未分类';
+  }
+};
+// 备考规划伴侣应用：考点级深链互相跳转，数据各自保存在本地浏览器
+const EXAM_PLAN_URL = 'https://exam-plan-ai-zfc3er164xi.qoder.zone';
+let planLink = null; // 当前页面的临时联动上下文；持久关系保存在 sq_plan_links_v1（planLinkStore）
 const STORAGE_LIMIT_BYTES = 5 * 1024 * 1024;
 const bootNotes = [];
 let lastStorageWarn = 0;
+
+// 联动协议 v1 的常量与长度闸门（必须在启动读取 planLinks 之前就声明）
+const PLAN_LINK_SCHEMA_VERSION = 1;
+// 超长标题判为无效而不是截断：截断后两端算出的钥匙会对不上
+const PLAN_PARAM_LIMITS = { plan: 64, subject: 100, unit: 400, topic: 400, exam: 150, task: 128 };
+const PLAN_LINK_ID_RE = /^([\w.\-]{1,64}):(t1_[0-9a-f]{32})$/;
+const PLAN_ID_RE = /^[\w.\-:]{1,64}$/;
+const PLAN_TOPIC_KEY_RE = /^t1_[0-9a-f]{32}$/;
+const PLAN_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const PLAN_ISO_RE = /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
+
+// 考试级联动快照：Exam Plan 在点击「练这个考点」时，把这场考试的资料与真题原文，
+// 留在同一个标签页的 window.name 里随跳转一起过来。读到即清空，不经过服务器，
+// 也不跨域读取对方的 IndexedDB / localStorage——只在用户自己点这一次换一手数据。
+const HANDOFF_PROTOCOL = 'exam-plan-handoff';
+const HANDOFF_VERSION = 1;
+const HANDOFF_LIMITS = {
+  maxJson: 1_500_000,
+  materials: 20,
+  name: 160,
+  text: 200_000,        // 与 sanitizeMaterialMeta 的文本上限一致，超过会被截到这里
+  minVisibleChars: 50,  // 与上传解析的字数闸门一致：少于这个字数出不出题
+};
+// 本次跳转带来的快照；启动时取一次，用不上下次也不会再出现（window.name 已被清空）
+let examHandoff = null;
 
 function arrOf(x) { return Array.isArray(x) ? x : []; }
 function objOf(x) { return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
@@ -207,6 +254,8 @@ function sanitizeStoredQuestion(raw, takenIds) {
     content,
     explanation: strOf(raw.explanation, 6000)
   };
+  // 归属状态要跟着题目落盘：被默认塞进第一个知识点的题不能算作目标考点
+  if (raw.kpUnmatched === true) q.kpUnmatched = true;
   if (type === 'single' || type === 'multi') {
     const options = arrOf(raw.options).slice(0, 8).map((o) => strOf(o, 800).trim()).filter(Boolean);
     if (options.length < 2) return null;
@@ -245,6 +294,9 @@ function sanitizeStoredQuestion(raw, takenIds) {
   return q;
 }
 
+// 练习集出题来源：清洗链与详情页标签共用同一份白名单
+const SET_ORIGIN_KINDS = ['generate', 'exam', 'batch'];
+
 function sanitizeStoredSet(raw, takenSetIds) {
   if (!raw || typeof raw !== 'object') return null;
   const name = strOf(raw.name, 80).trim();
@@ -266,15 +318,17 @@ function sanitizeStoredSet(raw, takenSetIds) {
   arrOf(raw.questions).slice(0, 500).forEach((rq) => {
     const q = sanitizeStoredQuestion(rq, qTaken);
     if (!q) { dropped++; return; }
-    q.knowledgePointId = knowledgePoints.some((k) => k.id === (rq && rq.knowledgePointId))
-      ? rq.knowledgePointId
-      : (knowledgePoints[0] ? knowledgePoints[0].id : null);
+    const matched = knowledgePoints.some((k) => k.id === (rq && rq.knowledgePointId));
+    q.knowledgePointId = matched ? rq.knowledgePointId : (knowledgePoints[0] ? knowledgePoints[0].id : null);
+    if (!matched) q.kpUnmatched = true;
     questions.push(q);
   });
   if (!questions.length) return null;
   const id = idOf(raw.id && !takenSetIds.has(String(raw.id)) ? raw.id : '', 'custom-');
   takenSetIds.add(id);
   const quality = sanitizeQuality(raw.quality);
+  // 联动来源必须显式放行并校验，否则刷新和备份导入后来源就丢了
+  const source = sanitizeSetSource(raw.source, knowledgePoints.map((kp) => kp.id));
   return {
     id,
     name: name.slice(0, 40),
@@ -284,6 +338,13 @@ function sanitizeStoredSet(raw, takenSetIds) {
     knowledgePoints,
     questions,
     ...(/^sub-[A-Za-z0-9_-]{1,32}$/.test(String(raw.subjectId)) ? { subjectId: raw.subjectId } : {}),
+    ...(source ? { source } : {}),
+    // 出题来源与聚焦考点要在刷新/备份导入后仍然可见，否则详情页的「练习来源」上下文会凭空消失
+    ...(SET_ORIGIN_KINDS.includes(String(raw.origin)) ? { origin: String(raw.origin) } : {}),
+    ...(() => {
+      const focus = strOf(raw.focusTopic, PLAN_PARAM_LIMITS.topic).trim();
+      return focus ? { focusTopic: focus } : {};
+    })(),
     ...(Number.isInteger(raw.accent) ? { accent: ((raw.accent % 6) + 6) % 6 } : {}),
     ...(quality ? { quality } : {}),
     ...(dropped ? { droppedQuestions: dropped } : {})
@@ -304,14 +365,182 @@ function sanitizeStoredSets(raw, existingIds = new Set()) {
   return { sets, droppedSets, droppedQuestions };
 }
 
-// 自建学科：名称是唯一标识，内置学科不允许重复
+// 自建练习科目 = 练习科目：除了名称，还带考试信息（目标考试 / 考试日期 / 开始日期 / 备考目标）
+// 和练习参数（默认题量 / 每日练习目标），首页与 AI 出题都读这些字段。
+function isoDateOf(v) {
+  const s = strOf(v, 10).trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+}
+
+/* ===== 页头身份：页图标 =====
+ * 规则与 Exam Plan AI 的 lib/pageIcon.ts 一致：图标只在「这份科目被点名的地方」出现一次，
+ * 取值统一走 subjectIcon()；没显式选过时按名称/考试关键词自动配，配不出落到 📚。
+ * 绝不随机——同一科目在两个位置渲染成不同图标，身份就散了。 */
+const PAGE_ICON_CHOICES = ['📐', '🧮', '📊', '⚗️', '🔬', '🧬', '🧲', '🌍', '💻', '🧠', '🩺', '📜', '⚖️', '🏛️', '💹', '🔤', '🎼', '🎨', '🏗️', '⚙️', '🗄️', '🎓', '🧭', '📚'];
+
+const KEYWORD_ICONS = [
+  [['数学', '高数', '线性代数', '概率', '统计', '微积分', 'math', 'calculus', 'algebra', 'statistic', 'geometry'], '📐'],
+  [['经济', '金融', '会计', '财务', 'market', 'finance', 'economi', 'account'], '💹'],
+  [['物理', '力学', '电磁', 'quantum', 'physics'], '🧲'],
+  [['化学', 'chemical', 'chemistry', 'organic'], '⚗️'],
+  [['生物', '生物化', 'genetic', 'biology', 'molecu'], '🧬'],
+  [['医学', '护理', '解剖', '临床', 'medic', 'nursing', 'anatom'], '🩺'],
+  [['心理', 'cognit', 'psycholog'], '🧠'],
+  [['计算机', '软件', '程序', '编程', '算法', '数据', 'code', 'programming', 'computer', 'algorithm', 'database', 'network'], '💻'],
+  [['语文', '中文', '文学', '汉语', '历史', '考古', 'literature', 'chinese', 'history'], '📜'],
+  [['政治', '法律', '法学', '马克思', 'philosoph', 'politic', 'law', 'legal'], '⚖️'],
+  [['英语', '日语', '韩语', '法语', '德语', '俄语', '外语', '雅思', '托福', 'english', 'japanese', 'french', 'german'], '🔤'],
+  [['地理', '地质', '环境', 'environment', 'geograph', 'geolog'], '🌍'],
+  [['建筑', '工程', '机械', '电气', '土木', 'architect', 'engineer', 'mechanic', 'civil'], '🏗️'],
+  [['音乐', '美术', '设计', '艺术', 'music', 'art', 'design'], '🎨'],
+  [['管理', '工商', '人力', '营销', 'management', 'business', 'marketing'], '🗄️'],
+  [['教育', '师范', 'teach', 'educat'], '🎓'],
+  [['导游', '旅游', '酒店', 'travel', 'tourism', 'hospitality'], '🧭'],
+];
+
+function autoPageIcon(name, examName) {
+  const haystack = `${name || ''} ${examName || ''}`.toLowerCase();
+  for (const [keys, emoji] of KEYWORD_ICONS) {
+    if (keys.some((key) => haystack.includes(key.toLowerCase()))) return emoji;
+  }
+  return '📚';
+}
+
+/* 图标的合法形态只有两种：选择器里那种字形，或者「没选」。早期版本把名称里的汉字
+ * 当图标存了下来（历史 → 史、编程 → 码），那不是身份，一律按没选处理——
+ * 校验只在这一处，读取和落库都走它，不在每个调用点各判一遍。 */
+const PICTOGRAPH = /\p{Extended_Pictographic}/u;
+
+function pageIconOf(raw) {
+  const icon = strOf(raw, 8).trim();
+  return PICTOGRAPH.test(icon) ? icon : '';
+}
+
+function subjectIcon(subject) {
+  return pageIconOf(subject && subject.icon)
+    || autoPageIcon(subject && subject.name, subject && subject.examName);
+}
+
+/* ===== 页头封面：内置纹理 + 用户上传 =====
+ * 与 Exam Plan AI 的 lib/pageCover.ts 同一套：封面只是装饰，不承载信息与动作，
+ * 只出现在「打开这份科目」那一页的页头。存法一眼分得开——内置是 "preset:<id>"，
+ * 图片是 "data:image/..."，其余一律当没有封面。纹理走浅纸质调子，压深了就成了营销 hero。 */
+const grain = (angle, alpha) =>
+  `repeating-linear-gradient(${angle}deg, rgba(15,13,12,${alpha}) 0 1px, rgba(255,255,255,0) 1px 7px)`;
+const sheen = (from, to) =>
+  `radial-gradient(120% 95% at 12% 0%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 58%), linear-gradient(180deg, ${from} 0%, ${to} 100%)`;
+
+// 色卡取自 Qoder 官网实测值（与 Exam Plan 的 lib/pageCover.ts 同一套）：
+// 纸面 #F2F4F2 / #F7F8F7 / #F9F9F9，墨色 #0F0D0C，灰阶 #E3E3E3 / #DDDDDD，
+// 品牌绿 #73B78E / #80C776，强调色 #FF5F57 / #FEBD2E。每格都是强调色压淡 + 纸面底色。
+const COVER_PRESETS = [
+  { id: 'paper', zh: '纸纹', en: 'Paper', background: `${grain(135, 0.022)}, ${grain(45, 0.014)}, ${sheen('#f9f9f9', '#f2f4f2')}` },
+  { id: 'mist', zh: '雾青', en: 'Haze', background: `${grain(135, 0.018)}, ${sheen('#f1f6f2', '#e2ede5')}` },
+  { id: 'moss', zh: '苔绿', en: 'Moss', background: `${grain(135, 0.018)}, ${sheen('#eef6ea', '#dcebd8')}` },
+  { id: 'wheat', zh: '麦黄', en: 'Wheat', background: `${grain(135, 0.02)}, ${sheen('#fbf4e1', '#f4e5bf')}` },
+  { id: 'clay', zh: '陶土', en: 'Clay', background: `${grain(135, 0.018)}, ${sheen('#fbefee', '#f3dbd8')}` },
+  { id: 'slate', zh: '石墨', en: 'Slate', background: `${grain(135, 0.02)}, ${grain(45, 0.012)}, ${sheen('#f3f3f3', '#dcdcdc')}` },
+];
+
+const PRESET_PREFIX = 'preset:';
+// 封面进 localStorage，尺寸必须封顶：长边 1600 足够铺满最宽的带，再大只是把本地存储撑爆。
+const COVER_MAX_EDGE = 1600;
+const COVER_MAX_INPUT_BYTES = 12 * 1024 * 1024;
+const COVER_MAX_DATA_CHARS = 420000;
+
+function findCoverPreset(value) {
+  const s = String(value || '');
+  if (!s.startsWith(PRESET_PREFIX)) return null;
+  return COVER_PRESETS.find((p) => p.id === s.slice(PRESET_PREFIX.length)) || null;
+}
+
+function coverImageSrc(value) {
+  const s = String(value || '');
+  return s.startsWith('data:image/') && s.length <= COVER_MAX_DATA_CHARS && !s.includes('"') ? s : null;
+}
+
+/** 存储层唯一的封面校验：不是内置纹理也不是合规图片，就退回「没有封面」。 */
+function coverOf(raw) {
+  const s = strOf(raw, COVER_MAX_DATA_CHARS + 64).trim();
+  if (findCoverPreset(s)) return s;
+  return coverImageSrc(s) ? s : '';
+}
+
+function hasSubjectCover(subject) {
+  return Boolean(findCoverPreset(subject && subject.cover) || coverImageSrc(subject && subject.cover));
+}
+
+function subjectCoverHTML(subject) {
+  const preset = findCoverPreset(subject.cover);
+  const src = coverImageSrc(subject.cover);
+  if (!preset && !src) return '';
+  const style = preset ? ` style="background:${preset.background}"` : '';
+  return `<div class="ui-cover-band"${style}>${src ? `<img src="${esc(src)}" alt="" decoding="async">` : ''}</div>`;
+}
+
+/** 读成封面用的 data URL：限尺寸 → 等比缩到长边 1600 → webp（不支持就 jpeg）；
+ * 透明底先铺应用纸色，免得转 jpeg 时变黑块。压到上限还装不下就报 size。 */
+function readCoverImage(file) {
+  if (!file || !String(file.type || '').startsWith('image/')) return Promise.reject(coverError('type'));
+  if (file.size > COVER_MAX_INPUT_BYTES) return Promise.reject(coverError('size'));
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(coverError('decode'));
+    reader.readAsDataURL(file);
+  }).then((raw) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(coverError('decode'));
+    image.src = raw;
+  })).then((image) => {
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    if (!width || !height) throw coverError('decode');
+    const encode = (edge, quality) => {
+      const scale = Math.min(1, edge / Math.max(width, height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width * scale));
+      canvas.height = Math.max(1, Math.round(height * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw coverError('canvas');
+      ctx.fillStyle = '#f7f8f7';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      let out = '';
+      try { out = canvas.toDataURL('image/webp', quality); } catch { out = ''; }
+      if (!out.startsWith('data:image/webp')) {
+        try { out = canvas.toDataURL('image/jpeg', quality); } catch { throw coverError('canvas'); }
+      }
+      if (!out.startsWith('data:image/')) throw coverError('canvas');
+      return out;
+    };
+    let encoded = encode(COVER_MAX_EDGE, 0.82);
+    if (encoded.length > COVER_MAX_DATA_CHARS) encoded = encode(1000, 0.72);
+    if (encoded.length > COVER_MAX_DATA_CHARS) throw coverError('size');
+    return encoded;
+  });
+}
+
+function coverError(code) {
+  const error = new Error(`cover:${code}`);
+  error.code = code;
+  return error;
+}
+
+function coverErrorMessage(code) {
+  if (code === 'size') return '图片太大，本地存不下，换一张或选内置纹理。';
+  if (code === 'type') return '只能选图片文件。';
+  return '这张图片读不出来，换一张或选内置纹理。';
+}
+
 function sanitizeSubjects(raw) {
   const builtinNames = new Set(BUILTIN_SUBJECTS.map((s) => s.name));
   const seen = new Set(BUILTIN_SUBJECTS.map((s) => s.id));
   const out = [];
   arrOf(raw).forEach((item) => {
     if (!item || typeof item !== 'object') return;
-    const name = strOf(item.name, 20).trim();
+    const name = strOf(item.name, 40).trim();
     if (!name || builtinNames.has(name)) return;
     const key = name.toLowerCase();
     if (out.some((s) => s.name.toLowerCase() === key)) return;
@@ -320,8 +549,15 @@ function sanitizeSubjects(raw) {
     seen.add(id);
     out.push({
       id,
-      name: name.slice(0, 20),
-      icon: (strOf(item.icon, 2) || name.slice(0, 1)).slice(0, 2),
+      name: name.slice(0, 40),
+      icon: pageIconOf(item.icon),
+      cover: coverOf(item.cover),
+      examName: strOf(item.examName, 100).trim(),
+      examDate: isoDateOf(item.examDate),
+      startDate: isoDateOf(item.startDate),
+      goal: strOf(item.goal, 60).trim(),
+      defaultCount: intOf(item.defaultCount, 15, 5, 60),
+      dailyGoal: intOf(item.dailyGoal, 20, 5, 100),
       createdAt: Number(item.createdAt) || Date.now()
     });
   });
@@ -370,10 +606,12 @@ function repairHistory(raw) {
     const gradedDefault = answers.filter((x) => x.correct !== null).length;
     const graded = intOf(a.graded, gradedDefault, 0, 1000);
     const correct = intOf(a.correct, answers.filter((x) => x.correct === true).length, 0, graded || 1000);
+    // 考点成绩快照要能挺过刷新和备份导入；旧历史没有它就只当普通成绩，不补算
+    const planResult = sanitizePlanResult(a.planResult);
     out.push({
       id,
       setId,
-      setName: strOf(a.setName, 80) || '（未知题库）',
+      setName: strOf(a.setName, 80) || '（未知练习集）',
       mode: a.mode === 'exam' ? 'exam' : 'learning',
       startedAt: Number(a.startedAt) || finishedAt,
       finishedAt,
@@ -383,50 +621,192 @@ function repairHistory(raw) {
       correct,
       ungraded: intOf(a.ungraded, 0, 0, 1000),
       score: intOf(a.score, graded ? Math.round((correct / graded) * 100) : 0, 0, 100),
-      answers
+      answers,
+      ...(planResult ? { planResult } : {})
     });
   });
   return out.sort((x, y) => y.finishedAt - x.finishedAt).slice(0, 200);
 }
 
-function repairWrong(raw) {
-  const out = {};
-  Object.keys(objOf(raw)).slice(0, 200).forEach((setId) => {
-    const map = objOf(raw[setId]);
-    const clean = {};
-    Object.keys(map).slice(0, 500).forEach((qid) => {
-      const n = parseInt(map[qid], 10);
-      if (Number.isFinite(n) && n > 0) clean[strOf(qid, 64)] = Math.min(n, 999);
-    });
-    if (Object.keys(clean).length) out[strOf(setId, 64)] = clean;
+/* 错题本 v2。主键仍是 setId + qid：题目 id 在集内生成（'q' + n），跨集会撞名。
+   v1 每条只有次数、答对就删除；v2 每条存 {次数, 考点, 首错/最近错/最近对时间, 状态}，
+   答对改成归档为 mastered——次数和错题时间都留着，用户随时能把这道题重新列入。 */
+const WRONG_BANK_VERSION = 2;
+const WRONG_DAY_MS = 86400000;
+// 错 1 次隔天回看，错 2 次 3 天后回看；错到第 3 次算顽固题，之后每天都能练
+const WRONG_SPACING = [1, 3];
+const WRONG_STUBBORN_TIMES = 3;
+const WRONG_MAX_STAMP = 4102444800000; // 2100-01-01：挡住被改坏的时间戳
+
+function wrongBankSetCount(raw) {
+  const src = objOf(raw);
+  if (Object.prototype.hasOwnProperty.call(src, 'bySet')) return Object.keys(objOf(src.bySet)).length;
+  return Object.keys(src).filter((k) => k !== 'version').length;
+}
+
+function emptyWrongBank() {
+  return { version: WRONG_BANK_VERSION, bySet: {} };
+}
+
+function wrongTimesOf(raw) {
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 999) : 0;
+}
+
+function wrongStampOf(raw) {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 && n < WRONG_MAX_STAMP ? Math.round(n) : null;
+}
+
+function normalizeWrongEntry(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const times = wrongTimesOf(raw.times);
+  if (!times) return null;
+  const lastCorrectAt = wrongStampOf(raw.lastCorrectAt);
+  const firstWrongAt = wrongStampOf(raw.firstWrongAt);
+  const lastWrongAt = wrongStampOf(raw.lastWrongAt) || firstWrongAt;
+  // 没有答对时间的条目不承认已掌握，状态一律退回 open
+  return {
+    times,
+    status: raw.status === 'mastered' && lastCorrectAt ? 'mastered' : 'open',
+    kpId: strOf(raw.kpId, 40).trim(),
+    firstWrongAt: firstWrongAt || lastWrongAt,
+    lastWrongAt,
+    lastCorrectAt,
+    lastAttemptId: strOf(raw.lastAttemptId, 64).trim()
+  };
+}
+
+// v1 只有次数：复习时间回推到已有的练习记录上，查不到就留 null，不伪造「什么时候错的」
+function wrongStampsFromHistory(attempts, setId, qid) {
+  const out = { firstWrongAt: null, lastWrongAt: null, lastCorrectAt: null, wrongCount: 0 };
+  arrOf(attempts).forEach((a) => {
+    if (!a || a.setId !== setId) return;
+    const at = wrongStampOf(a.finishedAt);
+    if (!at) return;
+    const hit = arrOf(a.answers).find((x) => x && x.qid === qid);
+    if (!hit || (hit.correct !== true && hit.correct !== false)) return;
+    if (hit.correct === false) {
+      out.wrongCount++;
+      out.lastWrongAt = Math.max(out.lastWrongAt || 0, at);
+      out.firstWrongAt = out.firstWrongAt ? Math.min(out.firstWrongAt, at) : at;
+    } else {
+      out.lastCorrectAt = Math.max(out.lastCorrectAt || 0, at);
+    }
   });
   return out;
+}
+
+function wrongKpIdOf(setId, qid) {
+  const q = getQuestion(getSet(setId), qid);
+  return q ? strOf(q.knowledgePointId, 40).trim() : '';
+}
+
+// 两种形状都要能读：{setId:{qid:次数}} 和 {version,bySet:{setId:{qid:{…}}}}；
+// 补时间戳只填空值，所以重复执行（刷新、备份导入）不会改写已经算好的复习节奏
+function repairWrong(raw, attempts) {
+  const src = objOf(raw);
+  const isEnvelope = Object.prototype.hasOwnProperty.call(src, 'bySet') || src.version === WRONG_BANK_VERSION;
+  const map = isEnvelope ? objOf(src.bySet) : src;
+  const bank = emptyWrongBank();
+  Object.keys(map).slice(0, 200).forEach((rawSetId) => {
+    const setId = strOf(rawSetId, 64);
+    const entries = objOf(map[rawSetId]);
+    const clean = {};
+    Object.keys(entries).slice(0, 500).forEach((rawQid) => {
+      const qid = strOf(rawQid, 64);
+      if (!setId || !qid) return;
+      const value = entries[rawQid];
+      const legacyTimes = value && typeof value === 'object' ? 0 : wrongTimesOf(value);
+      const entry = value && typeof value === 'object'
+        ? normalizeWrongEntry(value)
+        : (legacyTimes
+          ? { times: legacyTimes, status: 'open', kpId: '', firstWrongAt: null, lastWrongAt: null, lastCorrectAt: null, lastAttemptId: '' }
+          : null);
+      if (!entry) return;
+      if (entry.firstWrongAt === null || entry.lastWrongAt === null || entry.lastCorrectAt === null || !entry.kpId) {
+        const derived = wrongStampsFromHistory(attempts, setId, qid);
+        if (entry.firstWrongAt === null) entry.firstWrongAt = derived.firstWrongAt;
+        if (entry.lastWrongAt === null) entry.lastWrongAt = derived.lastWrongAt || entry.firstWrongAt;
+        if (entry.lastCorrectAt === null) entry.lastCorrectAt = derived.lastCorrectAt;
+        if (derived.wrongCount > entry.times) entry.times = Math.min(999, derived.wrongCount);
+        if (!entry.kpId) entry.kpId = wrongKpIdOf(setId, qid);
+      }
+      clean[qid] = entry;
+    });
+    if (Object.keys(clean).length) bank.bySet[setId] = clean;
+  });
+  return bank;
+}
+
+// 备份合并：次数取大的、时间取端的；只有一侧判为未掌握就当未掌握，不把对方的进步抹掉
+function mergeWrongEntry(target, patch) {
+  const next = target && target.times ? { ...target } : { ...patch };
+  next.times = Math.min(999, Math.max(next.times || 0, patch.times || 0));
+  next.status = next.status === 'open' || patch.status === 'open' ? 'open' : 'mastered';
+  const stamps = [next.firstWrongAt, patch.firstWrongAt].filter(Boolean);
+  next.firstWrongAt = stamps.length ? Math.min(...stamps) : null;
+  const wrongs = [next.lastWrongAt, patch.lastWrongAt].filter(Boolean);
+  next.lastWrongAt = wrongs.length ? Math.max(...wrongs) : null;
+  const rights = [next.lastCorrectAt, patch.lastCorrectAt].filter(Boolean);
+  next.lastCorrectAt = rights.length ? Math.max(...rights) : null;
+  if (next.status === 'mastered' && !next.lastCorrectAt) next.status = 'open';
+  next.kpId = next.kpId || patch.kpId || '';
+  next.lastAttemptId = '';
+  return next;
 }
 
 const bootSets = readStored(STORAGE.sets);
 const bootHistory = readStored(STORAGE.history);
 const bootWrong = readStored(STORAGE.wrong);
 const bootSubjects = readStored(STORAGE.subjects);
+const bootPlanLinks = readStored(STORAGE.planLinks);
 const settings = objOf(readStored(STORAGE.settings).value);
 
 const baseSetIds = new Set(
   (typeof SAMPLE_SETS !== 'undefined' ? arrOf(SAMPLE_SETS) : []).map((s) => s.id)
 );
-if (!bootSets.ok) bootNotes.push('浏览器当前禁止了本地存储，本次的题库和记录在刷新后可能丢失');
+if (!bootSets.ok) bootNotes.push('浏览器当前禁止了本地存储，本次的练习集和记录在刷新后可能丢失');
 const repairedSets = sanitizeStoredSets(bootSets.value, baseSetIds);
 let customSets = repairedSets.sets;
 let history = repairHistory(bootHistory.value);
-let wrongBank = repairWrong(bootWrong.value);
+let wrongBank = repairWrong(bootWrong.value, history);
 let userSubjects = sanitizeSubjects(bootSubjects.value);
+let planLinkStore = sanitizePlanLinks(bootPlanLinks.value);
 let materials = [];
+
+// 早期版本会把内置的演示练习集和练习科目写进本地存储。起始状态现在保持干净，
+// 这里一次性清掉那些遗留的演示内容；用户自己上传资料生成的练习集不受影响。
+const LEGACY_DEMO_SET_IDS = ['modern-history', 'biology-basics', 'js-basics', 'python-basics'];
+const LEGACY_DEMO_SUBJECT_IDS = ['sub-history', 'sub-bio', 'sub-code'];
+const legacyDemoSetIds = new Set(LEGACY_DEMO_SET_IDS);
+const legacyDemoRemovedSets = customSets.filter((s) => legacyDemoSetIds.has(s.id));
+if (legacyDemoRemovedSets.length) {
+  customSets = customSets.filter((s) => !legacyDemoSetIds.has(s.id));
+  const keptSetIds = new Set(customSets.map((s) => s.id));
+  history = history.filter((h) => keptSetIds.has(h.setId));
+  LEGACY_DEMO_SET_IDS.forEach((id) => { delete wrongBank.bySet[id]; });
+}
+// 内置练习科目可能已经被用户自己的练习集使用：只要还有练习集挂在上面，就把它当普通练习科目保留。
+const legacyDemoSubjectIds = new Set(LEGACY_DEMO_SUBJECT_IDS);
+const referencedSubjectIds = new Set(
+  customSets.map((s) => s.subjectId).filter((id) => typeof id === 'string' && id)
+);
+if (userSubjects.some((s) => legacyDemoSubjectIds.has(s.id) && !referencedSubjectIds.has(s.id))) {
+  userSubjects = userSubjects.filter(
+    (s) => !legacyDemoSubjectIds.has(s.id) || referencedSubjectIds.has(s.id)
+  );
+}
+const removedDemoContent = legacyDemoRemovedSets.length > 0;
 let materialsReady = false;
 let materialsUnavailable = false;
 
-if (repairedSets.droppedSets) bootNotes.push(`已跳过 ${repairedSets.droppedSets} 个损坏的题库`);
+if (repairedSets.droppedSets) bootNotes.push(`已跳过 ${repairedSets.droppedSets} 个损坏的练习集`);
 if (repairedSets.droppedQuestions) bootNotes.push(`已修复 ${repairedSets.droppedQuestions} 道异常题目`);
+if (removedDemoContent) bootNotes.push('已移除早期内置的演示练习集，题目现在只来自你上传的资料');
 if (!bootSets.missing && bootSets.ok && !bootSets.corrupt) {
   const rawCount = arrOf(bootSets.value).length;
-  if (repairedSets.sets.length !== rawCount || repairedSets.droppedQuestions) {
+  if (customSets.length !== rawCount || repairedSets.droppedQuestions) {
     saveJSONQuiet(STORAGE.sets, customSets);
   }
 }
@@ -437,7 +817,7 @@ if (!bootWrong.missing && bootWrong.ok && !bootWrong.corrupt) saveJSONQuiet(STOR
 if (!bootSubjects.missing && bootSubjects.ok && !bootSubjects.corrupt) {
   if (userSubjects.length !== arrOf(bootSubjects.value).length) saveJSONQuiet(STORAGE.subjects, userSubjects);
 }
-if (bootSubjects.corrupt) bootNotes.push('学科文件夹数据损坏，已保留备份并重置为内置学科');
+if (bootSubjects.corrupt) bootNotes.push('练习科目数据损坏，已保留备份并重置为空列表');
 
 let resume = { exam: null, learning: null };
 let learningPersistTimer = null;
@@ -458,6 +838,8 @@ function persistExam() {
     setId: ex.setId,
     name: ex.name || '',
     questions: ex.questions,
+    owners: ex.owners || null,
+    mock: !!ex.mock,
     answers: ex.answers,
     current: ex.current,
     startedAt: ex.startedAt,
@@ -487,6 +869,7 @@ function persistLearning() {
     cache: l.cache,
     seenKP: l.seenKP || {},
     startedAt: l.startedAt,
+    title: strOf(l.title, 60),
     onlyWrong: !!l.onlyWrong
   });
   if (!ok) warnSessionSaveFailed();
@@ -560,6 +943,9 @@ function validateExamSession(p) {
     setId: strOf(p.setId, 80),
     name: strOf(p.name, 80) || '未命名考试',
     questions: lite,
+    // owners 与题目一一对应；数量对不上就退回整场考试只用 setId
+    owners: arrOf(p.owners).length === lite.length ? arrOf(p.owners).map((o) => strOf(o, 80)) : null,
+    mock: !!p.mock,
     answers: cleanAnswers,
     current: intOf(p.current, 0, 0, lite.length - 1),
     startedAt: Number(p.startedAt) || Date.now(),
@@ -570,38 +956,41 @@ function validateExamSession(p) {
 
 function validateLearningSession(p) {
   if (!p || typeof p !== 'object') return null;
-  const set = getSet(strOf(p.setId, 80));
-  if (!set) return null;
-  const qids = arrOf(p.qids).map((q) => strOf(q, 64))
-    .filter((qid) => set.questions.some((q) => q.id === qid));
-  if (!qids.length) return null;
+  const baseSetId = strOf(p.setId, 80);
+  // 键自带所属练习集：某一集被删掉时只丢掉它那些题，剩下的还能继续练
+  const keys = arrOf(p.qids).map((k) => strOf(k, 200)).filter((k, i, all) => {
+    if (!k || all.indexOf(k) !== i) return false;
+    return !!sessionQuestionAt(baseSetId, k);
+  });
+  if (!keys.length) return null;
   const rawAnswers = objOf(p.answers);
   const rawResults = objOf(p.results);
   const rawCache = objOf(p.cache);
   const answers = {};
-  qids.forEach((qid) => {
-    const q = set.questions.find((x) => x.id === qid);
-    if (!q || rawAnswers[qid] === undefined) return;
-    const v = rawAnswers[qid];
-    if (q.type === 'multi') answers[qid] = arrOf(v).map((x) => parseInt(x, 10)).filter((n) => Number.isInteger(n) && n >= 0 && n < (q.options || []).length);
-    else if (q.type === 'tf') answers[qid] = typeof v === 'boolean' ? v : null;
-    else if (q.type === 'single') answers[qid] = Number.isInteger(parseInt(v, 10)) && v !== null ? parseInt(v, 10) : null;
-    else answers[qid] = v == null ? null : strOf(v, 12000);
+  keys.forEach((key) => {
+    const q = sessionQuestionAt(baseSetId, key);
+    if (!q || rawAnswers[key] === undefined) return;
+    const v = rawAnswers[key];
+    if (q.type === 'multi') answers[key] = arrOf(v).map((x) => parseInt(x, 10)).filter((n) => Number.isInteger(n) && n >= 0 && n < (q.options || []).length);
+    else if (q.type === 'tf') answers[key] = typeof v === 'boolean' ? v : null;
+    else if (q.type === 'single') answers[key] = Number.isInteger(parseInt(v, 10)) && v !== null ? parseInt(v, 10) : null;
+    else answers[key] = v == null ? null : strOf(v, 12000);
   });
   const results = {};
-  Object.keys(rawResults).slice(0, 500).forEach((qid) => {
-    if (!qids.includes(qid)) return;
-    const r = objOf(rawResults[qid]);
-    results[qid] = { correct: r.correct === true, answer: r.answer, output: strOf(r.output, 4000), revealed: !!r.revealed };
+  keys.forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(rawResults, key)) return;
+    const r = objOf(rawResults[key]);
+    results[key] = { correct: r.correct === true, answer: r.answer, output: strOf(r.output, 4000), revealed: !!r.revealed };
   });
   const cache = {};
-  Object.keys(rawCache).slice(0, 500).forEach((qid) => {
-    if (qids.includes(qid)) cache[qid] = strOf(rawCache[qid], 12000);
+  keys.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(rawCache, key)) cache[key] = strOf(rawCache[key], 12000);
   });
   return {
-    setId: set.id,
-    qids,
-    index: intOf(p.index, 0, 0, qids.length - 1),
+    setId: baseSetId,
+    title: strOf(p.title, 60),
+    qids: keys,
+    index: intOf(p.index, 0, 0, keys.length - 1),
     answers,
     results,
     cache,
@@ -651,7 +1040,7 @@ function renderResumeBar() {
     rows.push(`
       <div class="resume-bar">
         <span class="resume-tag">学习</span>
-        <span class="resume-copy"><b>${esc((getSet(l.setId) || {}).name || '学习进度')}</b> · 第 ${l.index + 1}/${total} 题 · 已答 ${answered}</span>
+        <span class="resume-copy"><b>${esc(l.title || (getSet(l.setId) || {}).name || '学习进度')}</b> · 第 ${l.index + 1}/${total} 题 · 已答 ${answered}</span>
         <span class="resume-actions">
           <button type="button" class="btn btn-primary btn-sm" onclick="resumeLearning()">继续学习</button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="discardSession('learning')">放弃</button>
@@ -681,9 +1070,9 @@ function resumeExam() {
 function resumeLearning() {
   const p = resume.learning;
   if (!p) return;
-  if (!getSet(p.setId)) {
+  if (!p.qids.some((key, i) => !!learningQuestionAt(p, i))) {
     discardSession('learning', true);
-    toast('题库已被删除，无法继续学习', 'info');
+    toast('练习集已被删除，无法继续学习', 'info');
     return;
   }
   state.learning = { ...p };
@@ -710,6 +1099,12 @@ const state = {
 const LANG_LABEL = { javascript: 'JavaScript', python: 'Python 3', cpp: 'C++', java: 'Java' };
 const TYPE_LABEL = { single: '单选', multi: '多选', tf: '判断', fill: '填空', code: '编程' };
 const TYPE_CLASS = { single: 'type-single', multi: 'type-multi', tf: 'type-tf', fill: 'type-fill', code: 'type-code' };
+// 练习来源：让练习集详情页一眼看出这套题是怎么来的
+const SET_ORIGIN_LABEL = {
+  generate: 'AI 根据资料出题',
+  exam: '真题原样整理',
+  batch: '笔记出题 + 真题整理'
+};
 
 function allSets() {
   const samples = typeof SAMPLE_SETS !== 'undefined' ? arrOf(SAMPLE_SETS) : [];
@@ -753,7 +1148,7 @@ function hasInboxContent() {
     || materials.some((m) => m.subjectId === INBOX_SUBJECT.id);
 }
 
-// 文件夹列表：内置学科 + 自建学科，有未归档内容时补一个「未分类」
+// 练习科目列表：内置练习科目 + 自建练习科目，有未归档内容时补一个「未分类」
 function visibleSubjects() {
   return hasInboxContent() ? [...allSubjects(), INBOX_SUBJECT] : [...allSubjects()];
 }
@@ -763,41 +1158,748 @@ function subjectNameTaken(name, exceptId) {
   return visibleSubjects().some((s) => s.id !== exceptId && norm(s.name) === key);
 }
 
-function createSubject(name) {
-  const clean = String(name || '').trim().slice(0, 20);
+function createSubject(name, extra) {
+  const e = extra && typeof extra === 'object' ? extra : {};
+  const clean = String(name || '').trim().slice(0, 40);
   if (!clean) {
-    toast('学科名称不能为空', 'info');
+    toast('练习科目名称不能为空', 'info');
     return null;
   }
   if (subjectNameTaken(clean)) {
-    toast('已经有同名学科了', 'info');
+    toast('已经有同名练习科目了', 'info');
     return null;
   }
   const subject = {
     id: 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     name: clean,
-    icon: clean.slice(0, 1),
+    // 图标留空 = 让自动配图接管；封面同理，没有就是「没有封面」的页头。
+    icon: pageIconOf(e.icon),
+    cover: coverOf(e.cover),
+    examName: strOf(e.examName, 100).trim(),
+    examDate: isoDateOf(e.examDate),
+    startDate: isoDateOf(e.startDate),
+    goal: strOf(e.goal, 60).trim(),
+    defaultCount: intOf(e.defaultCount, 15, 5, 60),
+    dailyGoal: intOf(e.dailyGoal, 20, 5, 100),
     createdAt: Date.now()
   };
   const next = [...userSubjects, subject];
   if (!saveJSON(STORAGE.subjects, next)) {
-    toast('学科没有保存成功，请检查本地存储空间', 'error');
+    toast('练习科目没有保存成功，请检查本地存储空间', 'error');
     return null;
   }
   userSubjects = next;
   return subject;
 }
 
+// 只更新考试信息、页头身份与练习参数：id / 名称 / 创建时间保持不变，写入前再过一遍 sanitize
+function updateSubject(id, patch) {
+  const current = userSubjects.find((s) => s.id === id);
+  if (!current) return null;
+  const merged = sanitizeSubjects([{ ...current, ...patch, id: current.id, name: current.name, createdAt: current.createdAt }])[0];
+  if (!merged) return null;
+  const next = userSubjects.map((s) => (s.id === id ? merged : s));
+  if (!saveJSON(STORAGE.subjects, next)) {
+    toast('修改没有保存成功', 'error');
+    return null;
+  }
+  userSubjects = next;
+  return merged;
+}
+
 function renameSubject(id, name) {
-  const clean = String(name || '').trim().slice(0, 20);
+  const clean = String(name || '').trim().slice(0, 40);
   const subject = userSubjects.find((s) => s.id === id);
   if (!subject) return false;
-  if (!clean) { toast('学科名称不能为空', 'info'); return false; }
-  if (subjectNameTaken(clean, id)) { toast('已经有同名学科了', 'info'); return false; }
-  const next = userSubjects.map((s) => (s.id === id ? { ...s, name: clean, icon: clean.slice(0, 1) } : s));
+  if (!clean) { toast('练习科目名称不能为空', 'info'); return false; }
+  if (subjectNameTaken(clean, id)) { toast('已经有同名练习科目了', 'info'); return false; }
+  // 改名不再顺手重写图标：用户选定的身份要留在原处，没选过的才由自动配图按新名字重算。
+  const next = userSubjects.map((s) => (s.id === id ? { ...s, name: clean } : s));
   if (!saveJSON(STORAGE.subjects, next)) { toast('重命名没有保存成功', 'error'); return false; }
   userSubjects = next;
   return true;
+}
+
+// ===== Exam Plan AI 联动：考点级深链 =====
+// 入站解析 ?from=exam-plan[&v=1&plan=&level=&unit=&subject=&topic=&exam=&date=&task=]：
+// 用与 Exam Plan 完全一致的算法算出考点钥匙，持久化联动关系，再定位/新增练习科目。
+// 所有入站参数都按不可信输入处理；只保存联动上下文，不跨域读取对方的计划、练习集或资料。
+// 协议常量与长度闸门见文件顶部（启动阶段读取 planLinks 前就必须可用）。
+
+function planParam(params, name) {
+  const raw = String(params.get(name) ?? '').trim();
+  return raw.length > PLAN_PARAM_LIMITS[name] ? null : raw;
+}
+
+// 完整内容路径才算有效联动上下文：层级参与身份，练习科目显示名被截到 20 字也不影响这里
+function sanitizePlanPath(raw) {
+  const src = objOf(raw);
+  const level = src.level === 'unit' || src.level === 'subtopic' ? src.level : '';
+  const subject = strOf(src.subject, PLAN_PARAM_LIMITS.subject).trim();
+  const unit = strOf(src.unit, PLAN_PARAM_LIMITS.unit).trim();
+  const topic = strOf(src.topic, PLAN_PARAM_LIMITS.topic).trim();
+  const exam = strOf(src.exam, PLAN_PARAM_LIMITS.exam).trim();
+  if (!level || !subject || !unit || !topic) return null;
+  return { level, exam, subject, unit, topic };
+}
+
+function sanitizePlanLink(raw) {
+  const src = objOf(raw);
+  const path = sanitizePlanPath(src.path);
+  const planId = strOf(src.planId, PLAN_PARAM_LIMITS.plan).trim();
+  const topicKey = strOf(src.topicKey, 40).trim();
+  if (!path || !PLAN_ID_RE.test(planId) || !PLAN_TOPIC_KEY_RE.test(topicKey)) return null;
+  const linkId = `${planId}:${topicKey}`;
+  if (src.linkId && strOf(src.linkId, 200).trim() && strOf(src.linkId, 200).trim() !== linkId) return null;
+  const ctx = objOf(src.sourceContext);
+  const date = strOf(ctx.date, 20).trim();
+  const now = new Date().toISOString();
+  const linkedAt = PLAN_ISO_RE.test(strOf(src.linkedAt, 40).trim()) ? strOf(src.linkedAt, 40).trim() : now;
+  const updatedAt = PLAN_ISO_RE.test(strOf(src.updatedAt, 40).trim()) ? strOf(src.updatedAt, 40).trim() : linkedAt;
+  return {
+    linkId,
+    planId,
+    topicKey,
+    path,
+    sourceContext: {
+      date: PLAN_DATE_RE.test(date) ? date : '',
+      task: strOf(ctx.task, PLAN_PARAM_LIMITS.task).trim()
+    },
+    subjectId: strOf(src.subjectId, 64).trim(),
+    linkedAt,
+    updatedAt
+  };
+}
+
+// 损坏数据只丢联动记录，不能让整个应用起不来
+function sanitizePlanLinks(raw) {
+  const out = {};
+  Object.entries(objOf(objOf(raw).links)).forEach(([key, item]) => {
+    const link = sanitizePlanLink(item);
+    if (!link || key !== link.linkId) return;
+    const prev = out[link.linkId];
+    if (prev && String(prev.updatedAt) >= String(link.updatedAt)) return;
+    out[link.linkId] = link;
+  });
+  return { schemaVersion: PLAN_LINK_SCHEMA_VERSION, links: out };
+}
+
+// 写入前先读磁盘最新值再合并：本页内存里的旧状态不能覆盖别的记录
+function putPlanLink(link) {
+  const clean = sanitizePlanLink(link);
+  if (!clean) return false;
+  const fresh = sanitizePlanLinks(readStored(STORAGE.planLinks).value);
+  const prev = fresh.links[clean.linkId];
+  if (prev && String(prev.updatedAt) > String(clean.updatedAt)) {
+    planLinkStore = fresh;
+    return true;
+  }
+  fresh.links[clean.linkId] = clean;
+  planLinkStore = fresh;
+  return saveJSON(STORAGE.planLinks, fresh);
+}
+
+function transientPlanLink(link, subject) {
+  return {
+    subjectId: subject.id,
+    subject: subject.name,
+    topic: link.path.topic,
+    exam: link.path.exam,
+    level: link.path.level,
+    unit: link.path.unit,
+    planSubject: link.path.subject,
+    planId: link.planId,
+    topicKey: link.topicKey,
+    linkId: link.linkId,
+    linkedAt: link.linkedAt
+  };
+}
+
+// ===== 联动 → 出题：练习集来源留痕与考点归属校验 =====
+// set.source 只回答「这份练习集来自哪条联动关系」。
+// 能不能用它回流考点成绩，取决于生成结果里是否真的存在目标知识点、
+// 且确有题目归属到它（returnEnabled），不是「显示过横幅」就算数。
+
+function normalizeFocusTitle(value) {
+  return String(value === null || value === undefined ? '' : value)
+    .normalize('NFKC')
+    .replace(/[\u3000\u00a0\s]+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+// 展示标题比对：相等优先，其次互相包含（AI 常把「武昌起义」写成「武昌起义（1911 年）」）
+function focusTitleMatches(a, b) {
+  const left = normalizeFocusTitle(a);
+  const right = normalizeFocusTitle(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
+// 练习科目名与计划练习科目名可能不同（本地练习科目被改名），以联动记录里的路径练习科目为准
+function sanitizeSetSource(raw, kpIds) {
+  const src = objOf(raw);
+  if (strOf(src.from, 20).trim() !== 'exam-plan') return null;
+  const planId = strOf(src.planId, PLAN_PARAM_LIMITS.plan).trim();
+  const topicKey = strOf(src.topicKey, 40).trim();
+  const linkId = strOf(src.linkId, 200).trim();
+  const path = sanitizePlanPath(src.path);
+  if (!PLAN_ID_RE.test(planId) || !PLAN_TOPIC_KEY_RE.test(topicKey) || !path) return null;
+  if (linkId && linkId !== `${planId}:${topicKey}`) return null;
+  const kp = strOf(src.knowledgePointId, 40).trim();
+  const linkedAt = strOf(src.linkedAt, 40).trim();
+  // 回流必须指向一个真实存在的知识点，否则降级成纯留痕
+  const returnEnabled = src.returnEnabled === true && !!kp && Array.isArray(kpIds) && kpIds.includes(kp);
+  return {
+    from: 'exam-plan',
+    linkId: `${planId}:${topicKey}`,
+    planId,
+    topicKey,
+    path,
+    knowledgePointId: returnEnabled ? kp : '',
+    returnEnabled,
+    linkedAt: PLAN_ISO_RE.test(linkedAt) ? linkedAt : ''
+  };
+}
+
+// 目标知识点必须唯一：多个候选同名时宁可承认「归属不了」，也不猜一个
+function findFocusKnowledgePoint(set, topic) {
+  const hits = ((set && set.knowledgePoints) || []).filter((kp) => kp && focusTitleMatches(kp.title, topic));
+  return hits.length === 1 ? hits[0] : null;
+}
+
+function attachGeneratedSource(set, snapshot) {
+  if (!set || !snapshot || !snapshot.linkId || !snapshot.topicKey || !snapshot.planId) return set;
+  const source = {
+    from: 'exam-plan',
+    linkId: snapshot.linkId,
+    planId: snapshot.planId,
+    topicKey: snapshot.topicKey,
+    path: {
+      level: snapshot.level,
+      exam: snapshot.exam,
+      subject: snapshot.planSubject || snapshot.subject,
+      unit: snapshot.unit,
+      topic: snapshot.topic
+    },
+    knowledgePointId: '',
+    returnEnabled: false,
+    linkedAt: snapshot.linkedAt
+  };
+  const target = findFocusKnowledgePoint(set, snapshot.topic);
+  if (target) {
+    // 被默认塞进第一个知识点的题目不算归属，避免把无关题算成目标考点成绩
+    const attributed = (set.questions || []).filter((q) => q.knowledgePointId === target.id && q.kpUnmatched !== true).length;
+    if (attributed > 0) {
+      source.knowledgePointId = target.id;
+      source.returnEnabled = true;
+    }
+  }
+  const clean = sanitizeSetSource(source, ((set.knowledgePoints) || []).map((kp) => kp.id));
+  if (clean) set.source = clean;
+  return set;
+}
+
+// ===== 联动 → 回程：考点成绩归因与回执 =====
+// 归因只在练习完成的那一刻算一次，并把结果作为快照写进历史。
+// 之后练习集被编辑、移动或删除，回程用的仍是这次练习的真实统计，
+// 而不是拿新的练习集结构去重算旧成绩。
+
+// 目标考点在本次作答里的计分情况；任何一环不可靠就返回 null，宁可不报也不虚报。
+function planResultForAttempt(set, answers) {
+  const src = set && set.source;
+  if (!src || src.returnEnabled !== true || !src.knowledgePointId) return null;
+  // 持久联动关系被清掉时不猜上下文：没有 link 就没有考点成绩可回
+  if (!planLinkStore.links[src.linkId]) return null;
+  if (!(set.knowledgePoints || []).some((kp) => kp && kp.id === src.knowledgePointId)) return null;
+  const byQid = new Map((set.questions || []).map((q) => [q.id, q]));
+  let graded = 0;
+  let correct = 0;
+  arrOf(answers).forEach((a) => {
+    if (!a || !a.qid) return;
+    const q = byQid.get(a.qid);
+    if (!q) return;                        // 题目已被删除：这道题无法归因
+    if (q.kpUnmatched === true) return;    // 兜底塞进第一个知识点的题不算目标考点
+    if (q.knowledgePointId !== src.knowledgePointId) return;
+    if (a.correct !== true && a.correct !== false) return; // 未评分题不进考点统计
+    graded += 1;
+    if (a.correct === true) correct += 1;
+  });
+  if (graded <= 0) return null; // 没有计分题就不输出考点正确率
+  return {
+    schemaVersion: 1,
+    linkId: src.linkId,
+    topicKey: src.topicKey,
+    knowledgePointId: src.knowledgePointId,
+    graded,
+    correct
+  };
+}
+
+// 历史快照要能挺过刷新和备份导入，但只认合法值：
+// 钥匙对不上、题数非法或答对数超过计分数，整段快照一起丢，不做部分放行。
+function sanitizePlanResult(raw) {
+  const src = objOf(raw);
+  if (Number(src.schemaVersion) !== 1) return null;
+  const linkId = strOf(src.linkId, 200).trim();
+  const topicKey = strOf(src.topicKey, 40).trim();
+  const hit = PLAN_LINK_ID_RE.exec(linkId);
+  if (!hit || hit[2] !== topicKey) return null;
+  const knowledgePointId = strOf(src.knowledgePointId, 40).trim();
+  const graded = Number(src.graded);
+  const correct = Number(src.correct);
+  if (!knowledgePointId || !Number.isInteger(graded) || graded <= 0 || graded > 1000) return null;
+  if (!Number.isInteger(correct) || correct < 0 || correct > graded) return null;
+  return { schemaVersion: 1, linkId, topicKey, knowledgePointId, graded, correct };
+}
+
+// 回程只指向预先配置的备考规划站点，绝不接受外部传来的 back 地址。
+// path 原样带上，Exam Plan 入站后用同一算法重算 tk 并校验一致性。
+function planReturnUrl(link, result) {
+  const params = new URLSearchParams();
+  params.set('from', 'starquiz');
+  params.set('v', '1');
+  params.set('plan', link.planId);
+  params.set('tk', link.topicKey);
+  params.set('level', link.path.level);
+  params.set('subject', link.path.subject);
+  params.set('unit', link.path.unit);
+  params.set('topic', link.path.topic);
+  if (link.path.exam) params.set('exam', link.path.exam);
+  if (link.sourceContext && link.sourceContext.date) params.set('date', link.sourceContext.date);
+  if (link.sourceContext && link.sourceContext.task) params.set('task', link.sourceContext.task);
+  if (result) {
+    params.set('attempt', String(result.attemptId));
+    // 只作展示来源（练的是哪套题），Exam Plan 侧缺失时留空，不影响归因统计
+    if (result.setId) params.set('set', String(result.setId));
+    params.set('graded', String(result.graded));
+    params.set('correct', String(result.correct));
+    params.set('at', String(result.completedAt));
+  }
+  return `${EXAM_PLAN_URL}/?${params.toString()}`;
+}
+
+// 只带定位上下文、不带成绩的回程：横幅用它，避免拿旧成绩冒充本次练习
+function planReturnHref(link) {
+  return link ? planReturnUrl(link) : `${EXAM_PLAN_URL}/`;
+}
+
+function planCompletedTimeLabel(finishedAt) {
+  const d = new Date(finishedAt);
+  if (!Number.isFinite(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// 回执卡片：只报本次归因到目标考点的计分情况，回程参数由这次 attempt 固定生成。
+// 练习集被删或联动关系被清除时卡片不出现，页面退回普通行为。
+function renderPlanReceiptCard(receipt) {
+  if (!receipt || !receipt.result || !receipt.link) return '';
+  const { result, link, attempt } = receipt;
+  const pct = result.graded ? Math.round((result.correct / result.graded) * 100) : 0;
+  const examPart = link.path.exam ? ` · ${esc(link.path.exam)}` : '';
+  const href = planReturnUrl(link, {
+    attemptId: attempt.id,
+    setId: attempt.setId,
+    graded: result.graded,
+    correct: result.correct,
+    completedAt: new Date(attempt.finishedAt).toISOString()
+  });
+  return `
+    <div class="plan-link-banner plan-receipt" role="note">
+      <div class="plan-link-main">
+        <span class="plan-link-eyebrow">备考规划练习回执${examPart}</span>
+        <span class="plan-link-text">目标考点「${esc(link.path.topic)}」本次计分 ${result.graded} 题，答对 ${result.correct} 题，正确率 ${pct}%。</span>
+        <span class="plan-receipt-meta">${attempt.mode === 'exam' ? '考试模式' : '学习模式'} · ${planCompletedTimeLabel(attempt.finishedAt)}</span>
+      </div>
+      <div class="plan-link-actions">
+        <a class="btn btn-primary btn-sm" href="${href}">带回备考规划 ↗</a>
+      </div>
+    </div>`;
+}
+
+// attempt 与持久联动关系都齐了才构成一张回执；缺一就退回普通页面
+function receiptForAttempt(attempt) {
+  if (!attempt || !attempt.planResult) return null;
+  const link = planLinkStore.links[attempt.planResult.linkId];
+  if (!link) return null;
+  return { attempt, link, result: attempt.planResult };
+}
+
+// 练习集这次练习里最近一条带考点成绩的记录；优先本页刚完成的那次。
+function findPlanReceipt(setId) {
+  const pageAttempt = state.lastPlanAttempt;
+  const pool = arrOf(history).filter((a) => a && a.setId === setId && a.planResult);
+  if (!pool.length) return null;
+  const fresh = pageAttempt && receiptForAttempt(pool.find((a) => a.id === pageAttempt.id && a.setId === pageAttempt.setId));
+  const receipt = fresh || receiptForAttempt(pool.slice().sort((x, y) => y.finishedAt - x.finishedAt)[0]);
+  return receipt ? Object.assign({}, receipt, { isCurrent: !!fresh }) : null;
+}
+
+// 出题开始时冻结联动快照：异步期间关闭横幅或切换练习科目都不会串到别的考点
+function captureFocusLink() {
+  if (!planLink || planLink.subjectId !== aiSubjectId) return null;
+  if (!planLink.linkId || !planLink.topicKey || !planLink.planId || !planLink.topic) return null;
+  return Object.assign({}, planLink);
+}
+
+function clearPlanLinkParams() {
+  try {
+    const url = new URL(window.location.href);
+    window.history.replaceState({}, '', url.pathname + url.hash);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// 解析入站参数：任一核心参数超长视为脏输入（返回 null）；
+// v/plan/level/subject/unit/topic 不齐时 linked=false，按旧的普通跳转处理，不启用结果回流。
+function readPlanLinkParams(params) {
+  const subjectName = planParam(params, 'subject');
+  const topic = planParam(params, 'topic');
+  const exam = planParam(params, 'exam');
+  const unit = planParam(params, 'unit');
+  const planId = planParam(params, 'plan');
+  if (subjectName === null || topic === null || exam === null || unit === null || planId === null) return null;
+  const level = String(params.get('level') || '').trim();
+  const date = String(params.get('date') || '').trim();
+  const task = String(params.get('task') || '').trim();
+  const linked = params.get('v') === '1'
+    && PLAN_ID_RE.test(planId)
+    && (level === 'unit' || level === 'subtopic')
+    && !!subjectName && !!unit && !!topic;
+  return {
+    linked,
+    planId,
+    level,
+    subjectName,
+    unit,
+    topic,
+    exam,
+    date: PLAN_DATE_RE.test(date) ? date : '',
+    task: task.length <= PLAN_PARAM_LIMITS.task ? task : ''
+  };
+}
+
+// ===== 考试级快照入站：把「这场考试的资料和真题」落到本地 =====
+// 通道是同一个标签页的 window.name：不经过服务器、不跨域读对方存储，
+// 只在用户自己点击「练这个考点」的那一次跳转里换一手数据，读到即清空。
+// 任何异常都当成「没有快照」，页面退回今天的样子（自己上传资料），绝不半份导入。
+function takeExamHandoff() {
+  let raw = '';
+  try { raw = String(window.name ?? ''); } catch (e) { return null; }
+  try { window.name = ''; } catch (e) { /* 清不掉也要继续：快照只在这一次跳转里有意义 */ }
+  if (!raw || raw.length > HANDOFF_LIMITS.maxJson) return null;
+  if (raw.indexOf(HANDOFF_PROTOCOL) < 0) return null;
+  let parsed = null;
+  try { parsed = JSON.parse(raw); } catch (e) { return null; }
+  return sanitizeExamHandoff(parsed);
+}
+
+function extOfName(name) {
+  const hit = String(name || '').match(/\.([A-Za-z0-9]{1,8})$/);
+  return hit ? hit[1].toLowerCase() : '';
+}
+
+function sanitizeExamHandoff(raw) {
+  const src = objOf(raw);
+  if (src.protocol !== HANDOFF_PROTOCOL || Number(src.version) !== HANDOFF_VERSION) return null;
+  const planId = strOf(src.planId, 64).trim();
+  if (!PLAN_ID_RE.test(planId)) return null;
+  const exam = strOf(src.exam, PLAN_PARAM_LIMITS.exam).trim();
+  const subject = strOf(src.subject, PLAN_PARAM_LIMITS.subject).trim();
+  if (!exam && !subject) return null;
+
+  const seen = new Set();
+  const pieces = [];
+  arrOf(src.materials).slice(0, HANDOFF_LIMITS.materials).forEach((item) => {
+    const piece = objOf(item);
+    const name = strOf(piece.name, HANDOFF_LIMITS.name).trim();
+    const text = cleanMaterialText(strOf(piece.text, HANDOFF_LIMITS.text));
+    if (!name) return;
+    const chars = aiVisibleChars(text);
+    if (chars < HANDOFF_LIMITS.minVisibleChars) return;
+    const key = `${norm(name)}|${chars}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    // 类型以 Exam Plan 的标签为准（真题/笔记是用户在 Plan 里选的），缺标签才本地猜一次
+    const kind = piece.kind === 'exam' || piece.kind === 'note' ? piece.kind : aiGuessFileKind(text, name);
+    pieces.push({ name, kind, text, chars, type: strOf(piece.type, 40).trim(), truncated: piece.truncated === true });
+  });
+  if (!pieces.length) return null;
+
+  const level = src.level === 'unit' || src.level === 'subtopic' ? String(src.level) : '';
+  return {
+    planId,
+    exam,
+    subject,
+    level,
+    unit: strOf(src.unit, PLAN_PARAM_LIMITS.unit).trim(),
+    topic: strOf(src.topic, PLAN_PARAM_LIMITS.topic).trim(),
+    date: PLAN_DATE_RE.test(String(src.date || '')) ? String(src.date) : '',
+    materials: pieces,
+    omitted: arrOf(src.omitted).map((name) => strOf(name, HANDOFF_LIMITS.name).trim()).filter(Boolean).slice(0, 20),
+  };
+}
+
+// 按「文件名 + 有效字数」去重：重复进入同一场考试不会把资料灌第二遍
+// （和 M2 回执「重复返回不重复记录」是同一条原则）。
+async function importExamHandoffMaterials(subject, expectedPlanId) {
+  const snap = examHandoff;
+  const result = { hasSnapshot: !!snap, added: [], skipped: 0, failed: 0, omitted: snap ? snap.omitted.length : 0, exam: snap ? snap.exam : '' };
+  if (!snap || !subject) return result;
+  // 快照和这条深链不是同一场考试（理论上只可能是标签页残留）：宁可不导入
+  if (expectedPlanId && snap.planId !== expectedPlanId) return result;
+  examHandoff = null;
+
+  const existing = new Set(subjectMaterials(subject.id).map((m) => `${norm(m.name)}|${m.chars}`));
+  let stamp = Date.now();
+  for (const piece of snap.materials) {
+    const key = `${norm(piece.name)}|${piece.chars}`;
+    if (existing.has(key)) { result.skipped++; continue; }
+    const record = {
+      id: 'mat-' + stamp.toString(36) + Math.random().toString(36).slice(2, 5),
+      subjectId: subject.id,
+      name: piece.name,
+      size: typeof Blob !== 'undefined' ? new Blob([piece.text]).size : piece.text.length,
+      ext: extOfName(piece.name),
+      kind: piece.kind,
+      pages: 0,
+      chars: piece.chars,
+      addedAt: stamp,
+      text: piece.text
+    };
+    stamp += 1;
+    try {
+      const saved = await saveMaterialRecord(record, null);
+      materials.unshift(saved);
+      existing.add(key);
+      result.added.push(saved);
+    } catch (e) {
+      console.warn('[StarQuiz] 考试快照的资料没有写入本地资料库', piece.name, e);
+      result.failed++;
+    }
+  }
+  materials.sort((a, b) => b.addedAt - a.addedAt);
+  return result;
+}
+
+// 出题弹窗直接带上这个练习科目里的全部资料：用户不用再手动选一遍
+function openPractice(subject) {
+  openAIModal(subject.id, subjectMaterials(subject.id).map((m) => m.id));
+}
+
+// 一句话说明这次跳转带来了什么：句子形状固定，便于 i18n 的 EN_PATTERNS 精确匹配，
+// 失败/超量另起一条提示，不把它们拼进同一句里。
+function planHandoffToast(result, subject) {
+  const folder = `「${subject.name}」`;
+  const held = subjectMaterials(subject.id).length;
+  if (result.hasSnapshot && result.added.length) {
+    return `已同步考试${folder}的资料与真题：新增 ${result.added.length} 份，可以直接出题`;
+  }
+  if (result.hasSnapshot) {
+    return `考试${folder}的资料与真题都已在这里，可以直接出题`;
+  }
+  if (held) return `这次跳转没有带来新资料：已选入${folder}的 ${held} 份资料，可以直接出题`;
+  return `考试${folder}里还没有资料：上传资料即可出题`;
+}
+
+function planHandoffWarnings(result) {
+  const notes = [];
+  if (result.failed) notes.push(`${result.failed} 份资料没能写入本地资料库，请手动重新上传`);
+  if (result.omitted) notes.push(`另有 ${result.omitted} 份资料超过单次携带上限，需要手动上传`);
+  return notes;
+}
+
+// 一场考试在 StarQuiz 里对应一个资料夹：名字优先用考试名，其次用练习科目名。
+// 已有联动记录绑定的资料夹永远优先复用，避免同一场考试在不同时间落到两个地方。
+function planFolderName(exam, subjectName) {
+  return String(exam || subjectName || '').trim().slice(0, PLAN_PARAM_LIMITS.subject);
+}
+
+function resolvePlanFolder({ boundSubjectId, exam, subjectName }) {
+  const bound = boundSubjectId ? subjectById(boundSubjectId) : null;
+  if (bound) return bound;
+  const name = planFolderName(exam, subjectName);
+  if (!name) return null;
+  const existing = allSubjects().find((s) => norm(s.name) === norm(name));
+  if (existing) return existing;
+  // 新建的资料夹要把考试名同时写进 examName，否则练习科目页的「目标考试」备考上下文是空的
+  return createSubject(name, { examName: String(exam || '').trim() });
+}
+
+// 旧链接（缺少联动上下文）：定位/新建考试资料夹、导入随跳转带来的资料、预开 AI 出题弹窗
+async function applyLegacyPlanLink(subjectName, topic, exam, planId) {
+  clearPlanLinkParams();
+  const subject = resolvePlanFolder({ exam, subjectName });
+
+  if (!subject) {
+    planLink = { subjectId: null, subject: subjectName, topic, exam };
+    navigateTo('sets');
+    toast(topic ? `来自备考规划：练「${topic}」。请先选择或新增一个练习科目。` : '来自备考规划：请选择或新增一个练习科目开始出题。', 'info', 6000);
+    return;
+  }
+
+  planLink = { subjectId: subject.id, subject: subject.name, topic, exam };
+  const imported = await importExamHandoffMaterials(subject, planId);
+  openSubject(subject.id);
+  openPractice(subject);
+  toast(planHandoffToast(imported, subject), 'info', 6000);
+  planHandoffWarnings(imported).forEach((note) => toast(note, 'info', 6000));
+}
+
+async function applyPlanDeepLink() {
+  let params;
+  try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+  if (params.get('from') !== 'exam-plan') return;
+
+  const parsed = readPlanLinkParams(params);
+  const keyApi = globalThis.StarQuizTopicKey;
+  if (!parsed || !parsed.linked || !keyApi) {
+    // 参数超长或没有联动上下文：按旧的普通跳转处理，仍做长度保护
+    const loose = parsed || {
+      subjectName: String(params.get('subject') || '').trim().slice(0, PLAN_PARAM_LIMITS.subject),
+      topic: String(params.get('topic') || '').trim().slice(0, PLAN_PARAM_LIMITS.topic),
+      exam: String(params.get('exam') || '').trim().slice(0, PLAN_PARAM_LIMITS.exam)
+    };
+    applyLegacyPlanLink(loose.subjectName, loose.topic, loose.exam, (parsed && parsed.planId) || '');
+    return;
+  }
+
+  const { planId, level, subjectName, unit, topic, exam, date, task } = parsed;
+  let topicKey = '';
+  try {
+    topicKey = await keyApi.topicKey({ level, subject: subjectName, unit, topic });
+  } catch (e) {
+    console.warn('[StarQuiz] 考点钥匙计算失败，退化为普通跳转', e);
+    applyLegacyPlanLink(subjectName, topic, exam, planId);
+    return;
+  }
+  const linkId = keyApi.composeLinkId(planId, topicKey);
+  const existingLink = planLinkStore.links[linkId] || null;
+
+  // 已有联动记录就复用它绑定的资料夹；资料夹被删过则回落到考试名（其次练习科目名）匹配，最后才新建
+  const subject = resolvePlanFolder({
+    boundSubjectId: existingLink && existingLink.subjectId ? existingLink.subjectId : '',
+    exam,
+    subjectName
+  });
+  if (!subject) {
+    planLink = { subjectId: null, subject: subjectName, topic, exam };
+    navigateTo('sets');
+    toast(`来自备考规划：练「${topic}」。请先选择或新增一个练习科目。`, 'info', 6000);
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const link = {
+    linkId,
+    planId,
+    topicKey,
+    path: { level, exam, subject: subjectName, unit, topic },
+    sourceContext: { date, task },
+    subjectId: subject.id,
+    linkedAt: existingLink ? existingLink.linkedAt : now,
+    updatedAt: now
+  };
+
+  // 先持久化，成功后才清理地址栏：存储失败时保留可重试的联动上下文
+  if (!putPlanLink(link)) {
+    planLink = transientPlanLink(link, subject);
+    openSubject(subject.id);
+    toast('联动关系没有保存成功，请检查浏览器本地存储空间后重新进入', 'error', 6000);
+    return;
+  }
+
+  planLink = transientPlanLink(link, subject);
+  clearPlanLinkParams();
+  const imported = await importExamHandoffMaterials(subject, planId);
+  openSubject(subject.id);
+  if (existingLink) {
+    // 重复进入同一个考点：复用关系与资料夹，不重复建数据、不重复自动弹窗
+    const extra = imported.added.length ? `，这次补入 ${imported.added.length} 份资料和真题` : '';
+    toast(`继续「${subject.name}」的考点「${topic}」练习${extra}`, 'info', 5000);
+    return;
+  }
+  openPractice(subject);
+  toast(planHandoffToast(imported, subject), 'info', 6000);
+  planHandoffWarnings(imported).forEach((note) => toast(note, 'info', 6000));
+}
+
+// 资料夹里的内容按类型说一句「笔记 X 份、真题 Y 份」：与出题向导里的说法保持一致
+function planMaterialCountLine(subjectId) {
+  const mats = subjectMaterials(subjectId);
+  if (!mats.length) return '';
+  const papers = mats.filter((m) => m.kind === 'exam').length;
+  const notes = mats.length - papers;
+  if (!papers) return `${mats.length} 份资料`;
+  if (!notes) return `真题 ${papers} 份`;
+  return `笔记 ${notes} 份、真题 ${papers} 份`;
+}
+
+// 练习科目页顶部：备考规划上下文横幅 + 返回入口（仅当深链指向本练习科目时显示）
+function renderPlanLinkBanner(subjectId) {
+  if (!planLink || planLink.subjectId !== subjectId) return '';
+  const topic = planLink.topic ? esc(planLink.topic) : '';
+  const exam = planLink.exam ? esc(planLink.exam) : '';
+  const ctx = topic ? `考点「${topic}」` : '这个练习科目';
+  const examPart = exam ? ` · ${exam}` : '';
+  const held = planMaterialCountLine(subjectId);
+  const hint = held
+    ? `围绕${ctx}出题练习：这场考试的资料已在这个练习科目里（${held}），可直接出题。`
+    : `围绕${ctx}出题练习：上传对应资料，AI 会生成题目并归入本练习科目。`;
+  // 横幅只负责带回原考点，不带任何成绩：这里没有「本次练习」可依附
+  const back = planReturnHref(planLinkStore.links[planLink.linkId]);
+  return `
+    <div class="plan-link-banner" role="note">
+      <div class="plan-link-main">
+        <span class="plan-link-eyebrow">来自备考规划${examPart}</span>
+        <span class="plan-link-text">${hint}</span>
+      </div>
+      <div class="plan-link-actions">
+        <a class="btn btn-secondary btn-sm" href="${back}">返回备考规划 ↗</a>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="dismissPlanLink()" aria-label="关闭提示">×</button>
+      </div>
+    </div>`;
+}
+
+// AI 出题弹窗内：当深链指向当前练习科目时，提示聚焦的考点
+function renderPlanLinkNote() {
+  if (!planLink || planLink.subjectId !== aiSubjectId) return '';
+  const topic = planLink.topic ? esc(planLink.topic) : '';
+  const exam = planLink.exam ? esc(planLink.exam) : '';
+  const examPart = exam ? `（${exam}）` : '';
+  const held = planMaterialCountLine(aiSubjectId);
+  const line = topic
+    ? (held
+      ? `备考规划聚焦考点「${topic}」${examPart}：这场考试的资料已在这里（${held}），可直接出题。`
+      : `备考规划聚焦考点「${topic}」${examPart}：上传这个考点的资料，AI 会据此出题。`)
+    : (held
+      ? `来自备考规划${examPart}：这场考试的资料已在这里（${held}），可直接出题。`
+      : `来自备考规划${examPart}：上传资料即可为这个练习科目出题。`);
+  return `
+    <div class="ai-note plan-link-note">
+      <span class="ai-note-dot"></span>
+      <span>${line} <a class="link-btn" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">返回备考规划 ↗</a></span>
+    </div>`;
+}
+
+// 生成结果里的目标考点归属：只有校验通过才开放练习结果回流
+function renderFocusAttribution(set, snapshot) {
+  if (!snapshot || !snapshot.topic) return '';
+  const topic = esc(snapshot.topic);
+  if (set.source && set.source.returnEnabled) {
+    const n = (set.questions || []).filter((q) => q.knowledgePointId === set.source.knowledgePointId && q.kpUnmatched !== true).length;
+    return `<div class="text-muted">联动考点：${topic} 已归入 ${n} 题，练习结果可回流</div>`;
+  }
+  return `<div class="text-muted">联动考点：${topic} 没有可靠归属，本练习集只记录来源</div>`;
+}
+
+function dismissPlanLink() {
+  // 只收起本页的临时提示；持久联动关系留在 sq_plan_links_v1，删除练习科目也不物理删除历史关系
+  planLink = null;
+  render();
 }
 
 const MATERIAL_DB = 'starquiz-materials';
@@ -862,6 +1964,28 @@ async function saveMaterialRecord(meta, blob) {
   return record;
 }
 
+// 把一份资料换到别的练习科目：只重写元数据，原始文件行保持不动（hasBlob 不变）
+async function moveMaterialMeta(materialId, subjectId) {
+  if (materialsUnavailable) return false;
+  const meta = materials.find((m) => m.id === materialId);
+  if (!meta || !subjectById(subjectId)) return false;
+  try {
+    const db = await openMaterialDb();
+    const tx = db.transaction(MATERIAL_STORE, 'readwrite');
+    tx.objectStore(MATERIAL_STORE).put({ ...meta, subjectId });
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('资料换练习科目失败'));
+      tx.onabort = () => reject(tx.error || new Error('资料换练习科目失败'));
+    });
+    meta.subjectId = subjectId;
+    return true;
+  } catch (e) {
+    console.warn('[StarQuiz] 资料换练习科目失败', e);
+    return false;
+  }
+}
+
 async function deleteMaterialRecord(id) {
   const db = await openMaterialDb();
   const tx = db.transaction([MATERIAL_STORE, MATERIAL_FILE_STORE], 'readwrite');
@@ -906,6 +2030,195 @@ function overallStats() {
   return { count, graded, correct, answered, avg, accuracy: graded ? Math.round((correct / graded) * 100) : null, totalQ };
 }
 
+/* 进度口径全站只用这一个：历史 attempt 的 answers[].qid 是唯一来源，
+   学习模式和考试的随机抽题都会写它，所以首页宫格、列表行、结果页说的是同一件事。 */
+function setProgress(setId) {
+  const set = getSet(setId);
+  if (!set) return { done: 0, total: 0 };
+  const seen = new Set();
+  history.forEach((a) => {
+    if (a.setId !== setId) return;
+    (Array.isArray(a.answers) ? a.answers : []).forEach((ans) => {
+      if (ans && ans.qid) seen.add(ans.qid);
+    });
+  });
+  return { done: Math.min(seen.size, set.questions.length), total: set.questions.length };
+}
+
+function subjectProgress(subjectId) {
+  return subjectSets(subjectId).reduce((acc, s) => {
+    const p = setProgress(s.id);
+    acc.done += p.done;
+    acc.total += p.total;
+    return acc;
+  }, { done: 0, total: 0 });
+}
+
+// 待答完的题数：首页所有「还剩多少」都从这里算，不在渲染函数里各算各的
+function pendingQuestionCount(setIds) {
+  return setIds.reduce((n, id) => {
+    const p = setProgress(id);
+    return n + Math.max(0, p.total - p.done);
+  }, 0);
+}
+
+function hasPendingQuestions(setId) {
+  return pendingQuestionCount([setId]) > 0;
+}
+
+/* —— 错题本读取口径：全站都从这里取，视图层不再自己遍历 bySet —— */
+
+// 题目被删掉的条目直接不显示（也不显示「已掌握」的归档），保证本子里没有幽灵错题
+function wrongItems(setId = '') {
+  const out = [];
+  Object.keys(wrongBank.bySet).forEach((sid) => {
+    if (setId && sid !== setId) return;
+    const set = getSet(sid);
+    if (!set) return;
+    const entries = objOf(wrongBank.bySet[sid]);
+    Object.keys(entries).forEach((qid) => {
+      const entry = normalizeWrongEntry(entries[qid]);
+      const q = getQuestion(set, qid);
+      if (!entry || !q) return;
+      out.push({ setId: sid, qid, entry, q, set, dueAt: wrongDueAt(entry) });
+    });
+  });
+  return out;
+}
+
+function wrongOpenItems(setId = '') {
+  return wrongItems(setId).filter((i) => i.entry.status === 'open');
+}
+
+// 间隔不入库，只从「最近一次答错 + 次数」算出来：改算法不会留下过期的复习计划
+function wrongIntervalDays(entry) {
+  if (!entry) return WRONG_SPACING[0];
+  if (entry.times >= WRONG_STUBBORN_TIMES) return 1;
+  return WRONG_SPACING[Math.max(0, Math.min(WRONG_SPACING.length - 1, entry.times - 1))];
+}
+
+function isStubbornWrong(entry) {
+  return !!entry && entry.times >= WRONG_STUBBORN_TIMES;
+}
+
+function wrongDueAt(entry) {
+  if (!entry || entry.status !== 'open') return null;
+  const base = entry.lastWrongAt || entry.firstWrongAt;
+  // 练习历史也被清掉时没有任何时间依据：当作立刻到期，别再让这道题永远看不见
+  return base ? base + wrongIntervalDays(entry) * WRONG_DAY_MS : 0;
+}
+
+function wrongIsDue(entry, now = Date.now()) {
+  const due = wrongDueAt(entry);
+  return due !== null && due <= now;
+}
+
+function wrongKpTitle(item) {
+  const id = item.entry.kpId || strOf(item.q.knowledgePointId, 40);
+  const kp = arrOf(item.set.knowledgePoints).find((k) => k && k.id === id);
+  return kp ? strOf(kp.title, 60).trim() : '';
+}
+
+/* 按考点收纳：同名考点跨练习集合到一组（同一份计划生成的考点标题是一致的），
+   没有考点归属的题落到「未归类」，不硬造一个考点。 */
+function groupWrongByKp(items) {
+  const groups = new Map();
+  items.forEach((item) => {
+    const title = wrongKpTitle(item);
+    const key = title ? title.toLowerCase() : '';
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        title,
+        items: [],
+        setIds: new Set(),
+        wrongTimes: 0,
+        stubborn: 0,
+        due: 0
+      });
+    }
+    const g = groups.get(key);
+    g.items.push(item);
+    g.setIds.add(item.setId);
+    g.wrongTimes += item.entry.times;
+    if (isStubbornWrong(item.entry)) g.stubborn++;
+    if (wrongIsDue(item.entry)) g.due++;
+  });
+  return [...groups.values()]
+    .map((g) => ({ ...g, setIds: [...g.setIds] }))
+    .sort((a, b) => b.stubborn - a.stubborn
+      || b.wrongTimes - a.wrongTimes
+      || b.items.length - a.items.length
+      || a.title.localeCompare(b.title, 'zh-CN'));
+}
+
+// 组卷和排序都用这一个优先级：顽固的、错的多的、到期早的先练
+function wrongPriorityCompare(a, b) {
+  const sa = isStubbornWrong(a.entry) ? 1 : 0;
+  const sb = isStubbornWrong(b.entry) ? 1 : 0;
+  if (sa !== sb) return sb - sa;
+  if (b.entry.times !== a.entry.times) return b.entry.times - a.entry.times;
+  const da = a.dueAt === null ? Infinity : a.dueAt;
+  const db = b.dueAt === null ? Infinity : b.dueAt;
+  if (da !== db) return da - db;
+  return (b.entry.lastWrongAt || 0) - (a.entry.lastWrongAt || 0);
+}
+
+// 四个数一次算完：导航角标、首页格子、错题本顶栏共用同一套口径
+function wrongStats(setId = '') {
+  const all = wrongItems(setId);
+  const open = all.filter((i) => i.entry.status === 'open');
+  const now = Date.now();
+  const groups = groupWrongByKp(open);
+  return {
+    total: all.length,
+    open: open.length,
+    mastered: all.length - open.length,
+    stubborn: open.filter((i) => isStubbornWrong(i.entry)).length,
+    due: open.filter((i) => wrongIsDue(i.entry, now)).length,
+    sets: new Set(open.map((i) => i.setId)).size,
+    groups: groups.length,
+    weakest: groups[0] || null
+  };
+}
+
+// 从备考规划联动进来、但还没生成过练习集的考点：首页把它们当成一格待办
+function pendingFocusLinks() {
+  const links = Object.values((planLinkStore && planLinkStore.links) || {});
+  if (!links.length) return [];
+  const covered = new Set(allSets().map((s) => (s.source || {}).linkId).filter(Boolean));
+  return links
+    .filter((l) => l && l.linkId && !covered.has(l.linkId))
+    .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+}
+
+/* 首页只推一套「现在该练的」：上次那套还没做完就继续它；
+   都做完了就推还剩题最多的新套；一套都没做过时按列表顺序推第一套。 */
+function focusSet() {
+  const usable = allSets().filter((s) => s.questions.length);
+  if (!usable.length) return null;
+  const last = history[0] ? getSet(history[0].setId) : null;
+  if (last && last.questions.length && hasPendingQuestions(last.id)) return last;
+  const pending = usable
+    .filter((s) => hasPendingQuestions(s.id))
+    .map((s) => ({ s, left: pendingQuestionCount([s.id]) }))
+    .sort((a, b) => b.left - a.left)[0];
+  if (pending) return pending.s;
+  return last && last.questions.length ? last : usable[0];
+}
+
+// 交卷后的「练下一套」：顺着列表找第一套还没答完的，全答完就取下一套
+function nextSetAfter(setId) {
+  const usable = allSets().filter((s) => s.questions.length);
+  if (!usable.length) return null;
+  const i = usable.findIndex((s) => s.id === setId);
+  for (let k = 1; k < usable.length; k++) {
+    const cand = usable[((i < 0 ? -1 : i) + k) % usable.length];
+    if (cand.id !== setId && hasPendingQuestions(cand.id)) return cand;
+  }
+  return usable[((i < 0 ? 0 : i) + 1) % usable.length] || null;
+}
+
 function streakDays() {
   const days = new Set(history.map((a) => todayStrOf(a.finishedAt)));
   let streak = 0;
@@ -938,6 +2251,7 @@ function toast(msg, type = 'info', ms = 3000) {
   const glyphs = { success: '✓', error: '!', info: 'i' };
   el.innerHTML = `<span class="toast-glyph">${glyphs[type] || 'i'}</span><span>${esc(msg)}</span>`;
   document.getElementById('toastContainer').appendChild(el);
+  if (typeof applyLang === 'function') applyLang(el);
   setTimeout(() => {
     el.style.opacity = '0';
     el.style.transition = 'opacity .3s';
@@ -950,6 +2264,7 @@ function openModal(html, extraClass = '') {
     <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
       <div class="modal ${extraClass}">${html}</div>
     </div>`;
+  if (typeof applyLang === 'function') applyLang(document.getElementById('modalContainer'));
 }
 
 function closeModal() {
@@ -987,15 +2302,120 @@ function closeSidebar() {
   document.getElementById('sidebarOverlay').classList.remove('open');
 }
 
+/* 侧栏收纳（对齐 Exam Plan AI）：桌面端可收起，收起后左上角留一个浮动展开按钮 */
+const SIDEBAR_PREF_KEY = 'sq_sidebar_collapsed';
+
+function sidebarCollapsed() {
+  try { return localStorage.getItem(SIDEBAR_PREF_KEY) === '1'; } catch { return false; }
+}
+
+function applySidebarPref() {
+  document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed());
+}
+
+function collapseSidebar() {
+  document.body.classList.add('sidebar-collapsed');
+  try { localStorage.setItem(SIDEBAR_PREF_KEY, '1'); } catch { /* 偏好存不下也不影响本次使用 */ }
+}
+
+function expandSidebar() {
+  document.body.classList.remove('sidebar-collapsed');
+  try { localStorage.setItem(SIDEBAR_PREF_KEY, '0'); } catch { /* 同上 */ }
+}
+
+// 导航只有一个来源：这一份配置同时喂给桌面侧栏和移动端底栏。
+// 练习科目页已经合并了练习记录，所以「记录」不再是独立的一级入口——四项目录和 Exam Plan 侧栏同构。
+// pin: 'bottom' 的项目在侧栏沉底（Exam Plan 也是只有设置沉底），移动端仍然只是底栏的一项。
+const NAV_VIEWS = [
+  { view: 'dashboard', label: '首页', icon: 'navHome' },
+  { view: 'sets', label: '练习科目', icon: 'navFolder' },
+  { view: 'wrong', label: '错题本', icon: 'navWrong' },
+  { view: 'settings', label: '设置', icon: 'navGear', pin: 'bottom' }
+];
+
+// 全局动作只剩一个：新增练习科目。AI 出题永远按练习科目归属，入口在练习科目详情页与资料行，
+// 不再在侧栏底部挂第二个「出题」按钮让人先选练习科目。
+const NAV_ACTIONS = [
+  { id: 'subject', label: '新增练习科目', icon: 'plus', onclick: 'newSubjectModal()' }
+];
+
+const addSubjectAction = () => NAV_ACTIONS.find((a) => a.id === 'subject');
+
+function activeNavView() {
+  // 练习科目详情和练习集详情仍然属于「练习科目」这条导航，高亮不能跟着页面名跑
+  if (state.view === 'subject' || state.view === 'setDetail') return 'sets';
+  return state.view;
+}
+
+function navItemHTML(item) {
+  const active = activeNavView() === item.view;
+  // 错题本角标只报「今天到期」：有积压但今天还没到复习时间时，不打扰
+  const count = item.view === 'wrong' ? wrongStats().due : 0;
+  return `<button type="button" class="ui-nav-item${active ? ' active' : ''}"
+    data-view="${item.view}" onclick="navigateTo('${item.view}')"${active ? ' aria-current="page"' : ''}>
+    <span class="nav-icon" aria-hidden="true">${ICON[item.icon] || ''}</span><span class="nav-label">${item.label}</span>
+    ${count ? `<span class="nav-count">${count}</span>` : ''}
+  </button>`;
+}
+
+function navActionsHTML(slot) {
+  const only = addSubjectAction();
+  if (slot === 'sidebar') {
+    // 侧栏的新建入口在练习科目分组末尾，用虚线导航项的形态（对齐 Exam Plan NotionSidebar）
+    return `<button type="button" class="ui-nav-item ui-nav-dashed" onclick="${only.onclick}">
+      <span class="nav-icon" aria-hidden="true">${ICON[only.icon] || ''}</span><span class="nav-label">${only.label}</span>
+    </button>`;
+  }
+  return `<button type="button" class="btn btn-primary btn-sm" onclick="${only.onclick}">${ICON[only.icon] || ''}${only.label}</button>`;
+}
+
+function renderNav() {
+  const nav = document.getElementById('sidebarNav');
+  if (nav) nav.innerHTML = NAV_VIEWS.filter((i) => !i.pin).map((i) => navItemHTML(i)).join('');
+  const foot = document.getElementById('sidebarBottom');
+  if (foot) foot.innerHTML = NAV_VIEWS.filter((i) => i.pin === 'bottom').map((i) => navItemHTML(i)).join('');
+  const bar = document.getElementById('bottomNav');
+  if (bar) bar.innerHTML = NAV_VIEWS.map((i) => navItemHTML(i)).join('');
+  const head = document.getElementById('headerActions');
+  if (head) head.innerHTML = navActionsHTML('header');
+}
+
+// 侧栏练习科目分组（对齐 Exam Plan NotionSidebar）：分组头带计数胶囊，行内只有色点 + 名称，
+// 删除按钮悬停才出现，纯导航不带数字——题数在练习科目页的卡组里看。
+function renderSidebarSubjects() {
+  const host = document.getElementById('sidebarSubjects');
+  if (!host) return;
+  const subjects = visibleSubjects();
+  const rows = subjects.map((s) => {
+    const accent = setAccent({ id: s.id });
+    const active = state.view === 'subject' && state.subjectId === s.id;
+    return `<div class="side-row${active ? ' is-active' : ''}">
+      <button type="button" class="side-row-main" onclick="openSubject('${s.id}')"${active ? ' aria-current="page"' : ''}>
+        <span class="side-row-dot" aria-hidden="true" style="background:${accent.bar}"></span>
+        <span class="side-row-name" data-no-i18n title="${esc(s.name)}">${esc(s.name)}</span>
+      </button>
+      <button type="button" class="side-row-del" onclick="deleteSubject('${s.id}')"
+        title="删除此练习科目" aria-label="删除练习科目 ${esc(s.name)}">${ICON.trash}</button>
+    </div>`;
+  }).join('');
+  host.innerHTML = `
+    <div class="sidebar-group-head">
+      <span>练习科目</span>
+      <span class="ui-chip tabular-nums">${subjects.length}</span>
+    </div>
+    ${rows || '<p class="sidebar-empty">暂无练习科目</p>'}
+    ${navActionsHTML('sidebar')}`;
+}
+
 const PAGE_TITLES = {
   dashboard: '首页',
-  sets: '学科',
-  subject: '学科',
-  setDetail: '题库详情',
+  sets: '练习科目',
+  subject: '练习科目',
+  setDetail: '练习集',
   learning: '学习模式',
   exam: '考试模式',
   examResult: '考试结果',
-  records: '学习进度',
+  wrong: '错题本',
   settings: '设置'
 };
 
@@ -1058,6 +2478,8 @@ function render() {
     console.error('[StarQuiz] 渲染失败', err);
     renderCrash(err);
   }
+  // 英文模式在渲染完成后就地替换文案；中文是源语言，applyLang 内部直接返回
+  if (typeof applyLang === 'function') applyLang(document.documentElement);
 }
 
 function renderCrash(err) {
@@ -1085,16 +2507,18 @@ function renderCore() {
     state.exam.timerId = null;
   }
 
-  document.querySelectorAll('.nav-item, .bn-item').forEach((el) => {
-    const target = state.view === 'subject' ? 'sets' : state.view;
-    el.classList.toggle('active', el.dataset.view === target);
-  });
   document.body.classList.toggle('focus-mode', state.view === 'learning' || state.view === 'exam');
   const pageTitle = state.view === 'subject'
-    ? ((subjectById(state.subjectId) || {}).name || '学科')
+    ? ((subjectById(state.subjectId) || {}).name || '练习科目')
     : PAGE_TITLES[state.view];
-  document.getElementById('pageTitle').textContent = pageTitle || '';
-  document.getElementById('headerActions').innerHTML = renderHeaderActions();
+  const titleEl = document.getElementById('pageTitle');
+  titleEl.textContent = pageTitle || '';
+  /* 练习科目视图的页头标题就是用户起的练习科目名，英文模式下不参与翻译 */
+  if (state.view === 'subject') titleEl.setAttribute('data-no-i18n', '');
+  else titleEl.removeAttribute('data-no-i18n');
+  // 导航与动作由同一份配置生成：侧栏、移动底栏、页头动作位都在 renderNav 里落地
+  renderNav();
+  renderSidebarSubjects();
 
   const main = document.getElementById('mainContent');
   switch (state.view) {
@@ -1105,7 +2529,7 @@ function renderCore() {
     case 'learning': main.innerHTML = renderLearning(); break;
     case 'exam': main.innerHTML = state.exam && state.exam.grading ? renderGrading() : renderExam(); break;
     case 'examResult': main.innerHTML = renderExamResult(); break;
-    case 'records': main.innerHTML = renderRecords(); break;
+    case 'wrong': main.innerHTML = renderWrongBook(); break;
     case 'settings': main.innerHTML = renderSettings(); break;
     default: main.innerHTML = renderDashboard();
   }
@@ -1117,174 +2541,500 @@ function renderCore() {
   syncQnav();
 }
 
-function renderHeaderActions() {
-  if (state.view === 'dashboard' || state.view === 'sets') {
-    return `
-      <button class="btn btn-primary btn-sm" onclick="openAIModal()">${ICON.spark} AI 生成</button>`;
-  }
-  if (state.view === 'subject') {
-    return `
-      <button class="btn btn-secondary btn-sm" onclick="pickSubjectFiles()">${ICON.upload} 上传资料</button>
-      <button class="btn btn-primary btn-sm" onclick="openAIModal('${state.subjectId}')">${ICON.spark} AI 出题</button>`;
-  }
-  return '';
+/* 卡片解剖（对齐 Exam Plan AI）：统计卡 = 标签 + 淡图标 / 大号数字 / 说明或进度；
+   note 走文案翻译，noteHTML 只给用户起的名（练习科目 / 考试），带 data-no-i18n 不参与翻译。
+   练习科目与练习集卡 = 左侧 3px 色条 + 标题 + 胶囊计数 + 描述 + 图标元信息 + 进度 + 分隔页脚。 */
+function statCard(label, value, opts) {
+  const o = opts || {};
+  const pct = typeof o.pct === 'number' ? Math.max(0, Math.min(100, Math.round(o.pct))) : null;
+  const note = o.noteHTML
+    ? `<div class="stat-note">${o.noteHTML}</div>`
+    : (o.note ? `<div class="stat-note">${esc(o.note)}</div>` : '');
+  return `
+    <div class="stat">
+      <div class="stat-head">
+        <span class="stat-label">${esc(label)}</span>
+        ${o.icon ? `<span class="stat-ico" aria-hidden="true">${o.icon}</span>` : ''}
+      </div>
+      <div class="stat-value">${value}</div>
+      ${pct != null
+        ? `<div class="stat-track"><div style="width:${pct}%"></div></div>${note}`
+        : note}
+    </div>`;
 }
 
-function heroArt() {
-  return `<svg viewBox="0 0 240 210" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M40 190c20 12 48 13 74 2" stroke="#D6F65B" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 9"/>
-    <g transform="rotate(-6 118 72)">
-      <rect x="50" y="48" width="148" height="42" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
-      <rect x="60" y="57" width="24" height="24" rx="7" fill="#1A1812" stroke="#1A1812" stroke-width="2.5"/>
-      <text x="72" y="75" text-anchor="middle" fill="#F7F0DC" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">C</text>
-      <rect x="94" y="62" width="82" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-      <rect x="94" y="75" width="50" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-    </g>
-    <g transform="rotate(5 118 110)">
-      <rect x="38" y="88" width="152" height="42" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
-      <rect x="48" y="97" width="24" height="24" rx="7" fill="#FF6B45" stroke="#1A1812" stroke-width="2.5"/>
-      <text x="60" y="115" text-anchor="middle" fill="#1A1812" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">B</text>
-      <rect x="82" y="102" width="90" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-      <rect x="82" y="115" width="56" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-    </g>
-    <g transform="rotate(-2 118 150)">
-      <rect x="44" y="128" width="156" height="44" rx="12" fill="#F7F0DC" stroke="#1A1812" stroke-width="3"/>
-      <rect x="54" y="138" width="24" height="24" rx="7" fill="#D6F65B" stroke="#1A1812" stroke-width="2.5"/>
-      <text x="66" y="156" text-anchor="middle" fill="#1A1812" font-family="Space Grotesk, sans-serif" font-size="14" font-weight="700">A</text>
-      <rect x="88" y="143" width="76" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-      <rect x="88" y="156" width="46" height="7" rx="3.5" fill="#1A1812" opacity="0.18"/>
-    </g>
-    <circle cx="199" cy="48" r="30" fill="#D6F65B" stroke="#1A1812" stroke-width="3"/>
-    <path d="M186 48l9 9 17-18" stroke="#1A1812" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M26 60l4.5 10 10 4.5-10 4.5-4.5 10-4.5-10-10-4.5 10-4.5z" fill="#FF6B45" stroke="#1A1812" stroke-width="2.5" stroke-linejoin="round"/>
-  </svg>`;
+function subjectStats(subjectId) {
+  const ids = new Set(subjectSets(subjectId).map((s) => s.id));
+  const attempts = history.filter((a) => ids.has(a.setId));
+  const graded = attempts.reduce((n, a) => n + (a.graded || 0), 0);
+  const correct = attempts.reduce((n, a) => n + (a.correct || 0), 0);
+  return { attempts: attempts.length, accuracy: graded ? Math.round((correct / graded) * 100) : null };
+}
+
+/* 首页是练习调度台，不是落地页也不是仪表盘：一张「今日练习」状态卡，
+   主按钮带当前进度，四个格子对应四种练法，统计压成进度条下面一行胶囊。
+   没有装饰性纹理、大情绪文案和英雄区，字段顺序对齐 Exam Plan AI 的今日视图。 */
+function dailyGoalTotal() {
+  const subjects = visibleSubjects();
+  if (!subjects.length) return 20;
+  return subjects.reduce((n, s) => n + (s.dailyGoal || 20), 0);
+}
+
+function todayDateLabel() {
+  const d = new Date();
+  try {
+    return new Intl.DateTimeFormat(isEn() ? 'en-US' : 'zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(d);
+  } catch {
+    return fmtDay(d.getTime());
+  }
+}
+
+function daysToExam(subject) {
+  if (!subject || !subject.examDate) return null;
+  const target = new Date(`${subject.examDate}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target - today) / 86400000);
+}
+
+// 「最近考试」全站只算一次：首页胶囊和练习科目总览的统计卡说的是同一个练习科目、同一个 D-N
+function nearestExamSubject() {
+  return visibleSubjects()
+    .map((s) => ({ s, left: daysToExam(s) }))
+    .filter((x) => x.left != null && x.left >= 0)
+    .sort((a, b) => a.left - b.left)[0] || null;
+}
+
+// 倒计时显示口径：已过日期和今天都显示「今天考试」，其余 D-N
+function examCountdownLabel(left) {
+  if (left == null) return '—';
+  return left <= 0 ? '今天考试' : `D-${left}`;
+}
+
+// 全部练习题的完成进度：练习科目总览的「总进度」与单个练习科目卡共用同一口径
+function overallProgress() {
+  return allSets().reduce((acc, s) => {
+    const p = setProgress(s.id);
+    acc.done += p.done;
+    acc.total += p.total;
+    return acc;
+  }, { done: 0, total: 0 });
+}
+
+// 首页只推一套「现在该练的」，主按钮的文案直接带上它的状态
+function mainPracticeAction(focus, progress, hasSubjects) {
+  if (!focus) {
+    return { label: hasSubjects ? '挑一个练习科目' : '去建第一个练习科目', onclick: "navigateTo('sets')" };
+  }
+  const name = `<span data-no-i18n>${esc(focus.name)}</span>`;
+  if (!progress.done) {
+    return { label: `开始练习 · ${name} 共 ${progress.total} 题`, onclick: `startLearning('${focus.id}')` };
+  }
+  if (progress.done < progress.total) {
+    return { label: `继续 · ${name} ${progress.done}/${progress.total} 题`, onclick: `startLearning('${focus.id}')` };
+  }
+  // 整套答完之后，最该做的不是再来一遍全量，而是今天到期的错题
+  const dueWrong = wrongStats(focus.id).due;
+  if (dueWrong) {
+    return { label: `重练错题 · ${name} 今日到期 ${dueWrong} 题`, onclick: `startLearning('${focus.id}', true)` };
+  }
+  return { label: `再过一遍 · ${name} ${progress.total} 题`, onclick: `startLearning('${focus.id}')` };
+}
+
+// 考点聚焦格：把待练的联动考点装回临时上下文，再打开出题弹窗（默认已勾上聚焦这个考点）
+function startFocusLink(linkId) {
+  const link = planLinkStore.links[linkId];
+  if (!link) {
+    toast('这条联动关系已经不存在了', 'info');
+    navigateTo('sets');
+    return;
+  }
+  const topic = (link.path || {}).topic || '';
+  const subject = resolvePlanFolder({
+    boundSubjectId: link.subjectId || '',
+    exam: (link.path || {}).exam || '',
+    subjectName: (link.path || {}).subject || ''
+  });
+  if (!subject) {
+    planLink = { subjectId: null, subject: (link.path || {}).subject || '', topic, exam: (link.path || {}).exam || '' };
+    navigateTo('sets');
+    toast(`先选一个练习科目，再练考点「${topic}」`, 'info', 6000);
+    return;
+  }
+  planLink = transientPlanLink(link, subject);
+  // 和深链首次落地走同一个入口：把资料夹里已经躺着的资料带进弹窗。
+  // 只传 subject.id 的话 aiPieces 是空的，aiStepReady(1) 的 hasMaterial 就是 false，
+  // 用户看到的是「资料明明在列表里，下一步却是灰的」。
+  openPractice(subject);
 }
 
 function renderDashboard() {
-  const sets = allSets();
+  const subjects = visibleSubjects();
   const st = overallStats();
   const streak = streakDays();
-  const lastAttempt = history[0];
-  const lastSet = lastAttempt ? getSet(lastAttempt.setId) : null;
   const today = todayAnswered();
-  const goal = 20;
+  const goal = dailyGoalTotal();
   const goalPct = Math.min(100, Math.round((today / goal) * 100));
+  const focus = focusSet();
+  const progress = focus ? setProgress(focus.id) : { done: 0, total: 0 };
+  const cta = mainPracticeAction(focus, progress, subjects.length);
+  const wrongToday = wrongStats();
+  const focusLinks = pendingFocusLinks();
+  const lastExam = history.find((a) => a.mode === 'exam');
+  // 「待练」按还没答完的练习集数算，和主按钮说的是同一件事
+  const pendingSets = allSets().filter((s) => s.questions.length && pendingQuestionCount([s.id]) > 0).length;
+  const nearest = nearestExamSubject();
 
-  const cards = visibleSubjects().slice(0, 4).map((s) => renderSubjectRow(s)).join('');
+  const cell = (o) => `
+    <button type="button" class="dispatch-cell" onclick="${o.onclick}">
+      <span class="dispatch-label">${o.label}</span>
+      <span class="dispatch-value">${o.value}</span>
+      <span class="dispatch-note">${o.note}</span>
+    </button>`;
+
+  const chip = (content) => `<span class="today-chip">${content}</span>`;
+  const chips = [];
+  if (streak > 0) chips.push(chip(`连续 ${streak} 天`));
+  if (pendingSets) chips.push(chip(`待练 ${pendingSets} 套`));
+  if (nearest) {
+    chips.push(chip(`<span data-no-i18n>${esc(nearest.s.examName || nearest.s.name)}</span>`));
+    // 考试倒计时的落点就是改考试：日期定错了，点这枚胶囊直接进编辑弹窗，不再另开入口
+    chips.push(`<button type="button" class="today-chip" onclick="examInfoModal('${nearest.s.id}')" title="编辑考试信息">${ICON.pen}<span>距考试 ${nearest.left} 天</span></button>`);
+  }
+  chips.push(chip(st.accuracy == null ? '还没有练习成绩' : `累计正确率 ${st.accuracy}%`));
 
   return `
-    <div class="dash-hero">
-      <div class="dash-hero-copy">
-        <span class="hero-pill">${ICON.spark} 今日练习</span>
-        <h2>今天，也来练两手。</h2>
-        <p>${streak > 0 ? `已连续 <b>${streak}</b> 天保持手感，别断了。` : '新的连续记录，从今天的第一题开始。'}</p>
-        <div class="hero-goal">
-          <div class="hero-goal-head"><span>今日目标</span><span>${today} / ${goal} 题</span></div>
-          <div class="hero-goal-track"><div style="width:${goalPct}%"></div></div>
-        </div>
-        <div class="hero-actions">
-          ${lastSet
-            ? `<button class="btn btn-lime" onclick="openSet('${lastSet.id}')">${ICON.play} 继续上次练习</button>`
-            : `<button class="btn btn-lime" onclick="navigateTo('sets')">挑一个学科 ${ICON.arrow}</button>`}
-          <button class="btn btn-ghost-light" onclick="navigateTo('records')">看看进度</button>
-        </div>
+    <div class="card today-card">
+      <div class="today-head">
+        <span class="ui-chip">今日</span>
+        <span class="today-date" data-no-i18n>${esc(todayDateLabel())}</span>
       </div>
-      <div class="hero-art" aria-hidden="true">${heroArt()}</div>
-    </div>
-
-    <div class="stat-rail">
-      <div class="stat"><div class="stat-value">${sets.length}</div><div class="stat-label">题库</div></div>
-      <div class="stat"><div class="stat-value">${st.totalQ}</div><div class="stat-label">题目</div></div>
-      <div class="stat"><div class="stat-value">${st.accuracy == null ? '--' : st.accuracy + '%'}</div><div class="stat-label">正确率</div></div>
-      <div class="stat"><div class="stat-value">${st.count}</div><div class="stat-label">练习次数</div></div>
-    </div>
-
-    <div class="section-title">
-      <span>学科文件夹</span>
-      <button class="btn btn-ghost btn-sm" onclick="navigateTo('sets')">全部学科 ${ICON.arrow}</button>
-    </div>
-    <div class="set-list">
-      ${cards || renderEmptySets()}
-    </div>
-    <div class="ai-cta" onclick="openAIModal()">
-      <div class="ai-cta-icon">${ICON.spark}</div>
-      <div class="ai-cta-copy">
-        <div class="ai-cta-title">上传资料，AI 出题</div>
-        <div class="ai-cta-desc">笔记自动出题，真题原样整理，全部保留</div>
+      <h2 class="today-title">今日练习</h2>
+      <div class="today-track">
+        <div class="today-track-head"><span>今日目标</span><b>${today} / ${goal} 题</b></div>
+        <div class="ui-progress"><div style="width:${goalPct}%"></div></div>
+        <div class="today-chips">${chips.join('')}</div>
       </div>
-      <span class="ai-cta-go">开始出题 ${ICON.arrow}</span>
+      <div class="today-actions">
+        <button class="btn btn-primary" onclick="${cta.onclick}">${cta.label}</button>
+      </div>
+      ${focus ? `
+        <div class="dispatch-grid">
+          ${cell({
+            label: '顺序练习',
+            value: `${progress.done}<span class="dispatch-denom"> / ${progress.total} 题</span>`,
+            note: `<span data-no-i18n>${esc(focus.name)}</span>`,
+            onclick: `startLearning('${focus.id}')`
+          })}
+          ${cell({
+            label: '错题重练',
+            value: `${wrongToday.due}<span class="dispatch-denom"> 题今天到期</span>`,
+            note: wrongToday.open ? `共 ${wrongToday.open} 题待复习` : '暂无错题',
+            onclick: "navigateTo('wrong')"
+          })}
+          ${cell({
+            label: '模拟考试',
+            value: `${lastExam ? lastExam.score : '--'}<span class="dispatch-denom"> 分（上次）</span>`,
+            note: lastExam ? '自检掌握度' : '还没有考过',
+            onclick: `startExamModal('${focus.id}')`
+          })}
+          ${focusLinks.length ? cell({
+            label: '考点聚焦',
+            value: `${focusLinks.length}<span class="dispatch-denom"> 个考点待练</span>`,
+            note: `<span data-no-i18n>${esc((focusLinks[0].path || {}).topic || '')}</span>`,
+            onclick: `startFocusLink('${focusLinks[0].linkId}')`
+          }) : ''}
+        </div>` : ''}
     </div>
   `;
 }
 
-function renderEmptySets() {
+// 空状态只解释「这里为什么是空的」，并给出这一个动作：新增练习科目仍是全站唯一入口（侧栏虚线行 / 移动页头）
+function renderEmptyFolders() {
+  const a = addSubjectAction();
   return `
-    <div class="card" style="text-align:center;padding:40px 20px">
-      <div class="empty-state-icon">${ICON.book}</div>
-      <div class="card-title">还没有题库</div>
-      <div class="card-desc mb-4">上传 PDF、Word、PPT 或粘贴文字，AI 自动整理成题库</div>
-      <div class="btn-group" style="justify-content:center">
-        <button class="btn btn-primary" onclick="openAIModal()">AI 生成</button>
-      </div>
+    <div class="empty-card">
+      <div class="empty-card-icon">${ICON.book}</div>
+      <div class="empty-card-title">还没有练习科目</div>
+      <button type="button" class="btn btn-primary" onclick="${a.onclick}">${ICON.plus}<span>${a.label}</span></button>
     </div>`;
+}
+
+/* 紧凑列表行（对齐 Exam Plan 的清单）：色点 + 标题 + 计数胶囊 + 一行说明 + 右侧次要数据。
+   练习科目页只保留「练习科目卡组」这一层收纳，练习科目内部（资料 / 练习集）仍用细线行。 */
+function lrow(o) {
+  return `
+    <button type="button" class="lrow" onclick="${o.onclick}">
+      <span class="lrow-dot" aria-hidden="true" style="background:${o.accent}"></span>
+      <span class="lrow-main">
+        <span class="lrow-title"><span class="lrow-name" data-no-i18n>${esc(o.title)}</span><span class="ui-chip tabular-nums">${o.chip}</span></span>
+        ${o.sub ? `<span class="lrow-sub"${o.subUserData ? ' data-no-i18n' : ''}>${esc(o.sub)}</span>` : ''}
+      </span>
+      <span class="lrow-tail">${o.tail}</span>
+      <span class="lrow-go" aria-hidden="true">→</span>
+    </button>`;
+}
+
+function tailAccuracy(acc) {
+  return acc == null
+    ? '<span class="lrow-tail-idle">未练习</span>'
+    : `<b>${acc}%</b><span class="lrow-tail-idle">正确率</span>`;
 }
 
 function renderSetRow(s) {
   const st = setStats(s.id);
+  const p = setProgress(s.id);
   const kpCount = (s.knowledgePoints || []).length;
-  const accent = setAccent(s);
-  const acc = st.accuracy == null ? '' : ` · 正确率 ${st.accuracy}%`;
+  return lrow({
+    onclick: `openSet('${s.id}')`,
+    accent: setAccent(s).bar,
+    title: s.name,
+    chip: `已做 ${p.done}/${p.total} 题`,
+    sub: s.description || `${kpCount} 知识点 · ${st.attempts ? `已练 ${st.attempts} 次` : '还没有练过'}`,
+    subUserData: !!s.description,
+    tail: tailAccuracy(st.accuracy)
+  });
+}
+
+/* 练习科目收纳（对齐 Exam Plan AI 的 CourseAccordionGallery）：
+   桌面是一排横向卡——悬停或键盘聚焦的那张展开成 5 倍宽，其余收成 60px 只留旋转名称、D-N 和进度；
+   移动端这排卡换成同一批练习科目的手风琴行。两个形态共用 subjectDeckData 与同一段进度 / 页脚，
+   展开完全交给 CSS（.deck-card:hover），不靠重渲染，所以过渡不会被 innerHTML 打断。 */
+function subjectDeckData(subject) {
+  const sets = subjectSets(subject.id);
+  const mats = subjectMaterials(subject.id);
+  const progress = subjectProgress(subject.id);
+  const left = daysToExam(subject);
+  const ids = new Set(sets.map((s) => s.id));
+  return {
+    subject,
+    sets,
+    mats,
+    left,
+    progress,
+    wrong: wrongOpenItems().filter((i) => ids.has(i.setId)).length,
+    qCount: sets.reduce((n, s) => n + s.questions.length, 0),
+    pct: progress.total ? Math.round((progress.done / progress.total) * 100) : 0,
+    accent: setAccent({ id: subject.id })
+  };
+}
+
+function deckFactLine(d) {
+  const base = d.mats.length
+    ? `${d.sets.length} 个练习集 · ${d.qCount} 道题 · ${d.mats.length} 份资料`
+    : `${d.sets.length} 个练习集 · ${d.qCount} 道题`;
+  return d.wrong ? `${base} · ${d.wrong} 题错题待复习` : base;
+}
+
+function deckProgressBlock(d) {
   return `
-    <button type="button" class="set-row" onclick="openSet('${s.id}')">
-      <span class="set-row-icon" style="background:${accent.bg};color:${accent.fg}">${esc(s.icon || '题')}</span>
-      <span class="set-row-main">
-        <span class="set-row-title">${esc(s.name)}</span>
-        <span class="set-row-desc">${esc(s.description || '')}</span>
-      </span>
-      <span class="set-row-meta">${s.questions.length} 题 · ${kpCount} 知识点${acc}</span>
-      <span class="set-row-arrow" aria-hidden="true">→</span>
+    <div class="deck-prog">
+      <div class="deck-prog-head"><span>练习进度</span><b>${d.pct}%</b></div>
+      <div class="ui-progress deck-bar"><div style="width:${d.pct}%"></div></div>
+      <div class="deck-prog-sub">已做 ${d.progress.done}/${d.progress.total} 题</div>
+    </div>`;
+}
+
+// 页脚动作：编辑（练习科目名 + 考试信息）与删除都是次要动作，主按钮「进入」留在右侧。
+// 编辑必须摆在明面上：改考点、改考试日期是每天都会发生的事，不该藏进 ⋯ 里。
+// 「未分类」是内置收纳位，改名和删除都不成立，所以和详情页页头一样只留「进入」。
+function deckFootHTML(subject) {
+  const acts = subject.builtin
+    ? '<span></span>'
+    : `<span class="deck-foot-acts">
+        <button type="button" class="deck-act" onclick="event.stopPropagation();examInfoModal('${subject.id}')" title="编辑练习科目">${ICON.pen}<span>编辑</span></button>
+        <button type="button" class="deck-act deck-act-danger" onclick="event.stopPropagation();deleteSubject('${subject.id}')" title="删除此练习科目">${ICON.trash}<span>删除</span></button>
+      </span>`;
+  return `
+    <div class="deck-foot">
+      ${acts}
+      <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation();openSubject('${subject.id}')"><span>进入</span>${ICON.arrow}</button>
+    </div>`;
+}
+
+function deckIdleFoot(d) {
+  return `
+    <div class="deck-idle-foot">
+      ${d.left != null ? `<span class="deck-idle-days">${d.left <= 0 ? '今天' : `D-${d.left}`}</span>` : ''}
+      <span class="deck-idle-pct">${d.pct}%</span>
+      <span class="deck-idle-track" aria-hidden="true"><div style="width:${d.pct}%"></div></span>
+    </div>`;
+}
+
+function deckCardHTML(d) {
+  const s = d.subject;
+  return `
+    <article class="deck-card" role="button" tabindex="0" aria-label="打开练习科目 ${esc(s.name)}"
+      onclick="openSubject('${s.id}')"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSubject('${s.id}')}">
+      <span class="deck-stripe" aria-hidden="true" style="background:${d.accent.bar}"></span>
+      <div class="deck-idle">
+        <span class="deck-idle-name" data-no-i18n>${esc(s.name)}</span>
+        ${deckIdleFoot(d)}
+      </div>
+      <div class="deck-full">
+        <div class="deck-head">
+          <button type="button" class="deck-title" onclick="openSubject('${s.id}')" title="${esc(s.name)}" data-no-i18n>${esc(s.name)}</button>
+          ${d.left != null ? `<span class="ui-chip tabular-nums">${examCountdownLabel(d.left)}</span>` : ''}
+        </div>
+        ${s.examDate ? `<div class="deck-meta"><span class="deck-meta-ico" aria-hidden="true">${ICON.calendar}</span><span>${esc(s.examDate)}</span></div>` : ''}
+        <div class="deck-sub">${deckFactLine(d)}</div>
+        ${deckProgressBlock(d)}
+        ${deckFootHTML(s)}
+      </div>
+    </article>`;
+}
+
+function deckFoldHTML(d) {
+  const s = d.subject;
+  return `
+    <details class="fold">
+      <summary class="fold-head">
+        <span class="fold-dot" aria-hidden="true" style="background:${d.accent.bar}"></span>
+        <span class="fold-copy">
+          <span class="fold-name" data-no-i18n>${esc(s.name)}</span>
+          <span class="fold-sub">${deckFactLine(d)}</span>
+        </span>
+        ${d.left != null ? `<span class="ui-chip tabular-nums">${examCountdownLabel(d.left)}</span>` : ''}
+        <span class="fold-chev" aria-hidden="true">${ICON.chevron}</span>
+      </summary>
+      <div class="fold-body">
+        ${deckProgressBlock(d)}
+        ${deckFootHTML(s)}
+      </div>
+    </details>`;
+}
+
+// 新建卡：和练习科目卡同一套悬停展开，收起时是虚线窄条，展开后是创建说明 + 立即创建
+function deckAddHTML() {
+  const a = addSubjectAction();
+  const open = `event.stopPropagation();${a.onclick}`;
+  return `
+    <div class="deck-card deck-add" role="button" tabindex="0" onclick="${a.onclick}"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${a.onclick}}"
+      aria-label="${a.label}">
+      <div class="deck-idle">
+        <span class="deck-idle-tile" aria-hidden="true">${ICON.plus}</span>
+        <span class="deck-idle-name">新增练习科目</span>
+        <span class="deck-idle-go" aria-hidden="true">${ICON.arrow}</span>
+      </div>
+      <div class="deck-full">
+        <div class="deck-add-head">
+          <span class="deck-tile deck-tile-ink" aria-hidden="true">${ICON.plus}</span>
+          <span>${a.label}</span>
+        </div>
+        <h3 class="deck-add-title">创建新的练习科目</h3>
+        <div class="deck-foot">
+          <span></span>
+          <button type="button" class="btn btn-primary btn-sm" onclick="${open}">${ICON.plus}<span>立即创建</span></button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function foldAddHTML() {
+  const a = addSubjectAction();
+  return `
+    <button type="button" class="fold fold-add" onclick="${a.onclick}">
+      <span class="fold-dot fold-add-dot" aria-hidden="true">${ICON.plus}</span>
+      <span class="fold-copy"><span class="fold-name">${a.label}</span></span>
+      <span class="lrow-go" aria-hidden="true">→</span>
     </button>`;
 }
 
-function renderSubjectRow(subject) {
-  const sets = subjectSets(subject.id);
-  const mats = subjectMaterials(subject.id);
-  const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
-  const accent = setAccent({ id: subject.id });
-  const desc = mats.length
-    ? `最近资料：${mats[0].name}`
-    : (sets[0] ? (sets[0].description || `${sets[0].name} · ${qCount} 题`) : '还没有资料，点进去上传');
+/* 练习科目详情里的收纳：和移动端练习科目行同一个 .fold 组件（对齐 CourseDetailPage 的可折叠资料段），
+   标题 + 计数胶囊 + 箭头，展开后是细线行列表。 */
+function foldSection(o) {
   return `
-    <button type="button" class="set-row subject-row" onclick="openSubject('${subject.id}')">
-      <span class="set-row-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
-      <span class="set-row-main">
-        <span class="set-row-title">${esc(subject.name)}</span>
-        <span class="set-row-desc">${esc(desc)}</span>
-      </span>
-      <span class="set-row-meta">${mats.length} 份资料 · ${sets.length} 套题库</span>
-      <span class="set-row-arrow" aria-hidden="true">→</span>
-    </button>`;
+    <details class="fold fold-section"${o.open ? ' open' : ''}>
+      <summary class="fold-head">
+        <span class="fold-copy"><span class="fold-name"${o.nameIsData ? ' data-no-i18n' : ''}>${esc(o.title)}</span></span>
+        ${o.actions ? `<span class="fold-actions">${o.actions}</span>` : ''}
+        ${o.chip ? `<span class="ui-chip tabular-nums">${o.chip}</span>` : ''}
+        <span class="fold-chev" aria-hidden="true">${ICON.chevron}</span>
+      </summary>
+      <div class="fold-body fold-body-flush">${o.body}</div>
+    </details>`;
+}
+
+/* 练习记录并入练习科目总览：这里只留「一共练成什么样」的一行摘要与按时间排列的历史，
+   原来按练习集分组的表现在卡组里已经是每个练习科目的进度条，不再重复一遍。 */
+function histRowHTML(a) {
+  const tone = a.score >= 85 ? 'score-high' : a.score >= 60 ? 'score-mid' : 'score-low';
+  return `
+    <div class="perf-row">
+      <span class="badge ${a.mode === 'exam' ? 'badge-primary' : 'badge-success'}">${a.mode === 'exam' ? '考试' : '学习'}</span>
+      <div class="perf-copy">
+        <div class="perf-name" data-no-i18n>${esc(a.setName)}</div>
+        <div class="perf-sub">${fmtDate(a.finishedAt)} · ${fmtDuration(a.durationSec)} · ${a.graded || 0}/${a.total || 0} 题</div>
+      </div>
+      <div class="history-score ${tone}">${a.score}%</div>
+    </div>`;
+}
+
+function renderHistorySection() {
+  const st = overallStats();
+  if (!history.length) {
+    return `
+      <div class="section-title"><span>练习记录<span class="section-count">0</span></span></div>
+      <div class="card"><div class="material-empty">还没有练习记录</div></div>`;
+  }
+  const head = history.slice(0, 8);
+  const rest = history.slice(8);
+  return `
+    <div class="section-title">
+      <span>练习记录<span class="section-count">${history.length}</span></span>
+      <span class="text-sm text-muted">共 ${history.length} 次练习 · 平均 ${st.avg} 分 · 已批改 ${st.graded} 题</span>
+    </div>
+    <div class="card">
+      ${head.map((a) => histRowHTML(a)).join('')}
+      ${rest.length ? `
+        <details class="hist-more">
+          <summary>展开全部 ${history.length} 条</summary>
+          ${rest.map((a) => histRowHTML(a)).join('')}
+        </details>` : ''}
+    </div>`;
 }
 
 function renderSets() {
   const subjects = visibleSubjects();
+  const st = overallStats();
+  const today = todayAnswered();
+  const goal = dailyGoalTotal();
+  const nearest = nearestExamSubject();
+  const prog = overallProgress();
+  const progPct = prog.total ? Math.round((prog.done / prog.total) * 100) : 0;
+  const deckData = subjects.map((s) => subjectDeckData(s));
+
+  const deck = subjects.length
+    ? `<div class="deck">${deckData.map(deckCardHTML).join('')}${deckAddHTML()}</div>
+       <div class="deck-fold">${foldAddHTML()}${deckData.map(deckFoldHTML).join('')}</div>`
+    : renderEmptyFolders();
+
   return `
-    <div class="section-title">
-      <span>全部学科</span>
-      <span class="text-sm text-muted">共 ${subjects.length} 个</span>
+    <div class="stat-rail">
+      ${statCard('练习科目', subjects.length, { icon: ICON.book, note: `共 ${st.totalQ} 道题` })}
+      ${statCard('最近考试', nearest ? examCountdownLabel(nearest.left) : '—', {
+        icon: ICON.calendar,
+        noteHTML: nearest ? `<span data-no-i18n>${esc(nearest.s.name)}</span>` : '还没设考试日期'
+      })}
+      ${statCard('今日进度', `${today}<span class="stat-denom"> / ${goal} 题</span>`, {
+        icon: ICON.flame,
+        pct: goal ? Math.min(100, Math.round((today / goal) * 100)) : 0,
+        note: today >= goal && goal ? '今日目标已达成' : `每日目标 ${goal} 题`
+      })}
+      ${statCard('练习进度', `${progPct}%`, {
+        icon: ICON.chart,
+        pct: progPct,
+        note: st.count ? `已做 ${prog.done}/${prog.total} 题 · 正确率 ${st.accuracy == null ? '--' : st.accuracy + '%'}` : `共 ${prog.total} 道题待练`
+      })}
     </div>
-    <p class="page-lead">按学科归档：上传的原始资料、提取的文字和生成的题库都在同一个文件夹里。</p>
-    <div class="set-list">
-      ${subjects.map((s) => renderSubjectRow(s)).join('')}
-      <button type="button" class="set-row set-row-add" onclick="newSubjectModal()">
-        <span class="set-row-icon" aria-hidden="true">＋</span>
-        <span class="set-row-main">
-          <span class="set-row-title">新建学科</span>
-          <span class="set-row-desc">例如：高等数学、英语写作、数据结构</span>
-        </span>
-        <span class="set-row-arrow" aria-hidden="true">→</span>
-      </button>
-    </div>`;
+
+    <div class="section-title"><span>练习科目收纳<span class="section-count">${subjects.length}</span></span></div>
+    ${deck}
+
+    ${renderHistorySection()}`;
 }
 
 function materialExtLabel(ext) {
@@ -1316,7 +3066,7 @@ function renderMaterialRow(m) {
     <div class="material-row" data-material="${esc(m.id)}">
       <span class="material-ext">${esc(materialExtLabel(m.ext))}</span>
       <div class="material-main">
-        <div class="material-name" title="${esc(m.name)}">${esc(m.name)}</div>
+        <div class="material-name" data-no-i18n title="${esc(m.name)}">${esc(m.name)}</div>
         <div class="material-meta">${materialKindLabel(m.kind)} · ${fmtSize(m.size)} · ${m.chars.toLocaleString('zh-CN')} 字 · ${fmtDay(m.addedAt)}${m.hasBlob ? '' : ' · 仅文字'}</div>
       </div>
       <div class="material-actions">
@@ -1328,146 +3078,622 @@ function renderMaterialRow(m) {
     </div>`;
 }
 
+/* 段内列表的溢出收纳：和练习记录、错题本同一个 .hist-more 机制——
+   前 6 行直接可见，剩下的收进「展开其余 N 套」，页面高度不会被长列表撑走。 */
+const SET_PREVIEW = 6;
+
+function setListHTML(sets) {
+  if (!sets.length) {
+    return `<div class="material-empty">还没有练习集</div>`;
+  }
+  const rest = sets.slice(SET_PREVIEW);
+  return `
+    <div class="lrow-list">
+      ${sets.slice(0, SET_PREVIEW).map((s) => renderSetRow(s)).join('')}
+      ${rest.length ? `
+        <details class="hist-more">
+          <summary>展开其余 ${rest.length} 套</summary>
+          ${rest.map((s) => renderSetRow(s)).join('')}
+        </details>` : ''}
+    </div>`;
+}
+
+// 页头动作：返回 + 本页独有的三个动作。有封面时同一组按钮浮在封面带上，
+// 只多一层半透明白垫（ui-cover-chip），档位不变——一个功能仍然只有这一个入口。
+function subjectHeadChrome(subject, covered, own, matIds) {
+  const cls = covered ? 'ui-text-btn ui-cover-chip' : 'ui-text-btn';
+  return `
+    <button class="${cls}" onclick="navigateTo('sets')">← 全部练习科目</button>
+    <div class="subject-actions">
+      <button class="${cls}" onclick="openAIModal('${subject.id}'${matIds ? `, [${matIds}]` : ''})">${ICON.spark}<span>AI 出题</span></button>
+      ${own ? `<button class="${cls}" onclick="examInfoModal('${subject.id}')" title="练习科目名称与考试信息都能改">${ICON.pen}<span>编辑</span></button>
+      <button class="${cls} is-danger" onclick="deleteSubject('${subject.id}')">${ICON.trash}<span>删除</span></button>` : ''}
+    </div>`;
+}
+
+// 属性 = 图标 + 定宽灰标签 + 同档不加粗取值；没填的走 ui-prop-empty 那档灰。
+function subjectProp(iconKey, label, value, opts) {
+  const o = opts || {};
+  return `<span class="ui-prop"><span class="ui-prop-icon">${ICON[iconKey]}</span>`
+    + `<span class="ui-prop-label">${label}</span>`
+    + `<span class="ui-prop-value${o.muted ? ' ui-prop-empty' : ''}"${o.raw ? ' data-no-i18n' : ''}>${esc(value)}</span></span>`;
+}
+
+function subjectPropsHTML(subject, left) {
+  const notSet = '未设定';
+  return [
+    subject.examName
+      ? subjectProp('book', '目标考试', subject.examName, { raw: true })
+      : subjectProp('book', '目标考试', notSet, { muted: true }),
+    subject.examDate
+      ? subjectProp('calendar', '考试日期', subject.examDate)
+      : subjectProp('calendar', '考试日期', notSet, { muted: true }),
+    left == null
+      ? subjectProp('clock', '距考试', notSet, { muted: true })
+      : subjectProp('clock', '距考试', examCountdownLabel(left)),
+    subject.goal
+      ? subjectProp('target', '备考目标', subject.goal, { raw: true })
+      : subjectProp('target', '备考目标', notSet, { muted: true }),
+    subjectProp('flame', '每日目标', `${subject.dailyGoal || 20} 题`)
+  ].join('');
+}
+
 function renderSubject() {
   const subject = subjectById(state.subjectId);
   if (!subject) {
-    return `<div class="empty-state"><div class="empty-state-title">学科不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+    return `<div class="empty-state"><div class="empty-state-title">练习科目不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回练习科目</button></div>`;
   }
-  const sets = subjectSets(subject.id);
+  // 练习集没有 createdAt，插入顺序就是生成顺序，所以倒序展示：AI 刚出的那套永远在最上面。
+  const sets = subjectSets(subject.id).slice().reverse();
   const mats = subjectMaterials(subject.id);
   const qCount = sets.reduce((n, s) => n + s.questions.length, 0);
-  const accent = setAccent({ id: subject.id });
   const own = !subject.builtin;
   const matIds = mats.map((m) => `'${m.id}'`).join(',');
   const busy = !materialsReady;
+  const chars = mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN');
+  const kpTotal = sets.reduce((n, s) => n + (s.knowledgePoints || []).length, 0);
+  const left = daysToExam(subject);
+  const covered = hasSubjectCover(subject);
+  const chrome = subjectHeadChrome(subject, covered, own, matIds);
 
   return `
-    <button class="back-link" onclick="navigateTo('sets')">← 全部学科</button>
+    ${covered ? `<div class="subject-cover">${subjectCoverHTML(subject)}<div class="subject-chrome is-float">${chrome}</div></div>` : ''}
 
-    <div class="subject-head">
-      <div class="subject-head-main">
-        <span class="subject-icon" style="background:${accent.bg};color:${accent.fg}">${esc(subject.icon || subject.name.slice(0, 1))}</span>
-        <div class="subject-head-copy">
-          <div class="hero-eyebrow">SUBJECT · 学科</div>
-          <h2>${esc(subject.name)}</h2>
-          <p>${subject.inbox ? '还没有归入学科的题库和资料会先放在这里。' : '这个文件夹里的资料和题库只属于本学科。'}</p>
-        </div>
-      </div>
-      <div class="subject-head-actions">
-        <button class="btn btn-primary btn-sm" onclick="pickSubjectFiles()">${ICON.upload} 上传资料</button>
-        <button class="btn btn-secondary btn-sm" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">${ICON.spark} AI 出题</button>
-        ${own ? `<button class="btn btn-ghost btn-sm" onclick="renameSubjectModal('${subject.id}')">重命名</button>
-        <button class="btn btn-ghost btn-sm link-danger" onclick="deleteSubject('${subject.id}')">删除学科</button>` : ''}
-      </div>
-    </div>
-
-    <div class="subject-counts">
-      <span><b>${mats.length}</b> 份资料</span>
-      <span><b>${sets.length}</b> 套题库</span>
-      <span><b>${qCount}</b> 道题目</span>
-      <span><b>${subjectMaterials(subject.id).reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')}</b> 字资料</span>
+    <div class="subject-head${covered ? ' is-covered' : ''}">
+      ${covered ? '' : `<div class="subject-chrome is-static">${chrome}</div>`}
+      <span class="ui-page-icon" data-no-i18n>${esc(subjectIcon(subject))}</span>
+      <h2 class="ui-doc-title" data-no-i18n>${esc(subject.name)}</h2>
+      <div class="subject-props">${subjectPropsHTML(subject, left)}</div>
+      ${renderPlanLinkBanner(subject.id)}
     </div>
 
     <input type="file" id="subjectFileInput" multiple hidden
       accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
       onchange="handleSubjectFileInput(this)">
 
-    <div class="section-title">
-      <span>资料</span>
-      ${mats.length ? `<button class="btn btn-ghost btn-sm" onclick="openAIModal('${subject.id}', [${matIds}])">用这些资料出题 ${ICON.arrow}</button>` : `<span class="text-sm text-muted">原始文件 + 提取文字</span>`}
-    </div>
-    <div class="material-list" id="materialList">
-      ${mats.length
-        ? mats.map((m) => renderMaterialRow(m)).join('')
-        : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料。上传 PDF、Word、PPT 或 TXT，文件会留在这个学科文件夹里。'}</div>`}
-    </div>
-    ${materialsUnavailable
-      ? `<div class="feedback feedback-incorrect" style="margin-top:12px">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
-      : `<button type="button" class="set-row set-row-add" onclick="pickSubjectFiles()">
-          <span class="set-row-icon" aria-hidden="true">＋</span>
-          <span class="set-row-main">
-            <span class="set-row-title">上传资料到「${esc(subject.name)}」</span>
-            <span class="set-row-desc">支持多选 · PDF / Word / PPT / TXT · 单文件 ≤ 30MB</span>
-          </span>
-          <span class="set-row-arrow" aria-hidden="true">→</span>
-        </button>
-        <div class="upload-status" id="subjectUploadStatus" hidden></div>`}
+    ${foldSection({
+      open: true,
+      title: '练习集',
+      chip: `${sets.length} 个 · ${qCount} 题 · ${kpTotal} 个知识点`,
+      body: setListHTML(sets)
+    })}
 
-    <div class="section-title">
-      <span>题库</span>
-      <span class="text-sm text-muted">${sets.length} 套 · ${qCount} 题</span>
+    ${foldSection({
+      title: '资料',
+      chip: mats.length ? `${mats.length} 份 · ${chars} 字` : '还没有资料',
+      actions: `<button type="button" class="link-btn" onclick="event.preventDefault();pickSubjectFiles()">＋ 上传资料</button>`,
+      body: `
+        <div class="material-list" id="materialList">
+          ${mats.length
+            ? mats.map((m) => renderMaterialRow(m)).join('')
+            : `<div class="material-empty">${busy ? '正在读取资料…' : '还没有资料'}</div>`}
+        </div>
+        ${materialsUnavailable
+          ? `<div class="feedback feedback-incorrect">当前浏览器无法使用本地资料库，上传的资料不会保存。请更换浏览器或关闭无痕模式。</div>`
+          : '<div class="upload-status" id="subjectUploadStatus" hidden></div>'}`
+    })}`;
+}
+
+// 新增练习科目向导：考试信息 → 上传资料 → 完成（对齐 Exam Plan AI 的三步向导）
+const NS_STEPS = ['考试信息', '上传资料', '完成'];
+
+function nsBlank() {
+  return {
+    step: 1, subjectId: null, name: '', icon: '', cover: '', examName: '', examDate: '', startDate: '', goal: '',
+    defaultCount: 15, dailyGoal: 20, parsing: false, added: 0, chars: 0, failed: []
+  };
+}
+
+let nsDraft = nsBlank();
+
+function nsReset() {
+  nsDraft = nsBlank();
+}
+
+function nsField(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+// 考试信息表单：新建向导第一步和练习科目页的「考试信息」弹窗共用同一套字段
+const EXAM_FORM_DEFAULTS = {
+  id: '', subjectKind: '', name: '', icon: '', cover: '', examName: '', goal: '', examDate: '', startDate: '',
+  defaultCount: 15, dailyGoal: 20
+};
+
+function examFormValues() {
+  return {
+    name: nsField('newSubjectName').trim(),
+    icon: pageIconOf(nsField('nsIcon')),
+    cover: coverOf(nsField('nsCover')),
+    examName: nsField('nsExamName').trim(),
+    goal: nsField('nsGoal').trim(),
+    examDate: nsField('nsExamDate').trim(),
+    startDate: nsField('nsStartDate').trim(),
+    defaultCount: intOf(nsField('nsDefaultCount'), 15, 5, 60),
+    dailyGoal: intOf(nsField('nsDailyGoal'), 20, 5, 100)
+  };
+}
+
+/* 页图标与封面选择器：只在「编辑练习科目」弹窗里出现——新建向导第一步讲的是考试信息，
+ * 身份（图标 / 封面）留到科目页的编辑里配，一个入口只管一件事。
+ * 取值写进隐藏域，保存时由 examFormValues() 一并读出，不在弹窗里即时落库。 */
+function iconGridHTML(current) {
+  return PAGE_ICON_CHOICES.map((emoji) =>
+    `<button type="button" class="icon-tile${emoji === current ? ' is-active' : ''}" data-icon="${esc(emoji)}" `
+    + `onclick="pickExamIcon(this.dataset.icon)" aria-label="${esc(emoji)}">${emoji}</button>`).join('');
+}
+
+function coverStripHTML(value) {
+  const tiles = COVER_PRESETS.map((preset) =>
+    `<button type="button" class="cover-tile${value === `${PRESET_PREFIX}${preset.id}` ? ' is-active' : ''}" `
+    + `style="background:${preset.background}" title="${preset.zh}" onclick="pickExamCover('${PRESET_PREFIX}${preset.id}')"></button>`).join('');
+  const uploaded = coverImageSrc(value)
+    ? `<button type="button" class="cover-tile is-active" style="background-image:url('${value}')" title="上传的图片"></button>`
+    : '';
+  return `<button type="button" class="cover-tile is-none${value ? '' : ' is-active'}" title="不用封面" onclick="pickExamCover('')">无</button>${tiles}${uploaded}`;
+}
+
+function examIdentityHtml(v) {
+  return `
+      <div class="wiz-field wiz-span">
+        <span class="form-label">页图标</span>
+        <input type="hidden" id="nsIcon" value="${esc(v.icon)}">
+        <div class="icon-grid" id="nsIconPicker">${iconGridHTML(v.icon)}</div>
+      </div>
+      <div class="wiz-field wiz-span">
+        <span class="form-label">封面</span>
+        <input type="hidden" id="nsCover" value="${esc(v.cover)}">
+        <div class="cover-strip" id="nsCoverPicker">${coverStripHTML(v.cover)}</div>
+        <div class="cover-tools">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="pickCoverFile()">${ICON.upload}<span>上传图片</span></button>
+        </div>
+        <input type="file" id="nsCoverInput" hidden accept="image/png,image/jpeg,image/webp,image/gif" onchange="onCoverFileSelected(this)">
+      </div>`;
+}
+
+function pickExamIcon(emoji) {
+  const input = document.getElementById('nsIcon');
+  const grid = document.getElementById('nsIconPicker');
+  if (!input || !grid) return;
+  const next = input.value === emoji ? '' : emoji;
+  input.value = next;
+  grid.innerHTML = iconGridHTML(next);
+}
+
+function pickExamCover(value) {
+  const input = document.getElementById('nsCover');
+  const strip = document.getElementById('nsCoverPicker');
+  if (!input || !strip) return;
+  const next = coverOf(value);
+  input.value = next;
+  strip.innerHTML = coverStripHTML(next);
+}
+
+function pickCoverFile() {
+  document.getElementById('nsCoverInput')?.click();
+}
+
+async function onCoverFileSelected(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  try {
+    const data = await readCoverImage(file);
+    pickExamCover(data);
+    toast('封面已选好，保存后生效', 'success');
+  } catch (err) {
+    toast(coverErrorMessage(err && err.code), 'error');
+  }
+}
+
+function examFieldsHtml(raw) {
+  const v = { ...EXAM_FORM_DEFAULTS, ...(raw || {}) };
+  const advOpen = v.defaultCount !== 15 || v.dailyGoal !== 20;
+  return `
+    <div class="wiz-grid">
+      <div class="wiz-field wiz-span">
+        <label class="form-label" for="newSubjectName">练习科目名称</label>
+        <input class="form-input" id="newSubjectName" maxlength="40" placeholder="例如：导游业务、考研英语、高等数学" value="${esc(v.name)}" onkeydown="if(event.key==='Enter'){event.preventDefault();${v.subjectKind === 'edit' ? `submitExamInfo('${esc(v.id)}')` : 'nsNext()'}};">
+      </div>
+      ${v.subjectKind === 'edit' ? examIdentityHtml(v) : ''}
+      <div class="wiz-field">
+        <label class="form-label" for="nsExamName">目标考试</label>
+        <input class="form-input" id="nsExamName" maxlength="100" placeholder="例如：2026 年导游资格考试" value="${esc(v.examName)}">
+      </div>
+      <div class="wiz-field">
+        <label class="form-label" for="nsGoal">备考目标</label>
+        <input class="form-input" id="nsGoal" maxlength="60" placeholder="例如：一次通过 / 90 分以上" value="${esc(v.goal)}">
+      </div>
+      <div class="wiz-field">
+        <label class="form-label" for="nsExamDate">考试日期</label>
+        <input class="form-input" type="date" id="nsExamDate" value="${esc(v.examDate)}">
+      </div>
+      <div class="wiz-field">
+        <label class="form-label" for="nsStartDate">开始练习日期</label>
+        <input class="form-input" type="date" id="nsStartDate" value="${esc(v.startDate || todayStr())}">
+      </div>
+      <details class="wiz-adv wiz-span"${advOpen ? ' open' : ''}>
+        <summary>高级设置</summary>
+        <div class="wiz-grid">
+          <div class="wiz-field">
+            <label class="form-label" for="nsDefaultCount">默认题量（道）</label>
+            <input class="form-input" type="number" id="nsDefaultCount" min="5" max="60" step="1" value="${v.defaultCount}">
+          </div>
+          <div class="wiz-field">
+            <label class="form-label" for="nsDailyGoal">每日练习目标（道）</label>
+            <input class="form-input" type="number" id="nsDailyGoal" min="5" max="100" step="1" value="${v.dailyGoal}">
+          </div>
+        </div>
+      </details>
+    </div>`;
+}
+
+function nsCollectExamInfo() {
+  Object.assign(nsDraft, examFormValues());
+}
+
+function nsExamInfo() {
+  return {
+    icon: nsDraft.icon || '',
+    cover: nsDraft.cover || '',
+    examName: nsDraft.examName,
+    examDate: nsDraft.examDate,
+    startDate: nsDraft.startDate,
+    goal: nsDraft.goal,
+    defaultCount: nsDraft.defaultCount,
+    dailyGoal: nsDraft.dailyGoal
+  };
+}
+
+function nsRail() {
+  return `<div class="wiz-steps" role="list">
+    ${NS_STEPS.map((label, i) => {
+      const n = i + 1;
+      const cls = n === nsDraft.step ? 'is-current' : (n < nsDraft.step ? 'is-done' : 'is-idle');
+      const inner = n < nsDraft.step
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`
+        : String(n);
+      const clickable = n < nsDraft.step && !nsDraft.parsing;
+      return `${i > 0 ? '<span class="wiz-gap" aria-hidden="true"></span>' : ''}
+        <div role="listitem" class="wiz-step ${cls}"${clickable ? ` onclick="nsGoTo(${n})"` : ''}${n === nsDraft.step ? ' aria-current="step"' : ''}>
+          <span class="wiz-step-num">${inner}</span>
+          <span class="wiz-step-label">${label}</span>
+        </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function nsLayerBody() {
+  if (nsDraft.step === 1) {
+    return `
+      <div class="wiz-head">
+        <span class="wiz-title">考试信息</span>
+      </div>
+      ${examFieldsHtml(nsDraft)}`;
+  }
+  if (nsDraft.step === 2) {
+    const subjectName = esc(nsDraft.name || (subjectById(nsDraft.subjectId) || {}).name || '新练习科目');
+    return `
+      <div class="wiz-head">
+        <span class="wiz-title">上传资料</span>
+      </div>
+      <input type="file" id="nsFileInput" multiple hidden
+        accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
+        onchange="handleNsFileInput(this)">
+      <label class="ai-dropzone" for="nsFileInput">
+        <span class="ai-dropzone-icon">${ICON.upload}</span>
+        <span class="ai-dropzone-title">把资料放进「${subjectName}」</span>
+      </label>
+      <div class="upload-status" id="nsUploadStatus"${nsDraft.parsing ? '' : ' hidden'}>${nsDraft.parsing ? '正在解析资料…' : ''}</div>
+      <div class="wiz-summary" id="nsSummary">${nsSummaryBits()}</div>`;
+  }
+  const subject = subjectById(nsDraft.subjectId) || {};
+  const mats = subjectMaterials(subject.id || '');
+  const left = daysToExam(subject);
+  return `
+    <div class="wiz-head">
+      <span class="wiz-title" data-no-i18n>${esc(subject.name || nsDraft.name)}</span>
+      <span class="wiz-hint">已建好</span>
     </div>
-    <div class="set-list">
-      ${sets.length ? sets.map((s) => renderSetRow(s)).join('') : '<div class="material-empty">还没有题库。用上面的资料让 AI 出一套，或从其他学科移动过来。</div>'}
-      <button type="button" class="set-row set-row-add" onclick="openAIModal('${subject.id}'${mats.length ? `, [${matIds}]` : ''})">
-        <span class="set-row-icon" aria-hidden="true">＋</span>
-        <span class="set-row-main">
-          <span class="set-row-title">在本学科新建题库</span>
-          <span class="set-row-desc">${mats.length ? `可直接使用这 ${mats.length} 份资料出题` : '上传资料，或直接粘贴文字'}</span>
+    <div class="wiz-summary">
+      <span class="wiz-chip"><b>${mats.length}</b> 份资料</span>
+      <span class="wiz-chip"><b>${mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')}</b> 字可用</span>
+      <span class="wiz-chip is-soft">每日目标 <b>${subject.dailyGoal || 20}</b> 题</span>
+      ${left != null ? `<span class="wiz-chip is-soft">${left >= 0 ? `距考试 ${left} 天` : '考试日期已过'}</span>` : ''}
+      ${nsDraft.failed.length ? `<span class="wiz-chip is-soft">${nsDraft.failed.length} 份未成功</span>` : ''}
+    </div>
+    <div style="margin-top:14px">
+      <button type="button" class="wiz-choice" onclick="nsFinish('ai')">
+        <span class="wiz-choice-main">
+          <span class="wiz-choice-title">直接 AI 出题${mats.length ? `（用这 ${mats.length} 份资料）` : ''}</span>
         </span>
-        <span class="set-row-arrow" aria-hidden="true">→</span>
+        <span class="set-row-foot-go">开始 →</span>
+      </button>
+      <button type="button" class="wiz-choice" style="margin-top:8px" onclick="nsFinish('folder')">
+        <span class="wiz-choice-main">
+          <span class="wiz-choice-title">进入练习科目</span>
+        </span>
+        <span class="set-row-foot-go">打开 →</span>
       </button>
     </div>`;
 }
 
+function nsSummaryBits() {
+  const subject = subjectById(nsDraft.subjectId) || {};
+  const mats = subjectMaterials(subject.id || '');
+  const bits = [];
+  if (mats.length) bits.push(`<span class="wiz-chip"><b>${mats.length}</b> 份资料已存入</span>`);
+  if (mats.length) bits.push(`<span class="wiz-chip is-soft">${mats.reduce((n, m) => n + m.chars, 0).toLocaleString('zh-CN')} 字</span>`);
+  nsDraft.failed.slice(0, 3).forEach((msg) => bits.push(`<span class="wiz-chip is-soft">${esc(msg)}</span>`));
+  if (nsDraft.failed.length > 3) bits.push(`<span class="wiz-chip is-soft">另有 ${nsDraft.failed.length - 3} 份失败</span>`);
+  return bits.join('');
+}
+
+function nsFooter() {
+  if (nsDraft.step === 1) {
+    return `<button class="btn btn-secondary" onclick="nsCancel()">取消</button>
+      <button class="btn btn-primary" onclick="nsNext()">下一步：上传资料 ${ICON.arrow}</button>`;
+  }
+  if (nsDraft.step === 2) {
+    return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 考试信息</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-secondary" onclick="nsSkip()">跳过资料</button>
+      <button class="btn btn-primary" id="nsNextBtn" onclick="nsNext()"${nsDraft.parsing ? ' disabled' : ''}>完成 ${ICON.arrow}</button>`;
+  }
+  return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 上一步</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-secondary" onclick="closeModal()">稍后再说</button>`;
+}
+
+function nsRender() {
+  const body = document.getElementById('nsBody');
+  const foot = document.getElementById('nsFooter');
+  const rail = document.getElementById('nsRail');
+  if (rail) rail.innerHTML = nsRail();
+  if (body) body.innerHTML = nsLayerBody();
+  if (foot) foot.innerHTML = nsFooter();
+  if (nsDraft.step === 1) setTimeout(() => document.getElementById('newSubjectName')?.focus(), 40);
+  if (nsDraft.step === 2) setTimeout(() => bindNsDropzone(), 20);
+}
+
 function newSubjectModal() {
+  nsReset();
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">新建学科</div>
-      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="modal-title">新增练习科目</div>
+      <button class="modal-close" onclick="nsCancel()">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">学科名称</label>
-        <input class="form-input" id="newSubjectName" maxlength="20" placeholder="例如：高等数学" onkeydown="if(event.key==='Enter')submitNewSubject()">
-        <p class="text-sm text-muted" style="margin:8px 0 0">之后上传的资料和生成的题库都会放进这个文件夹。</p>
-      </div>
+      <div id="nsRail">${nsRail()}</div>
+      <div id="nsBody" class="wiz-layer">${nsLayerBody()}</div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="submitNewSubject()">创建学科</button>
-    </div>`);
-  setTimeout(() => document.getElementById('newSubjectName')?.focus(), 40);
+    <div class="modal-footer" id="nsFooter">${nsFooter()}</div>`, 'modal-wide');
 }
 
-function submitNewSubject() {
-  const input = document.getElementById('newSubjectName');
-  const subject = createSubject(input ? input.value : '');
-  if (!subject) { if (input) input.focus(); return; }
+function nsCancel() {
+  if (nsDraft.parsing) { toast('资料还在解析中，先等它结束', 'info'); return; }
+  nsReset();
   closeModal();
-  toast(`学科「${subject.name}」已创建`, 'success');
-  openSubject(subject.id);
 }
 
-function renameSubjectModal(id) {
+function nsBack() {
+  if (nsDraft.parsing || nsDraft.step === 1) return;
+  nsDraft.step -= 1;
+  nsRender();
+}
+
+function nsGoTo(n) {
+  if (nsDraft.parsing || n >= nsDraft.step) return;
+  nsDraft.step = n;
+  nsRender();
+}
+
+function nsSkip() {
+  nsDraft.step = 3;
+  nsRender();
+}
+
+function nsNext() {
+  if (nsDraft.step === 1) {
+    nsCollectExamInfo();
+    if (!nsDraft.name) {
+      toast('请填写练习科目', 'info');
+      document.getElementById('newSubjectName')?.focus();
+      return;
+    }
+    const info = nsExamInfo();
+    if (nsDraft.subjectId) {
+      // 从后面步骤退回来改考试信息：更新原练习科目，不再建一个
+      const updated = updateSubject(nsDraft.subjectId, info);
+      if (!updated) return;
+      nsDraft.name = updated.name;
+      nsDraft.step = 2;
+      nsRender();
+      return;
+    }
+    const subject = createSubject(nsDraft.name, info);
+    if (!subject) {
+      document.getElementById('newSubjectName')?.focus();
+      return;
+    }
+    nsDraft.subjectId = subject.id;
+    nsDraft.name = subject.name;
+    nsDraft.step = 2;
+    toast(`已建好「${subject.name}」`, 'success');
+    nsRender();
+    return;
+  }
+  if (nsDraft.step === 2) {
+    if (nsDraft.parsing) { toast('资料还在解析中，请稍候', 'info'); return; }
+    nsDraft.step = 3;
+    nsRender();
+  }
+}
+
+function nsFinish(where) {
+  const id = nsDraft.subjectId;
+  const mats = subjectMaterials(id);
+  nsReset();
+  closeModal();
+  if (!id) return;
+  if (where === 'ai') openAIModal(id, mats.map((m) => m.id));
+  else openSubject(id);
+}
+
+function pickNsFiles() {
+  const input = document.getElementById('nsFileInput');
+  if (!input) return;
+  if (materialsUnavailable) {
+    toast('当前浏览器无法保存资料，请更换浏览器或关闭无痕模式', 'error', 5000);
+    return;
+  }
+  input.click();
+}
+
+function bindNsDropzone() {
+  const dz = document.querySelector('#nsBody .ai-dropzone');
+  if (!dz || dz.dataset.bound === '1') return;
+  dz.dataset.bound = '1';
+  let depth = 0;
+  dz.addEventListener('dragenter', (e) => { e.preventDefault(); depth++; dz.classList.add('dragover'); });
+  dz.addEventListener('dragover', (e) => e.preventDefault());
+  dz.addEventListener('dragleave', (e) => { e.preventDefault(); depth = Math.max(0, depth - 1); if (!depth) dz.classList.remove('dragover'); });
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    depth = 0;
+    dz.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (files.length) nsUpload(files);
+  });
+}
+
+async function handleNsFileInput(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (files.length) await nsUpload(files);
+}
+
+async function nsUpload(files) {
+  if (!nsDraft.subjectId || nsDraft.parsing) return;
+  if (materialsUnavailable) {
+    toast('当前浏览器无法保存资料，请更换浏览器或关闭无痕模式', 'error', 5000);
+    return;
+  }
+  const status = document.getElementById('nsUploadStatus');
+  nsDraft.parsing = true;
+  const existing = new Set(subjectMaterials(nsDraft.subjectId).map((m) => `${m.name}|${m.size}`));
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const label = file.name || `文件 ${i + 1}`;
+    if (status) {
+      status.hidden = false;
+      status.textContent = `正在解析 ${i + 1}/${files.length}：${label}`;
+    }
+    if (file.size > MATERIAL_MAX_BYTES) {
+      nsDraft.failed.push(`${label}：超过 30MB`);
+      continue;
+    }
+    if (existing.has(`${file.name}|${file.size}`)) {
+      nsDraft.failed.push(`${label}：已存在`);
+      continue;
+    }
+    try {
+      const { text, meta } = await extractMaterial(file);
+      const clean = cleanMaterialText(text);
+      const chars = aiVisibleChars(clean);
+      if (chars < 50) throw new Error('几乎没有提取到文字，可能是扫描版');
+      const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
+      const pageMatch = String(meta || '').match(/(\d+)/);
+      const record = {
+        id: 'mat-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        subjectId: nsDraft.subjectId,
+        name: String(file.name || '未命名资料').slice(0, 160),
+        size: file.size,
+        ext,
+        kind: aiGuessFileKind(clean, file.name),
+        pages: pageMatch ? parseInt(pageMatch[1], 10) : 0,
+        chars,
+        addedAt: Date.now(),
+        text: clean
+      };
+      let saved = null;
+      try {
+        saved = await saveMaterialRecord(record, file.size <= MATERIAL_BLOB_LIMIT ? file : null);
+      } catch {
+        saved = await saveMaterialRecord({ ...record, hasBlob: false }, null);
+      }
+      materials.unshift(saved);
+      existing.add(`${file.name}|${file.size}`);
+      nsDraft.added += 1;
+    } catch (e) {
+      nsDraft.failed.push(`${label}：${(e && e.message) || '解析失败'}`);
+    }
+    materials.sort((a, b) => b.addedAt - a.addedAt);
+    const sum = document.getElementById('nsSummary');
+    if (sum) sum.innerHTML = nsSummaryBits();
+  }
+  nsDraft.parsing = false;
+  if (nsDraft.step === 2) nsRender();
+  const foot = document.getElementById('nsFooter');
+  if (foot) foot.innerHTML = nsFooter();
+  render();
+}
+
+
+// 练习科目页与卡组页脚的「编辑」：和新建向导第一步共用 examFieldsHtml / examFormValues，
+// 一个弹窗同时改练习科目名称与考试信息（目标考试 / 考试日期 / 开始日期 / 备考目标 / 题量）
+function examInfoModal(id) {
   const subject = userSubjects.find((s) => s.id === id);
   if (!subject) return;
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">重命名学科</div>
+      <div class="modal-title">编辑练习科目</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">学科名称</label>
-        <input class="form-input" id="renameSubjectName" maxlength="20" value="${esc(subject.name)}" onkeydown="if(event.key==='Enter')submitRenameSubject('${id}')">
-      </div>
+      <div class="wiz-layer">${examFieldsHtml({ ...subject, subjectKind: 'edit' })}</div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="submitRenameSubject('${id}')">保存</button>
-    </div>`);
-  setTimeout(() => {
-    const input = document.getElementById('renameSubjectName');
-    if (input) { input.focus(); input.select(); }
-  }, 40);
+      <button class="btn btn-primary" onclick="submitExamInfo('${id}')">保存</button>
+    </div>`, 'modal-wide');
+  setTimeout(() => document.getElementById('newSubjectName')?.focus(), 40);
 }
 
-function submitRenameSubject(id) {
-  const input = document.getElementById('renameSubjectName');
-  if (!renameSubject(id, input ? input.value : '')) return;
+function submitExamInfo(id) {
+  const subject = userSubjects.find((s) => s.id === id);
+  if (!subject) return;
+  const v = examFormValues();
+  if (!v.name) {
+    toast('请填写练习科目', 'info');
+    document.getElementById('newSubjectName')?.focus();
+    return;
+  }
+  if (v.name !== subject.name && !renameSubject(id, v.name)) return;
+  if (!updateSubject(id, v)) return;
   closeModal();
-  toast('学科已重命名', 'success');
+  toast('修改已保存', 'success');
   render();
 }
 
@@ -1477,9 +3703,9 @@ function deleteSubject(id) {
   const mats = subjectMaterials(id);
   const movable = subjectSets(id).filter((s) => !s.builtin);
   const detail = mats.length
-    ? `会删除 ${mats.length} 份资料${movable.length ? `，${movable.length} 套题库移到「未分类」` : ''}。`
-    : (movable.length ? `${movable.length} 套题库会移到「未分类」。` : '文件夹里没有内容。');
-  confirmModal('删除学科', `确定删除「${subject.name}」吗？${detail}`, '删除学科', async () => {
+    ? `会删除 ${mats.length} 份资料${movable.length ? `，${movable.length} 个练习集移到「未分类」` : ''}。`
+    : (movable.length ? `${movable.length} 个练习集会移到「未分类」。` : '这个练习科目还没有内容。');
+  confirmModal('删除练习科目', `确定删除「${subject.name}」吗？${detail}`, '删除练习科目', async () => {
     let failed = 0;
     for (const m of mats) {
       try { await deleteMaterialRecord(m.id); } catch { failed++; }
@@ -1494,7 +3720,7 @@ function deleteSubject(id) {
     userSubjects = nextSubjects;
     materials = materials.filter((m) => m.subjectId !== id);
     if (failed) toast(`${failed} 份资料未能从资料库删除，刷新后可能仍会显示`, 'info', 5000);
-    toast('学科已删除', 'success');
+    toast('练习科目已删除', 'success');
     if (state.subjectId === id) navigateTo('sets');
     else render();
   }, true);
@@ -1609,7 +3835,7 @@ function previewMaterial(id) {
   if (!m) return;
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">${esc(m.name)}</div>
+      <div class="modal-title" data-no-i18n>${esc(m.name)}</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
@@ -1675,17 +3901,17 @@ function moveSetModal(id) {
   if (!set) return;
   const current = subjectOfSet(set).id;
   const options = [...allSubjects(), INBOX_SUBJECT]
-    .map((s) => `<option value="${s.id}" ${s.id === current ? 'selected' : ''}>${esc(s.name)}</option>`)
+    .map((s) => `<option value="${s.id}" ${s.id === current ? 'selected' : ''} data-no-i18n>${esc(s.name)}</option>`)
     .join('');
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">更改题库学科</div>
+      <div class="modal-title">移动练习集</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
       <p class="text-sm text-muted" style="margin:0 0 12px">「${esc(set.name)}」当前在「${esc(subjectOfSet(set).name)}」。</p>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">目标学科</label>
+        <label class="form-label">目标练习科目</label>
         <select class="form-select" id="moveSetSubject">${options}</select>
       </div>
     </div>
@@ -1716,7 +3942,7 @@ function moveSetConfirm(id) {
 
 function renderSetDetail() {
   const set = getSet(state.setId);
-  if (!set) return `<div class="empty-state"><div class="empty-state-title">题库不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!set) return `<div class="empty-state"><div class="empty-state-title">练习集不存在</div><div class="empty-state-desc">它可能已被删除</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回练习科目</button></div>`;
 
   const st = setStats(set.id);
   const kps = set.knowledgePoints || [];
@@ -1724,19 +3950,29 @@ function renderSetDetail() {
   set.questions.forEach((q) => { types[q.type] = (types[q.type] || 0) + 1; });
   const accent = setAccent(set);
   const subject = subjectOfSet(set);
+  const path = (set.source && set.source.path) || null;
+  const ctx = [];
+  const examName = (path && path.exam) || subject.examName || '';
+  if (examName) ctx.push(`目标考试：${esc(examName)}`);
+  if (path && path.unit) ctx.push(`所属单元：${esc(path.unit)}`);
+  const originLabel = path
+    ? `备考规划考点「${esc(path.topic)}」`
+    : (SET_ORIGIN_LABEL[set.origin] || (set.focusTopic ? `聚焦${esc(set.focusTopic)}` : (set.builtin ? '内置示例' : '手动添加')));
+  ctx.push(`练习来源：${originLabel}`);
 
   return `
     <button class="back-link" onclick="openSubject('${subject.id}')">← 返回${esc(subject.name)}</button>
 
-    <div class="set-detail-hero" style="--set-accent:${accent.bg}">
+    <div class="set-detail-hero" style="--set-accent:${accent.bg};--set-accent-bar:${accent.bar}">
       <div class="detail-head">
         <div class="detail-icon" style="background:${accent.bg};color:${accent.fg}">${esc(set.icon || '题')}</div>
         <div>
-          <div class="hero-eyebrow">${esc(subject.name)} · DECK</div>
-          <h2>${esc(set.name)}</h2>
+          <div class="hero-eyebrow"><span data-no-i18n>${esc(subject.name)}</span> · 练习集</div>
+          <h2 data-no-i18n>${esc(set.name)}</h2>
         </div>
       </div>
       <p>${esc(set.description || '')}</p>
+      <div class="subject-meta">${ctx.map((c) => `<span class="ui-chip">${c}</span>`).join('')}</div>
       <div class="set-detail-stats">
         <div class="set-detail-stat"><div class="set-detail-stat-value">${set.questions.length}</div><div class="set-detail-stat-label">题目</div></div>
         <div class="set-detail-stat"><div class="set-detail-stat-value">${kps.length}</div><div class="set-detail-stat-label">知识点</div></div>
@@ -1746,11 +3982,13 @@ function renderSetDetail() {
       <div class="set-detail-actions">
         <button class="btn btn-primary" onclick="startLearning('${set.id}')">${ICON.play} 进入学习模式</button>
         <button class="btn" onclick="startExamModal('${set.id}')">${ICON.clock} 模拟考试</button>
-        ${set.builtin ? '' : `<button class="btn btn-secondary" onclick="moveSetModal('${set.id}')">更改学科</button>
-        <button class="btn btn-danger" onclick="deleteSet('${set.id}')">删除题库</button>`}
+        ${set.builtin ? '' : `<button class="btn btn-secondary" onclick="moveSetModal('${set.id}')">更改练习科目</button>
+        <button class="btn btn-danger" onclick="deleteSet('${set.id}')">删除练习集</button>`}
       </div>
       ${renderQuality(set)}
     </div>
+
+    ${renderPlanReceiptCard(findPlanReceipt(set.id))}
 
     <div class="section-title">题型分布</div>
     <div class="tags mb-6">
@@ -1765,8 +4003,8 @@ function renderSetDetail() {
           <div class="knowledge-item">
             <div class="knowledge-item-icon">${ICON.bulb}</div>
             <div>
-              <div class="knowledge-item-title">${esc(kp.title)}</div>
-              <div class="knowledge-item-desc">${esc(kp.content)}</div>
+              <div class="knowledge-item-title" data-no-i18n>${esc(kp.title)}</div>
+              <div class="knowledge-item-desc" data-no-i18n>${esc(kp.content)}</div>
             </div>
           </div>`).join('')}
       </div>` : ''}
@@ -1777,18 +4015,18 @@ function renderSetDetail() {
 function deleteSet(id) {
   const set = getSet(id);
   if (!set || set.builtin) return;
-  confirmModal('删除题库', `确定删除「${set.name}」吗？该操作不可恢复，历史练习记录会保留。`, '删除', () => {
+  confirmModal('删除练习集', `确定删除「${set.name}」吗？该操作不可恢复，历史练习记录会保留。`, '删除', () => {
     const next = customSets.filter((s) => s.id !== id);
     if (!saveJSON(STORAGE.sets, next)) {
-      toast('删除失败：本地存储写入出错，题库仍然保留', 'error', 5000);
+      toast('删除失败：本地存储写入出错，练习集仍然保留', 'error', 5000);
       return;
     }
     customSets = next;
-    delete wrongBank[id];
+    delete wrongBank.bySet[id];
     if (!saveJSON(STORAGE.wrong, wrongBank)) toast('错题本清理未能写入，下次打开可能恢复', 'info', 4000);
     if (resume.exam && resume.exam.setId === id) clearSession('exam');
     if (resume.learning && resume.learning.setId === id) clearSession('learning');
-    toast('题库已删除', 'success');
+    toast('练习集已删除', 'success');
     navigateTo('sets');
   }, true);
 }
@@ -1853,26 +4091,177 @@ function closeQnavAfterJump() {
   state.qnavOpen = false;
 }
 
+/* 选项的键盘操作只判一次：Enter/Space 等同点击；单选组里方向键移动即选中（标准 radio 行为），
+   多选组只移动焦点，由 Space 勾选。作答会整页重渲染，所以焦点按位置找回同一行。 */
+function optionKeydown(e) {
+  const row = e.target instanceof Element ? e.target.closest('.option-item[data-option-index]') : null;
+  if (!row || !row.parentElement) return;
+  const rows = [...row.parentElement.querySelectorAll('.option-item[data-option-index]')];
+  const i = rows.indexOf(row);
+  if (i < 0) return;
+  // 重渲染后节点全换了：单选还会变成没有序号属性的只读行，只能按位置找回，否则焦点掉回 body
+  const focusBack = (idx) => {
+    const list = document.querySelector('.options-list');
+    const now = list ? [...list.children].filter((el) => el.classList.contains('option-item')) : [];
+    const el = now[idx] || now[i];
+    if (el && el.isConnected) el.focus();
+  };
+  if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+    e.preventDefault();
+    row.click();
+    focusBack(i);
+    return;
+  }
+  let next = -1;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (i + 1) % rows.length;
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (i - 1 + rows.length) % rows.length;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = rows.length - 1;
+  if (next < 0 || next === i) return;
+  e.preventDefault();
+  if (row.parentElement.getAttribute('role') === 'radiogroup') rows[next].click();
+  focusBack(next);
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
+  if (e.key !== 'Escape') { optionKeydown(e); return; }
   const modal = document.getElementById('modalContainer');
   if (modal && modal.innerHTML.trim()) { closeModal(); return; }
   if (state.qnavOpen) toggleQnav(false);
 });
 
+/* —— 跨练习集的练习会话 ——
+   题目 id 只在练习集内唯一（'q1' 这种），跨集会撞名，所以错题重练的作答键带上所属练习集：
+   "setId::qid"。普通「学习」仍是裸 qid，两种键由同一个解析器处理，历史会话不受影响。
+   成绩最后按所属练习集拆开写历史，每个练习集的进度、考点正确率、错题时间戳才都不会失真。 */
+function wrongKey(setId, qid) {
+  return `${strOf(setId, 80)}::${strOf(qid, 64)}`;
+}
+
+function parseSessionKey(l, key) {
+  const s = strOf(key, 200);
+  const i = s.indexOf('::');
+  if (i < 0) return { setId: strOf(l && l.setId, 80), qid: s };
+  return { setId: s.slice(0, i), qid: s.slice(i + 2) };
+}
+
+function learningQuestionAt(l, i) {
+  if (!l) return null;
+  return sessionQuestionAt(l.setId, arrOf(l.qids)[i]);
+}
+
+// 键可能是裸 qid（单一练习集）或 setId::qid（跨练习集重练），都归到同一个解析入口
+function sessionQuestionAt(fallbackSetId, key) {
+  const s = strOf(key, 200);
+  if (!s) return null;
+  const { setId, qid } = parseSessionKey({ setId: fallbackSetId }, s);
+  return getQuestion(getSet(setId), qid);
+}
+
+// 一次作答落到哪个练习集的错题本上
+function learningWrongTarget(l, key) {
+  return parseSessionKey(l, key);
+}
+
+function recordAttemptsBySet(answers, meta) {
+  const m = objOf(meta);
+  const groups = new Map();
+  arrOf(answers).forEach((a) => {
+    if (!a || !a.qid) return;
+    const setId = strOf(a.setId || m.setId, 80);
+    if (!setId) return;
+    if (!groups.has(setId)) groups.set(setId, []);
+    groups.get(setId).push({
+      qid: strOf(a.qid, 64),
+      type: strOf(a.type, 20),
+      userAnswer: a.userAnswer,
+      correct: a.correct === true ? true : a.correct === false ? false : null
+    });
+  });
+  const finishedAt = Number(m.finishedAt) || Date.now();
+  const startedAt = Number(m.startedAt) || finishedAt;
+  const out = [];
+  groups.forEach((list, setId) => {
+    const set = getSet(setId);
+    const graded = list.filter((x) => x.correct !== null).length;
+    const correct = list.filter((x) => x.correct === true).length;
+    const total = Math.max(list.length, intOf(objOf(m.totals)[setId], list.length, 0, 1000));
+    const planResult = planResultForAttempt(set, list);
+    const attempt = {
+      id: `a${finishedAt.toString(36)}${out.length.toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      setId,
+      setName: set ? set.name : strOf(m.setName, 80) || '（已删除的练习集）',
+      mode: m.mode === 'exam' ? 'exam' : 'learning',
+      startedAt,
+      finishedAt,
+      durationSec: intOf(m.durationSec, 0, 0, 86400),
+      total,
+      graded,
+      correct,
+      ungraded: Math.max(0, total - graded),
+      score: graded ? Math.round((correct / graded) * 100) : 0,
+      answers: list
+    };
+    if (planResult) attempt.planResult = planResult;
+    out.push(attempt);
+  });
+  return out;
+}
+
+function pushAttempts(attempts) {
+  if (!attempts.length) return false;
+  history = [...attempts, ...history].sort((a, b) => b.finishedAt - a.finishedAt).slice(0, 200);
+  // 只有单练习集的会话才谈「这次回传给哪个考点」；跨集模拟的归因留给各自的拆分记录
+  if (attempts.length === 1 && attempts[0].planResult) {
+    state.lastPlanAttempt = { id: attempts[0].id, setId: attempts[0].setId };
+  }
+  return saveJSON(STORAGE.history, history);
+}
+
+/* 错题重练：把任意来源的错题装进同一个会话。单一练习集时保持裸 qid 键，
+   跨练习集才用复合键——这样普通学习的存档、断点恢复和统计完全不受影响。 */
+// 进来的条目有两种：错题本里的（带 entry）和刚交卷那一轮答错的（只有题面），
+// 这里只认「题目还在不在」，别让没有 entry 的正常来源被当成脏数据丢掉。
+function startWrongPractice(items, title) {
+  const list = arrOf(items).filter((i) => i && i.q && i.setId && i.qid);
+  if (!list.length) { toast('这一组暂时没有可练的错题', 'info'); return; }
+  const setIds = new Set(list.map((i) => i.setId));
+  const mixed = setIds.size > 1;
+  state.learning = {
+    setId: list[0].setId,
+    title: mixed ? strOf(title, 60) : '',
+    qids: list.map((i) => (mixed ? wrongKey(i.setId, i.qid) : i.qid)),
+    index: 0,
+    answers: {},
+    results: {},
+    cache: {},
+    seenKP: {},
+    startedAt: Date.now(),
+    finished: false,
+    onlyWrong: true
+  };
+  resume.learning = null;
+  state.view = 'learning';
+  state.setId = list[0].setId;
+  closeSidebar();
+  persistLearning();
+  render();
+  const body = $('.main-body');
+  if (body) body.scrollTop = 0;
+}
+
 function startLearning(setId, onlyWrong = false) {
   const set = getSet(setId);
   if (!set) return;
-  let list = set.questions;
   if (onlyWrong) {
-    const wb = wrongBank[setId] || {};
-    const ids = new Set(Object.keys(wb));
-    const filtered = list.filter((q) => ids.has(q.id));
-    if (filtered.length) list = filtered;
-    else { toast('该题库暂无错题，已切换为全部题目', 'info'); }
+    const items = wrongOpenItems(setId).sort(wrongPriorityCompare);
+    if (items.length) { startWrongPractice(items, set.name); return; }
+    toast('这个练习集暂无错题，已切换为全部题目', 'info');
   }
+  const list = set.questions;
   state.learning = {
     setId,
+    title: '',
     qids: list.map((q) => q.id),
     index: 0,
     answers: {},
@@ -1896,32 +4285,33 @@ function startLearning(setId, onlyWrong = false) {
 function currentLearningQuestion() {
   const l = state.learning;
   if (!l) return null;
-  const set = getSet(l.setId);
-  const qid = l.qids[l.index];
-  return getQuestion(set, qid);
+  return learningQuestionAt(l, l.index);
 }
 
 function renderLearning() {
   const l = state.learning;
-  if (!l) return `<div class="empty-state"><div class="empty-state-title">未开始学习</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!l) return `<div class="empty-state"><div class="empty-state-title">未开始学习</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回练习科目</button></div>`;
   const set = getSet(l.setId);
-  if (!set) return `<div class="empty-state"><div class="empty-state-title">题库不存在</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
 
+  // 作答状态一律按「会话键」存取：单一练习集时键就是 qid，跨练习集重练时是 setId::qid
+  const key = strOf(l.qids[l.index], 200);
   const q = currentLearningQuestion();
-  if (!q) return `<div class="empty-state"><div class="empty-state-title">没有题目</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!q) return `<div class="empty-state"><div class="empty-state-title">没有题目</div><button class="btn btn-primary" onclick="${l.onlyWrong ? "navigateTo('wrong')" : "navigateTo('sets')"}">返回</button></div>`;
+  const owner = getSet(parseSessionKey(l, key).setId) || set;
 
   const total = l.qids.length;
-  const res = l.results[q.id];
+  const res = l.results[key];
   const answered = !!res;
-  const kp = (set.knowledgePoints || []).find((k) => k.id === q.knowledgePointId);
-  const kpOpen = !!(kp && l.seenKP && l.seenKP['kp_' + l.index]);
+  const kp = (owner && owner.knowledgePoints || []).find((k) => k.id === q.knowledgePointId);
   const isLast = l.index === total - 1;
+  // 跨练习集重练时，每题标出它来自哪个练习集，避免「同名题」看错
+  const mixedSets = new Set(l.qids.map((k) => parseSessionKey(l, k).setId)).size > 1;
 
-  const navItems = l.qids.map((qid, i) => {
-    const qq = getQuestion(set, qid);
+  const navItems = l.qids.map((k, i) => {
+    const qq = sessionQuestionAt(l.setId, k);
     if (!qq) return '';
-    const r = l.results[qid];
-    const pending = !r && isAnswered(qq, l.answers[qid]);
+    const r = l.results[k];
+    const pending = !r && isAnswered(qq, l.answers[k]);
     let cls = '';
     let stateText = '未作答';
     if (i === l.index) { cls = 'current'; stateText = '当前'; }
@@ -1929,23 +4319,25 @@ function renderLearning() {
     else if (pending) { cls = 'answered'; stateText = '待提交'; }
     return `<button type="button" class="q-nav-item ${cls}" onclick="learningGo(${i})" title="第 ${i + 1} 题 · ${TYPE_LABEL[qq.type] || qq.type} · ${stateText}" aria-label="第 ${i + 1} 题，${stateText}">${i + 1}</button>`;
   }).join('');
-  const answeredCount = l.qids.filter((qid) => {
-    if (l.results[qid]) return true;
-    const qq = getQuestion(set, qid);
-    return !!qq && isAnswered(qq, l.answers[qid]);
+  const answeredCount = l.qids.filter((k) => {
+    if (l.results[k]) return true;
+    const qq = sessionQuestionAt(l.setId, k);
+    return !!qq && isAnswered(qq, l.answers[k]);
   }).length;
 
   let bodyHtml = '';
   if (answered) {
     bodyHtml = renderAnsweredQuestion(q, res, 'learning');
   } else {
-    bodyHtml = renderAnswerableQuestion(q, l, 'learning');
+    bodyHtml = renderAnswerableQuestion(q, l, 'learning', key);
   }
+
+  const fromWrong = !!l.onlyWrong;
 
   return `
     <div class="question-container">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <button class="back-link" style="margin:0" onclick="backToSet('${set.id}')">← ${esc(set.name)}</button>
+        <button class="back-link" style="margin:0" onclick="${fromWrong ? 'backToWrong()' : `backToSet('${l.setId}')`}">← ${esc(fromWrong ? (l.title || '错题本') : ((set || {}).name || '练习科目'))}</button>
         <button class="btn btn-secondary btn-sm" onclick="finishLearning(false)">完成学习</button>
       </div>
 
@@ -1956,19 +4348,19 @@ function renderLearning() {
 
       ${kp ? `
         <div class="knowledge-card">
-          <div class="knowledge-card-title">${ICON.bulb} 知识点 · ${esc(kp.title)}</div>
-          <div class="knowledge-card-content">${esc(kp.content)}</div>
+          <div class="knowledge-card-title">${ICON.bulb} 知识点 · <span data-no-i18n>${esc(kp.title)}</span></div>
+          <div class="knowledge-card-content" data-no-i18n>${esc(kp.content)}</div>
         </div>` : ''}
 
       <div class="question-header">
-        <span class="question-number">第 ${l.index + 1} 题 · 共 ${total} 题</span>
+        <span class="question-number">第 ${l.index + 1} 题 · 共 ${total} 题${mixedSets && owner ? ` · <span data-no-i18n>${esc(owner.name)}</span>` : ''}</span>
         <span style="display:flex;gap:8px;align-items:center">
           <span class="badge ${TYPE_CLASS[q.type] || 'badge-muted'}">${TYPE_LABEL[q.type] || q.type}</span>
           ${difficultyDots(q.difficulty)}
         </span>
       </div>
 
-      <div class="question-text">${esc(q.content)}</div>
+      <div class="question-text" id="questionText" data-no-i18n>${esc(q.content)}</div>
 
       ${bodyHtml}
 
@@ -1994,28 +4386,63 @@ function renderLearning() {
     </div>`;
 }
 
-function renderAnswerableQuestion(q, l, mode) {
-  if (q.type === 'code') return renderCodeQuestion(q, l, mode);
+/* 选项行只由这一处生成：单选/判断是 radiogroup 里的 radio，多选是 group 里的 checkbox。
+   语义、焦点序号和点击行为都从这里出，学习与考试四处渲染不再各写一套。
+   roving 表示本组还没有选中项，此时把第一个选项放进 Tab 顺序（标准 radiogroup 行为）。 */
+function optionRowHtml({ kind, index, selected, action, marker, content, roving }) {
+  const multi = kind === 'multi';
+  const tab = multi || selected || (roving && index === 0) ? 0 : -1;
+  return `<div class="option-item${selected ? ' selected' : ''}" role="${multi ? 'checkbox' : 'radio'}" tabindex="${tab}" aria-checked="${selected ? 'true' : 'false'}" data-option-index="${index}" onclick="${action}">
+        <span class="option-marker${multi ? ' checkbox' : ''}" aria-hidden="true">${marker}</span>
+        <span class="option-content" data-no-i18n>${esc(content)}</span>
+      </div>`;
+}
+
+function optionListHtml(kind, rows) {
+  return `<div class="options-list" role="${kind === 'multi' ? 'group' : 'radiogroup'}" aria-labelledby="questionText">${rows.join('')}</div>`;
+}
+
+// 已作答的选项只读：不进 Tab 顺序，正确项与自己的错选各带一句读屏说明。
+// tabindex="-1" 是为了让键盘作答后焦点能落回同一行——没有它，div 无法被程序聚焦，焦点会掉回 body。
+function answeredOptionRowHtml({ kind, index, cls, marker, content, note }) {
+  return `<div class="option-item ${cls}" role="listitem" tabindex="-1">
+        <span class="option-marker${kind === 'multi' ? ' checkbox' : ''}" aria-hidden="true">${marker}</span>
+        <span class="option-content" data-no-i18n>${esc(content)}</span>
+        ${note ? `<span class="sr-only">${note}</span>` : ''}
+      </div>`;
+}
+
+function renderAnswerableQuestion(q, l, mode, key) {
+  const k = strOf(key, 200) || strOf(q.id, 64);
+  if (q.type === 'code') return renderCodeQuestion(q, l, mode, k);
 
   let html = '';
   if (q.type === 'single' || q.type === 'tf') {
     const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
-    html += `<div class="options-list">${opts.map((o, idx) => `
-      <div class="option-item" onclick="learningChoose('${q.id}', ${idx})">
-        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content">${esc(o)}</span>
-      </div>`).join('')}</div>`;
+    const cur = q.type === 'tf' ? (l.answers[k] === undefined ? -1 : (l.answers[k] ? 0 : 1)) : l.answers[k];
+    html += optionListHtml('single', opts.map((o, idx) => optionRowHtml({
+      kind: 'single',
+      index: idx,
+      selected: cur === idx,
+      roving: !(cur >= 0),
+      action: `learningChoose('${k}', ${idx})`,
+      marker: String.fromCharCode(65 + idx),
+      content: o
+    })));
   } else if (q.type === 'multi') {
-    const sel = l.answers[q.id] || [];
-    html += `<div class="options-list">${q.options.map((o, idx) => `
-      <div class="option-item ${sel.includes(idx) ? 'selected' : ''}" onclick="learningToggleMulti('${q.id}', ${idx})">
-        <span class="option-marker checkbox">${sel.includes(idx) ? '✓' : ''}</span>
-        <span class="option-content">${esc(o)}</span>
-      </div>`).join('')}</div>
-      <button class="btn btn-primary" onclick="learningSubmitMulti('${q.id}')" ${sel.length === 0 ? 'disabled' : ''}>提交答案</button>`;
+    const sel = l.answers[k] || [];
+    html += optionListHtml('multi', q.options.map((o, idx) => optionRowHtml({
+      kind: 'multi',
+      index: idx,
+      selected: sel.includes(idx),
+      action: `learningToggleMulti('${k}', ${idx})`,
+      marker: sel.includes(idx) ? '✓' : '',
+      content: o
+    }))) + `
+      <button class="btn btn-primary" onclick="learningSubmitMulti('${k}')" ${sel.length === 0 ? 'disabled' : ''}>提交答案</button>`;
   } else if (q.type === 'fill') {
-    html += `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(l.answers[q.id] || '')}" oninput="learningInput('${q.id}', this.value)">
-      <div><button class="btn btn-primary" onclick="learningSubmitFill('${q.id}')">提交答案</button></div>`;
+    html += `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(l.answers[k] || '')}" oninput="learningInput('${k}', this.value)">
+      <div><button class="btn btn-primary" onclick="learningSubmitFill('${k}')">提交答案</button></div>`;
   }
   return html;
 }
@@ -2029,34 +4456,37 @@ function renderAnsweredQuestion(q, res, mode) {
     const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
     const correctIdx = q.type === 'tf' ? (q.answer ? 0 : 1) : q.answer;
     const userIdx = q.type === 'tf' ? (res.answer ? 0 : 1) : res.answer;
-    optionsHtml = `<div class="options-list">${opts.map((o, idx) => {
+    optionsHtml = `<div class="options-list" role="list">${opts.map((o, idx) => {
       let cls = '';
-      if (idx === correctIdx) cls = 'show-correct';
-      else if (idx === userIdx) cls = 'incorrect';
-      return `<div class="option-item ${cls}">
-        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content">${esc(o)}</span>
-      </div>`;
+      let note = '';
+      if (idx === correctIdx) { cls = 'show-correct'; note = '正确答案'; }
+      else if (idx === userIdx) { cls = 'incorrect'; note = '你的答案'; }
+      return answeredOptionRowHtml({ kind: 'single', index: idx, cls, marker: String.fromCharCode(65 + idx), content: o, note });
     }).join('')}</div>`;
   } else if (q.type === 'multi') {
     const correctArr = Array.isArray(q.answer) ? q.answer : [];
     const userArr = Array.isArray(res.answer) ? res.answer : [];
-    optionsHtml = `<div class="options-list">${q.options.map((o, idx) => {
+    optionsHtml = `<div class="options-list" role="list">${q.options.map((o, idx) => {
       const isCorrect = correctArr.includes(idx);
       const isUser = userArr.includes(idx);
       let cls = '';
-      if (isCorrect) cls = 'show-correct';
-      else if (isUser) cls = 'incorrect';
-      return `<div class="option-item ${cls}">
-        <span class="option-marker checkbox">${isCorrect ? '✓' : (isUser ? '✗' : '')}</span>
-        <span class="option-content">${esc(o)}</span>
-      </div>`;
+      let note = '';
+      if (isCorrect) { cls = 'show-correct'; note = '正确答案'; }
+      else if (isUser) { cls = 'incorrect'; note = '你的答案'; }
+      return answeredOptionRowHtml({
+        kind: 'multi',
+        index: idx,
+        cls,
+        marker: isCorrect ? '✓' : (isUser ? '✗' : ''),
+        content: o,
+        note
+      });
     }).join('')}</div>`;
   } else if (q.type === 'fill') {
     optionsHtml = `
       <div class="answer-compare">
-        <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}">${esc(res.answer || '（空）')}</b></div>
-        <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)">${esc(answerText(q))}</b></div>
+        <div><span class="answer-compare-label">你的答案</span><b style="color:${correct ? 'var(--success)' : 'var(--danger)'}" data-no-i18n>${esc(res.answer || t('（空）'))}</b></div>
+        <div><span class="answer-compare-label">正确答案</span><b style="color:var(--success)" data-no-i18n>${esc(answerText(q))}</b></div>
       </div>`;
   } else if (q.type === 'code') {
     optionsHtml = renderCodeResult(q, res);
@@ -2065,7 +4495,7 @@ function renderAnsweredQuestion(q, res, mode) {
   return `${optionsHtml}
     <div class="feedback ${feedbackClass}">
       <div class="feedback-title">${correct ? '✓ 回答正确' : '✕ 回答错误'}</div>
-      ${q.explanation ? `<div class="feedback-explanation">${esc(q.explanation)}</div>` : ''}
+      ${q.explanation ? `<div class="feedback-explanation" data-no-i18n>${esc(q.explanation)}</div>` : ''}
     </div>`;
 }
 
@@ -2078,7 +4508,7 @@ function renderCodeResult(q, res) {
     html += `<div class="code-output ${res.correct ? 'success' : 'error'}"><div class="output-label ${res.correct ? 'pass' : 'fail'}">${res.correct ? '运行结果' : '测试结果'}</div>${esc(res.output)}</div>`;
   }
   if (res.revealed && q.answer) {
-    html += `<div class="code-output" style="margin-bottom:16px"><div class="output-label">参考答案</div>${esc(q.answer)}</div>`;
+    html += `<div class="code-output" style="margin-bottom:16px"><div class="output-label">参考答案</div><span data-no-i18n>${esc(q.answer)}</span></div>`;
   }
   return html;
 }
@@ -2099,73 +4529,80 @@ function answerText(q) {
 }
 
 function userAnswerText(q, ans) {
-  if (ans == null || (Array.isArray(ans) && ans.length === 0) || ans === '') return '（未作答）';
-  if (q.type === 'tf') return ans ? '正确' : '错误';
+  // 这些是界面兜底文案，不是用户作答内容：容器带 data-no-i18n 不参与翻译层，所以在这里按当前语言取值
+  if (ans == null || (Array.isArray(ans) && ans.length === 0) || ans === '') return t('（未作答）');
+  if (q.type === 'tf') return ans ? t('正确') : t('错误');
   if (q.type === 'single') return `${String.fromCharCode(65 + ans)}. ${q.options[ans] ?? ''}`;
   if (q.type === 'multi' && Array.isArray(ans)) return ans.map((i) => String.fromCharCode(65 + i)).join(', ');
   if (q.type === 'fill') return String(ans);
-  if (q.type === 'code') return '（代码见作答）';
+  if (q.type === 'code') return t('（代码见作答）');
   return String(ans);
 }
 
-function learningChoose(qid, idx) {
+function learningChoose(key, idx) {
   const l = state.learning;
-  if (!l || l.results[qid]) return;
-  const q = currentLearningQuestion();
+  if (!l || l.results[key]) return;
+  const q = sessionQuestionAt(l.setId, key);
   if (!q) return;
   let answer = idx;
   if (q.type === 'tf') answer = idx === 0;
-  l.answers[qid] = answer;
+  l.answers[key] = answer;
   const correct = gradeObjective(q, answer);
-  l.results[qid] = { correct, answer };
-  updateWrongBank(l.setId, q.id, correct);
+  l.results[key] = { correct, answer };
+  gradeWrong(l, key, correct);
   persistLearning();
   render();
 }
 
-function learningToggleMulti(qid, idx) {
+function learningToggleMulti(key, idx) {
   const l = state.learning;
-  if (!l || l.results[qid]) return;
-  let sel = l.answers[qid] || [];
+  if (!l || l.results[key]) return;
+  let sel = l.answers[key] || [];
   if (sel.includes(idx)) sel = sel.filter((i) => i !== idx);
   else sel = [...sel, idx].sort((a, b) => a - b);
-  l.answers[qid] = sel;
+  l.answers[key] = sel;
   persistLearning();
   render();
 }
 
-function learningSubmitMulti(qid) {
+function learningSubmitMulti(key) {
   const l = state.learning;
-  if (!l || l.results[qid]) return;
-  const sel = l.answers[qid] || [];
+  if (!l || l.results[key]) return;
+  const sel = l.answers[key] || [];
   if (!sel.length) return;
-  const q = currentLearningQuestion();
+  const q = sessionQuestionAt(l.setId, key);
   if (!q) return;
   const correct = sameSet(sel, q.answer);
-  l.results[qid] = { correct, answer: sel };
-  updateWrongBank(l.setId, q.id, correct);
+  l.results[key] = { correct, answer: sel };
+  gradeWrong(l, key, correct);
   persistLearning();
   render();
 }
 
-function learningInput(qid, val) {
+function learningInput(key, val) {
   if (!state.learning) return;
-  state.learning.answers[qid] = val;
+  state.learning.answers[key] = val;
   persistLearningSoon();
 }
 
-function learningSubmitFill(qid) {
+function learningSubmitFill(key) {
   const l = state.learning;
-  if (!l || l.results[qid]) return;
-  const q = currentLearningQuestion();
+  if (!l || l.results[key]) return;
+  const q = sessionQuestionAt(l.setId, key);
   if (!q) return;
-  const val = l.answers[qid] || '';
+  const val = l.answers[key] || '';
   if (!val.trim()) { toast('请先输入答案', 'info'); return; }
   const correct = gradeObjective(q, val);
-  l.results[qid] = { correct, answer: val };
-  updateWrongBank(l.setId, q.id, correct);
+  l.results[key] = { correct, answer: val };
+  gradeWrong(l, key, correct);
   persistLearning();
   render();
+}
+
+// 一次作答落到它所属练习集的错题本上
+function gradeWrong(l, key, correct) {
+  const target = learningWrongTarget(l, key);
+  updateWrongBank(target.setId, target.qid, correct, { attemptId: learningAttemptId(l) });
 }
 
 function backToSet(setId) {
@@ -2175,6 +4612,11 @@ function backToSet(setId) {
   render();
   const body = $('.main-body');
   if (body) body.scrollTop = 0;
+}
+
+function backToWrong() {
+  if (state.view === 'learning' && state.learning) finishLearning(true);
+  navigateTo('wrong');
 }
 
 function learningNext() {
@@ -2203,14 +4645,15 @@ function learningGo(i) {
 
 function finishLearning(silent) {
   const l = state.learning;
-  if (!l || l.finished) { if (!silent) navigateTo('sets'); return; }
+  if (!l || l.finished) { if (!silent) navigateTo(l && l.onlyWrong ? 'wrong' : 'sets'); return; }
   l.finished = true;
 
-  const answeredIds = Object.keys(l.results);
-  if (answeredIds.length === 0) {
+  const answeredKeys = Object.keys(l.results);
+  if (answeredKeys.length === 0) {
     state.learning = null;
     clearSession('learning');
     if (!silent) {
+      if (l.onlyWrong) { navigateTo('wrong'); return; }
       state.setId = l.setId;
       state.view = 'setDetail';
       render();
@@ -2218,61 +4661,65 @@ function finishLearning(silent) {
     return;
   }
 
-  const set = getSet(l.setId);
-  const correct = answeredIds.filter((id) => l.results[id].correct).length;
-  const attempts = answeredIds.map((id) => ({
-    qid: id,
-    type: (getQuestion(set, id) || {}).type,
-    userAnswer: l.results[id].answer,
-    correct: l.results[id].correct
-  }));
+  // 每一答都带上所属练习集：跨集重练的成绩按集拆开写历史，统计和考点归因才不会串味
+  const answers = answeredKeys.map((key) => {
+    const target = parseSessionKey(l, key);
+    const res = l.results[key] || {};
+    return {
+      setId: target.setId,
+      qid: target.qid,
+      type: (sessionQuestionAt(l.setId, key) || {}).type,
+      userAnswer: res.answer,
+      correct: res.correct === true ? true : res.correct === false ? false : null
+    };
+  });
+  const totals = {};
+  arrOf(l.qids).forEach((key) => {
+    const setId = parseSessionKey(l, key).setId;
+    if (setId) totals[setId] = (totals[setId] || 0) + 1;
+  });
 
-  const attempt = {
-    id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    setId: l.setId,
-    setName: set ? set.name : '（已删除题库）',
+  const finishedAt = Date.now();
+  const startedAt = Number(l.startedAt) || finishedAt;
+  const correct = answers.filter((a) => a.correct === true).length;
+  const attempts = recordAttemptsBySet(answers, {
     mode: 'learning',
-    startedAt: l.startedAt,
-    finishedAt: Date.now(),
-    durationSec: Math.round((Date.now() - l.startedAt) / 1000),
-    total: l.qids.length,
-    graded: answeredIds.length,
-    correct,
-    ungraded: l.qids.length - answeredIds.length,
-    score: answeredIds.length ? Math.round((correct / answeredIds.length) * 100) : 0,
-    answers: attempts
-  };
-
-  history.unshift(attempt);
-  if (history.length > 200) history = history.slice(0, 200);
-  saveJSON(STORAGE.history, history);
+    setId: l.setId,
+    setName: (getSet(l.setId) || {}).name,
+    startedAt,
+    finishedAt,
+    durationSec: Math.round((finishedAt - startedAt) / 1000),
+    totals
+  });
+  pushAttempts(attempts);
   clearSession('learning');
 
   state.learning = null;
   if (!silent) {
-    toast(`学习完成：答对 ${correct}/${answeredIds.length}，正确率 ${attempt.score}%`, correct === answeredIds.length ? 'success' : 'info');
+    const score = answers.length ? Math.round((correct / answers.length) * 100) : 0;
+    toast(`学习完成：答对 ${correct}/${answers.length}，正确率 ${score}%`, correct === answers.length ? 'success' : 'info');
+    if (l.onlyWrong) { navigateTo('wrong'); return; }
     state.setId = l.setId;
     state.view = 'setDetail';
     render();
   }
 }
 
-function renderCodeQuestion(q, l, mode) {
-  const value = mode === 'exam' ? (l.answers[q.id] || q.template || '') : (l.cache[q.id] ?? (l.answers[q.id] || q.template || ''));
+function renderCodeQuestion(q, l, mode, key) {
+  const k = strOf(key, 200) || strOf(q.id, 64);
+  const value = l.cache[k] ?? (l.answers[k] || q.template || '');
   const lang = q.language || 'javascript';
   const tests = (q.testCases || []).slice(0, 4);
+  const judgeOff = serviceStatus.judge === false;
 
   return `
     <div class="code-editor-wrapper">
       <div class="code-editor-toolbar">
         <label>${LANG_LABEL[lang] || lang}</label>
-        ${mode === 'learning'
-          ? `<button class="btn btn-sm" onclick="learningRunCode('${q.id}')" id="runCodeBtn">运行测试</button>`
-          : ''}
+        <button class="btn btn-sm" onclick="learningRunCode('${k}')" id="runCodeBtn" ${judgeOff ? 'disabled' : ''}>运行测试</button>
       </div>
-      <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="${mode === 'exam'
-        ? `examCodeInput('${q.id}', this.value)`
-        : `learningCodeInput('${q.id}', this.value)`}">${esc(value)}</textarea>
+      ${judgeGateHtml(!judgeOff)}
+      <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="learningCodeInput('${k}', this.value)">${esc(value)}</textarea>
       ${tests.length ? `
         <div class="test-cases">
           <div class="test-cases-title">测试用例</div>
@@ -2284,25 +4731,24 @@ function renderCodeQuestion(q, l, mode) {
         </div>` : ''}
     </div>
     <div id="codeOutputArea"></div>
-    ${mode === 'learning' ? `<div style="display:flex;gap:8px;margin-bottom:20px">
-      <button class="btn btn-secondary btn-sm" onclick="learningRevealAnswer('${q.id}')">查看参考答案</button>
-    </div>` : ''}`;
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button class="btn btn-secondary btn-sm" onclick="learningRevealAnswer('${k}')">查看参考答案</button>
+    </div>`;
 }
 
-function learningCodeInput(qid, val) {
+function learningCodeInput(key, val) {
   if (!state.learning) return;
-  state.learning.cache[qid] = val;
-  state.learning.answers[qid] = val;
+  state.learning.cache[key] = val;
+  state.learning.answers[key] = val;
   persistLearningSoon();
 }
 
-async function learningRunCode(qid) {
+async function learningRunCode(key) {
   const l = state.learning;
   if (!l) return;
-  const set = getSet(l.setId);
-  const q = getQuestion(set, qid);
+  const q = sessionQuestionAt(l.setId, key);
   if (!q) return;
-  const source = l.cache[qid] ?? l.answers[qid] ?? q.template ?? '';
+  const source = l.cache[key] ?? l.answers[key] ?? q.template ?? '';
   const tests = (q.testCases || []).slice(0, 4);
   if (!tests.length) {
     toast('这道题没有测试用例，暂不能自动判题', 'info');
@@ -2310,6 +4756,10 @@ async function learningRunCode(qid) {
   }
   const btn = document.getElementById('runCodeBtn');
   const out = document.getElementById('codeOutputArea');
+  if (serviceStatus.judge === false) {
+    if (out) out.innerHTML = judgeGateHtml(false);
+    return;
+  }
   if (btn) { btn.disabled = true; btn.textContent = '运行中...'; }
   if (out) out.innerHTML = `<div class="code-output running"><div class="output-label run">正在运行测试用例...</div></div>`;
 
@@ -2332,9 +4782,9 @@ async function learningRunCode(qid) {
       out.innerHTML = `<div class="code-output ${allPass ? 'success' : 'error'}">
         <div class="output-label ${allPass ? 'pass' : 'fail'}">${allPass ? '✓ 全部通过' : '✗ 部分用例未通过'}</div>${esc(lines.join('\n\n'))}</div>`;
     }
-    if (allPass && !l.results[qid]) {
-      l.results[qid] = { correct: true, answer: source, output: lines.join('\n'), revealed: false };
-      updateWrongBank(l.setId, q.id, true);
+    if (allPass && !l.results[key]) {
+      l.results[key] = { correct: true, answer: source, output: lines.join('\n'), revealed: false };
+      gradeWrong(l, key, true);
       persistLearning();
       toast('全部测试通过，回答正确！', 'success');
       render();
@@ -2351,17 +4801,16 @@ async function learningRunCode(qid) {
   }
 }
 
-function learningRevealAnswer(qid) {
+function learningRevealAnswer(key) {
   const l = state.learning;
   if (!l) return;
-  const set = getSet(l.setId);
-  const q = getQuestion(set, qid);
+  const q = sessionQuestionAt(l.setId, key);
   if (!q) return;
-  if (!l.results[qid]) {
-    l.results[qid] = { correct: false, answer: l.cache[qid] || '', revealed: true };
-    updateWrongBank(l.setId, q.id, false);
+  if (!l.results[key]) {
+    l.results[key] = { correct: false, answer: l.cache[key] || '', revealed: true };
+    gradeWrong(l, key, false);
   } else {
-    l.results[qid].revealed = true;
+    l.results[key].revealed = true;
   }
   persistLearning();
   render();
@@ -2373,7 +4822,7 @@ function startExamModal(setId) {
   const set = getSet(setId);
   if (!set) return;
   const n = arrOf(set.questions).length;
-  if (!n) { toast('这个题库还没有题目，先添加题目再考试', 'info'); return; }
+  if (!n) { toast('这个练习集还没有题目，先添加题目再考试', 'info'); return; }
   const countOptions = [`<option value="all">全部（${n} 题）</option>`];
   if (n > 10) countOptions.push('<option value="10">随机 10 题</option>');
   if (n > 20) countOptions.push('<option value="20">随机 20 题</option>');
@@ -2381,7 +4830,7 @@ function startExamModal(setId) {
 
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">模拟考试 · ${esc(set.name)}</div>
+      <div class="modal-title">模拟考试 · <span data-no-i18n>${esc(set.name)}</span></div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
@@ -2395,7 +4844,6 @@ function startExamModal(setId) {
         <label class="form-label">题目范围</label>
         <select class="form-select" id="examCount">${countOptions.join('')}</select>
       </div>
-      <p class="text-sm text-muted">考试模式下答完交卷才会显示结果，编程题交卷时自动运行测试用例评分。</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">取消</button>
@@ -2406,7 +4854,7 @@ function startExamModal(setId) {
 function beginExam(setId) {
   const set = getSet(setId);
   if (!set) return;
-  if (!arrOf(set.questions).length) { closeModal(); toast('这个题库还没有题目', 'info'); return; }
+  if (!arrOf(set.questions).length) { closeModal(); toast('这个练习集还没有题目', 'info'); return; }
   const minutesEl = document.getElementById('examMinutes');
   const countEl = document.getElementById('examCount');
   const minutes = Math.min(600, Math.max(1, parseInt(minutesEl && minutesEl.value, 10) || 30));
@@ -2437,17 +4885,168 @@ function beginExam(setId) {
   render();
 }
 
+/* —— 错题模拟：把错题装进一场闭卷考试，可以按比例混入没练过的题 —— */
+
+function examOwnerAt(ex, i) {
+  const owner = arrOf(ex && ex.owners)[i];
+  return strOf(owner || (ex && ex.setId), 80);
+}
+
+// 同一次考试的错题只记一次：断点恢复或重复交卷都不会把「错 N 次」刷高
+function examAttemptId(ex) {
+  return `E${(Number(ex && ex.startedAt) || 0).toString(36)}`;
+}
+
+const WRONG_MOCK_SCOPES = ['due', 'open', 'stubborn'];
+
+function wrongMockItems(scope) {
+  const open = wrongOpenItems();
+  if (scope === 'stubborn') return open.filter((i) => isStubbornWrong(i.entry)).sort(wrongPriorityCompare);
+  if (scope === 'due') {
+    const due = open.filter((i) => wrongIsDue(i.entry)).sort(wrongPriorityCompare);
+    // 一道都没到期时别空转：最近错的题顶上，用户仍然有东西可练
+    return due.length ? due : open.slice().sort(wrongPriorityCompare).slice(0, 10);
+  }
+  return open.sort(wrongPriorityCompare);
+}
+
+function wrongMockScopeLabel(scope) {
+  if (scope === 'stubborn') return '顽固错题';
+  if (scope === 'open') return '全部未掌握';
+  return '今日到期';
+}
+
+// 混入的新题只从错题所在练习科目里抽，且排除错题本有记录和练习历史里答过的题
+function freshQuestionsFor(items, limit) {
+  if (!limit) return [];
+  const subjectIds = new Set(items.map((i) => subjectOfSet(i.set).id));
+  const taken = new Set(items.map((i) => wrongKey(i.setId, i.qid)));
+  const answered = new Set();
+  history.forEach((a) => {
+    arrOf(a.answers).forEach((x) => { if (x && x.qid) answered.add(`${strOf(a.setId, 80)}::${x.qid}`); });
+  });
+  const pool = [];
+  allSets().forEach((set) => {
+    if (!subjectIds.has(subjectOfSet(set).id)) return;
+    arrOf(set.questions).forEach((q) => {
+      const key = wrongKey(set.id, q.id);
+      if (taken.has(key) || answered.has(key)) return;
+      pool.push({ setId: set.id, qid: q.id, q, key });
+    });
+  });
+  return shuffle(pool).slice(0, Math.max(0, Math.min(limit, 40)));
+}
+
+function wrongMockPlan(scope, mixRatio) {
+  const items = wrongMockItems(scope);
+  if (!items.length) return { items: [], refs: [], total: 0 };
+  const mix = mixRatio > 0 ? Math.max(1, Math.round(items.length * mixRatio)) : 0;
+  const fresh = freshQuestionsFor(items, mix);
+  const refs = shuffle([...items.map((i) => ({ setId: i.setId, qid: i.qid, q: i.q })), ...fresh]);
+  return { items, fresh, refs, total: refs.length };
+}
+
+function startWrongMockModal() {
+  const open = wrongOpenItems().length;
+  if (!open) { toast('错题本还是空的，先去做几套题', 'info'); return; }
+  const counts = WRONG_MOCK_SCOPES.map((scope) => ({ scope, n: wrongMockItems(scope).length })).filter((c) => c.n);
+  const paper = wrongMockPlan((counts[0] || {}).scope || 'due', 0.2);
+  const defMin = Math.min(60, Math.max(10, paper.total * 2));
+  openModal(`
+    <div class="modal-header">
+      <div class="modal-title">错题模拟</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">出题范围</label>
+        <select class="form-select" id="mockScope" onchange="updateWrongMockPreview()">
+          ${counts.map((c) => `<option value="${c.scope}">${wrongMockScopeLabel(c.scope)}（${c.n} 题）</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">混入新题</label>
+        <select class="form-select" id="mockMix" onchange="updateWrongMockPreview()">
+          <option value="0">不混 · 只考错题</option>
+          <option value="0.2" selected>混约 20% 没练过的题</option>
+          <option value="0.5">混约一半新题</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">考试时长</label>
+        <select class="form-select" id="mockMinutes">
+          ${[10, 20, 30, 45, 60].map((m) => `<option value="${m}" ${m === defMin ? 'selected' : ''}>${m} 分钟</option>`).join('')}
+        </select>
+      </div>
+      <p class="text-sm text-muted" id="mockPreview">${esc(wrongMockSummary(paper))}</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="beginWrongMock()">开始考试</button>
+    </div>`);
+}
+
+function wrongMockSummary(paper) {
+  if (!paper.total) return '这个范围里暂时没有错题';
+  const sets = new Set(paper.refs.map((r) => r.setId)).size;
+  return `本次 ${paper.total} 题：错题 ${paper.items.length} 道 · 新题 ${paper.fresh.length} 道 · 跨 ${sets} 个练习集，交卷后统一评分。`;
+}
+
+function updateWrongMockPreview() {
+  const el = document.getElementById('mockPreview');
+  if (!el) return;
+  const scopeEl = document.getElementById('mockScope');
+  const mixEl = document.getElementById('mockMix');
+  const scope = WRONG_MOCK_SCOPES.includes(scopeEl && scopeEl.value) ? scopeEl.value : 'due';
+  const ratio = Math.min(1, Math.max(0, parseFloat(mixEl && mixEl.value) || 0));
+  el.textContent = wrongMockSummary(wrongMockPlan(scope, ratio));
+}
+
+function beginWrongMock() {
+  const scopeEl = document.getElementById('mockScope');
+  const mixEl = document.getElementById('mockMix');
+  const minutesEl = document.getElementById('mockMinutes');
+  const scope = WRONG_MOCK_SCOPES.includes(scopeEl && scopeEl.value) ? scopeEl.value : 'due';
+  const ratio = Math.min(1, Math.max(0, parseFloat(mixEl && mixEl.value) || 0));
+  const minutes = Math.min(600, Math.max(1, parseInt(minutesEl && minutesEl.value, 10) || 30));
+  const paper = wrongMockPlan(scope, ratio);
+  if (!paper.total) { closeModal(); toast('这个范围里暂时没有错题', 'info'); return; }
+
+  closeModal();
+  resume.exam = null;
+  resume.learning = null;
+  const first = paper.refs[0];
+  state.exam = {
+    setId: first.setId,
+    name: `错题模拟 · ${wrongMockScopeLabel(scope)}`,
+    owners: paper.refs.map((r) => r.setId),
+    mock: true,
+    questions: paper.refs.map((r) => r.q),
+    answers: new Array(paper.total).fill(null),
+    current: 0,
+    startedAt: Date.now(),
+    deadline: Date.now() + minutes * 60000,
+    minutes,
+    grading: false,
+    timerId: null
+  };
+  state.view = 'exam';
+  state.setId = first.setId;
+  persistExam();
+  render();
+}
+
 function renderExam() {
   const ex = state.exam;
-  if (!ex) return `<div class="empty-state"><div class="empty-state-title">没有进行中的考试</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
+  if (!ex) return `<div class="empty-state"><div class="empty-state-title">没有进行中的考试</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回练习科目</button></div>`;
   const set = getSet(ex.setId);
-  const examName = set ? set.name : (ex.name || '考试');
+  const examName = ex.owners ? (ex.name || '错题模拟') : (set ? set.name : (ex.name || '考试'));
 
   const q = ex.questions[ex.current];
   if (!q) {
     return `<div class="empty-state">
       <div class="empty-state-title">这场考试没有可答的题目</div>
-      <div class="empty-state-desc">可能是题库被删除或数据异常，答题记录不受影响。</div>
+      <div class="empty-state-desc">可能是练习集被删除或数据异常，答题记录不受影响。</div>
       <button class="btn btn-primary" onclick="abandonExam()">结束考试</button>
     </div>`;
   }
@@ -2469,8 +5068,8 @@ function renderExam() {
       <div class="code-editor-wrapper">
         <div class="code-editor-toolbar">
           <label>${LANG_LABEL[q.language || 'javascript'] || q.language}</label>
-          <span style="font-size:11.5px">交卷后自动运行测试用例评分</span>
         </div>
+        ${judgeGateHtml(serviceStatus.judge !== false)}
         <textarea class="code-editor" id="codeEditor" spellcheck="false" oninput="examCodeInput(${ex.current}, this.value)">${esc(ex.answers[ex.current] || q.template || '')}</textarea>
         ${(q.testCases || []).length ? `
           <div class="test-cases">
@@ -2485,22 +5084,26 @@ function renderExam() {
   } else if (q.type === 'single' || q.type === 'tf') {
     const opts = q.type === 'tf' ? ['正确', '错误'] : q.options;
     const cur = ex.answers[ex.current];
-    bodyHtml = `<div class="options-list">${opts.map((o, idx) => {
-      let selected = false;
-      if (q.type === 'tf') selected = cur === (idx === 0);
-      else selected = cur === idx;
-      return `<div class="option-item ${selected ? 'selected' : ''}" onclick="examChoose(${idx})">
-        <span class="option-marker">${String.fromCharCode(65 + idx)}</span>
-        <span class="option-content">${esc(o)}</span>
-      </div>`;
-    }).join('')}</div>`;
+    const selectedIdx = q.type === 'tf' ? (cur === undefined ? -1 : (cur ? 0 : 1)) : cur;
+    bodyHtml = optionListHtml('single', opts.map((o, idx) => optionRowHtml({
+      kind: 'single',
+      index: idx,
+      selected: selectedIdx === idx,
+      roving: !(selectedIdx >= 0),
+      action: `examChoose(${idx})`,
+      marker: String.fromCharCode(65 + idx),
+      content: o
+    })));
   } else if (q.type === 'multi') {
     const cur = Array.isArray(ex.answers[ex.current]) ? ex.answers[ex.current] : [];
-    bodyHtml = `<div class="options-list">${q.options.map((o, idx) => `
-      <div class="option-item ${cur.includes(idx) ? 'selected' : ''}" onclick="examToggleMulti(${idx})">
-        <span class="option-marker checkbox">${cur.includes(idx) ? '✓' : ''}</span>
-        <span class="option-content">${esc(o)}</span>
-      </div>`).join('')}</div>`;
+    bodyHtml = optionListHtml('multi', q.options.map((o, idx) => optionRowHtml({
+      kind: 'multi',
+      index: idx,
+      selected: cur.includes(idx),
+      action: `examToggleMulti(${idx})`,
+      marker: cur.includes(idx) ? '✓' : '',
+      content: o
+    })));
   } else if (q.type === 'fill') {
     bodyHtml = `<input class="fill-input" id="fillInput" placeholder="输入你的答案..." value="${esc(ex.answers[ex.current] || '')}" oninput="examFillInput(${ex.current}, this.value)">`;
   }
@@ -2509,12 +5112,12 @@ function renderExam() {
     <div class="question-container">
       <div class="exam-header">
         <div>
-          <div style="font-size:14.5px;font-weight:700;margin-bottom:1px">${esc(examName)}</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:1px">${esc(examName)}</div>
           <div class="text-sm text-muted">已答 ${answeredCount} / ${total} 题</div>
         </div>
         <div class="timer" id="examTimer">--:--</div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary btn-sm" onclick="navigateTo('setDetail')">退出</button>
+          <button class="btn btn-secondary btn-sm" onclick="${ex.owners ? "navigateTo('wrong')" : "navigateTo('setDetail')"}">退出</button>
           <button class="btn btn-primary btn-sm" onclick="submitExam(false)">交卷</button>
         </div>
       </div>
@@ -2527,7 +5130,7 @@ function renderExam() {
         </span>
       </div>
 
-      <div class="question-text">${esc(q.content)}</div>
+      <div class="question-text" id="questionText" data-no-i18n>${esc(q.content)}</div>
       ${bodyHtml}
 
       <div class="nav-buttons">
@@ -2679,13 +5282,19 @@ async function confirmSubmitExam() {
     const ans = ex.answers[i];
     if (q.type === 'code') {
       if (!isAnswered(q, ans)) {
-        gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: false });
+        gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: false });
+        continue;
+      }
+      // 判题没启用就不必逐题去撞 503：直接记为未评分，交卷照常完成
+      if (serviceStatus.judge === false) {
+        judgeFailed = true;
+        gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: null });
         continue;
       }
       try {
         const tests = (q.testCases || []).slice(0, 3);
         if (!tests.length) {
-          gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: null });
+          gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: null });
           continue;
         }
         let allPass = true;
@@ -2694,55 +5303,67 @@ async function confirmSubmitExam() {
           const stdout = (result.stdout || '').trim();
           if (stdout !== String(t.expectedOutput).trim()) { allPass = false; break; }
         }
-        gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: allPass });
+        gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: allPass });
       } catch (e) {
         judgeFailed = true;
-        gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: null });
+        gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: null });
       }
     } else if (!isAnswered(q, ans)) {
-      gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: false });
+      gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: false });
     } else {
-      gradedAnswers.push({ qid: q.id, type: q.type, userAnswer: ans, correct: gradeObjective(q, ans) });
+      gradedAnswers.push({ setId: examOwnerAt(ex, i), qid: q.id, type: q.type, userAnswer: ans, correct: gradeObjective(q, ans) });
     }
   }
 
   const graded = gradedAnswers.filter((a) => a.correct !== null).length;
   const correct = gradedAnswers.filter((a) => a.correct === true).length;
   const ungraded = gradedAnswers.filter((a) => a.correct === null).length;
+  const finishedAt = Date.now();
+  const attemptId = examAttemptId(ex);
 
-  const set = getSet(ex.setId);
-  const attempt = {
-    id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+  // 交卷是整批评分：逐题只改内存，最后统一落一次盘；未评分的题不动错题本
+  gradedAnswers.forEach((a) => {
+    updateWrongBank(a.setId, a.qid, a.correct, { attemptId, at: finishedAt, silent: true });
+  });
+  saveJSON(STORAGE.wrong, wrongBank);
+
+  // 错题模拟会跨练习集组卷：成绩按所属练习集拆开写历史，各科的统计才不会被混在一起
+  const attempts = recordAttemptsBySet(gradedAnswers, {
+    mode: 'exam',
     setId: ex.setId,
-    setName: set ? set.name : '（已删除题库）',
+    setName: ex.name,
+    startedAt: ex.startedAt,
+    finishedAt,
+    durationSec: Math.round((finishedAt - ex.startedAt) / 1000)
+  });
+  const historySaved = pushAttempts(attempts);
+
+  const result = {
+    id: attempts.length === 1 ? attempts[0].id : attemptId,
+    setId: ex.setId,
+    setName: ex.name || (getSet(ex.setId) || {}).name || '考试',
+    mixed: attempts.length > 1,
+    mock: !!ex.mock,
+    setCount: attempts.length,
     mode: 'exam',
     startedAt: ex.startedAt,
-    finishedAt: Date.now(),
-    durationSec: Math.round((Date.now() - ex.startedAt) / 1000),
+    finishedAt,
+    durationSec: Math.round((finishedAt - ex.startedAt) / 1000),
     total: ex.questions.length,
     graded,
     correct,
     ungraded,
     score: graded ? Math.round((correct / graded) * 100) : 0,
-    answers: gradedAnswers
+    answers: gradedAnswers,
+    ...(attempts.length === 1 && attempts[0].planResult ? { planResult: attempts[0].planResult } : {})
   };
-
-  gradedAnswers.forEach((a) => {
-    if (a.correct === true) removeWrong(ex.setId, a.qid);
-    else if (a.correct === false) addWrong(ex.setId, a.qid);
-  });
-
-  history.unshift(attempt);
-  if (history.length > 200) history = history.slice(0, 200);
-  const historySaved = saveJSON(STORAGE.history, history);
-  saveJSON(STORAGE.wrong, wrongBank);
 
   clearSession('exam');
   state.exam = null;
-  state.examResult = attempt;
+  state.examResult = result;
   state.view = 'examResult';
   render();
-  if (judgeFailed) toast('部分编程题因判题服务不可用而未评分', 'info', 4000);
+  if (judgeFailed) toast(serviceStatus.judge === false ? JUDGE_OFF_TEXT : '部分编程题因判题服务不可用而未评分', 'info', 4000);
   if (!historySaved) toast('这次成绩未能写入本地存储，建议先导出备份', 'error', 5000);
 }
 
@@ -2754,10 +5375,53 @@ function renderGrading() {
   </div>`;
 }
 
+/* 交卷后的「下一步」：单练习集考的是整套题，重做口径跟着练习集错题本走；
+   错题模拟只把这次真答错的题拉回来重练，不然会越滚越大。
+   mock = 这张卷子来自错题模拟（哪怕只抽到一个练习集里），mixed = 跨了练习集，两者口径一致。 */
+function isMockPaper(a) {
+  return !!a && (!!a.mock || !!a.mixed);
+}
+
+function wrongItemsFromAnswers(answers) {
+  const out = [];
+  arrOf(answers).forEach((x) => {
+    if (!x || x.correct !== false) return;
+    const set = getSet(strOf(x.setId, 80));
+    const q = getQuestion(set, strOf(x.qid, 64));
+    if (q) out.push({ setId: set.id, qid: q.id, q, set });
+  });
+  return out;
+}
+
+function resultWrongItems(a) {
+  if (!a) return [];
+  return isMockPaper(a) ? wrongItemsFromAnswers(a.answers) : wrongOpenItems(a.setId);
+}
+
+function redoResultWrong() {
+  const a = state.examResult;
+  if (!a) return;
+  if (isMockPaper(a)) startWrongPractice(resultWrongItems(a), '本次模拟的错题');
+  else startLearning(a.setId, true);
+}
+
+// 交卷之后回到复习节奏：这一页说清错题本还剩多少、今天该练哪些
+function wrongFollowUpHTML() {
+  const s = wrongStats();
+  if (!s.open) return '';
+  const parts = [`错题本还有 ${s.open} 道待复习`, s.due ? `今日到期 ${s.due} 道` : '下一批还没到时间'];
+  if (s.stubborn) parts.push(`顽固 ${s.stubborn} 道`);
+  return `<p class="text-sm text-muted follow-up">${parts.join(' · ')}</p>`;
+}
+
 function renderExamResult() {
   const a = state.examResult;
-  if (!a) return `<div class="empty-state"><div class="empty-state-title">没有结果</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回学科</button></div>`;
-  const set = getSet(a.setId);
+  if (!a) return `<div class="empty-state"><div class="empty-state-title">没有结果</div><button class="btn btn-primary" onclick="navigateTo('sets')">返回练习科目</button></div>`;
+  const set = a.mixed ? null : getSet(a.setId);
+  const mock = isMockPaper(a);
+  // 交卷不是终点：这一页要立刻给出下一步——重做刚错的题，或直接练下一套
+  const redoItems = resultWrongItems(a);
+  const next = mock || !set ? null : nextSetAfter(a.setId);
   const level = a.score >= 85 ? 'high' : a.score >= 60 ? 'medium' : 'low';
   const label = a.score >= 85 ? '优秀' : a.score >= 60 ? '合格' : '需要加强';
 
@@ -2768,7 +5432,7 @@ function renderExamResult() {
           <span class="results-score ${level}">${a.score}</span>
           <span class="score-unit">分</span>
         </div>
-        <div class="results-label"><b>${label}</b> · ${a.mode === 'exam' ? '考试模式' : '学习模式'}</div>
+        <div class="results-label"><b>${label}</b> · ${a.mode === 'exam' ? '考试模式' : '学习模式'}${mock ? ` · <span>${esc(a.setName)}</span>` : ''}</div>
 
         <div class="results-stats">
           <div class="result-stat"><div class="result-stat-value" style="color:var(--success)">${a.correct}</div><div class="result-stat-label">答对</div></div>
@@ -2778,16 +5442,25 @@ function renderExamResult() {
         ${a.ungraded ? `<p class="text-sm text-muted" style="margin-top:12px">另有 ${a.ungraded} 题未作答或未评分，不计入得分</p>` : ''}
       </div>
 
+      ${renderPlanReceiptCard(receiptForAttempt(a))}
+
+      <div class="btn-group" style="justify-content:center;margin-bottom:14px;flex-wrap:wrap">
+        ${redoItems.length ? `<button class="btn btn-primary" onclick="redoResultWrong()">重做错题 ${redoItems.length} 题</button>` : ''}
+        ${next ? `<button class="btn ${redoItems.length ? 'btn-secondary' : 'btn-primary'}" onclick="openSet('${next.id}')">练下一套 · <span data-no-i18n>${esc(next.name)}</span></button>` : ''}
+      </div>
+      ${wrongFollowUpHTML()}
       <div class="btn-group" style="justify-content:center;margin-bottom:28px;flex-wrap:wrap">
-        ${set ? `<button class="btn btn-primary" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
-        ${set ? `<button class="btn btn-secondary" onclick="openSet('${set.id}')">返回题库</button>` : ''}
-        <button class="btn btn-secondary" onclick="navigateTo('records')">查看记录</button>
+        ${set && !mock ? `<button class="btn btn-ghost" onclick="startExamModal('${set.id}')">再考一次</button>` : ''}
+        ${set ? `<button class="btn btn-ghost" onclick="openSet('${set.id}')">返回练习集</button>` : ''}
+        ${mock ? `<button class="btn btn-ghost" onclick="navigateTo('wrong')">回到错题本</button>` : ''}
+        <button class="btn btn-ghost" onclick="navigateTo('sets')">回到练习科目</button>
       </div>
 
-      ${set ? `
+      ${arrOf(a.answers).length ? `
         <div class="section-title" style="text-align:left">答题回顾</div>
         ${a.answers.map((ans, i) => {
-          const q = getQuestion(set, ans.qid);
+          const owner = getSet(strOf(ans.setId, 80)) || set;
+          const q = getQuestion(owner, ans.qid);
           if (!q) return '';
           const cls = ans.correct === true ? 'correct' : ans.correct === false ? 'incorrect' : '';
           const statusCls = ans.correct === true ? 'badge-success' : ans.correct === false ? 'badge-danger' : 'badge-muted';
@@ -2797,101 +5470,196 @@ function renderExamResult() {
               <span class="badge ${TYPE_CLASS[q.type] || 'badge-muted'}">${TYPE_LABEL[q.type] || q.type}</span>
               <span class="badge ${statusCls}">${status}</span>
             </div>
-            <div class="review-question">${i + 1}. ${esc(q.content)}</div>
-            <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}">${esc(userAnswerText(q, ans.userAnswer))}</span></div>
-            ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text">${esc(answerText(q))}</span></div>` : ''}
-            ${q.explanation ? `<div class="review-answer" style="margin-top:8px;color:var(--text-secondary)">${esc(q.explanation)}</div>` : ''}
-            ${q.type === 'code' && q.answer ? `<div class="code-output" style="margin-top:12px"><div class="output-label">参考答案</div>${esc(q.answer)}</div>` : ''}
+            <div class="review-question">${i + 1}. <span data-no-i18n>${esc(q.content)}</span></div>
+            <div class="review-answer">你的答案：<span class="${ans.correct ? 'correct-text' : 'wrong-text'}" data-no-i18n>${esc(userAnswerText(q, ans.userAnswer))}</span></div>
+            ${ans.correct !== true ? `<div class="review-answer">正确答案：<span class="correct-text" data-no-i18n>${esc(answerText(q))}</span></div>` : ''}
+            ${q.explanation ? `<div class="review-answer" data-no-i18n style="margin-top:8px;color:var(--text-secondary)">${esc(q.explanation)}</div>` : ''}
+            ${q.type === 'code' && q.answer ? `<div class="code-output" style="margin-top:12px"><div class="output-label">参考答案</div><span data-no-i18n>${esc(q.answer)}</span></div>` : ''}
           </div>`;
         }).join('')}` : ''}
     </div>`;
 }
 
-function renderRecords() {
-  const st = overallStats();
-  const sets = allSets();
-  const wrongTotal = Object.values(wrongBank).reduce((n, m) => n + Object.keys(m).length, 0);
+/* 错题本：答错的题由两种模式在评分时写进 v2 信封（recordWrong / archiveWrong），
+   这里只负责「今天该练哪些」——按考点收纳、一键只练这组、组一套错题模拟。
+   口径统一走 wrongItems / wrongStats，视图层不再自己遍历 bySet。 */
 
-  const perSet = sets.map((s) => {
-    const rs = setStats(s.id);
-    return { set: s, ...rs };
-  }).filter((x) => x.attempts > 0).sort((a, b) => b.attempts - a.attempts);
+const WRONG_FILTERS = ['open', 'stubborn', 'mastered', 'all'];
+const WRONG_FILTER_LABEL = { open: '未掌握', stubborn: '顽固', mastered: '已掌握', all: '全部' };
+const WRONG_GROUP_LIMIT = 12;
+
+function wrongFilterValue() {
+  return WRONG_FILTERS.includes(state.wrongFilter) ? state.wrongFilter : 'open';
+}
+
+function wrongSortValue() {
+  return state.wrongSort === 'recent' ? 'recent' : 'priority';
+}
+
+function setWrongFilter(value) {
+  if (!WRONG_FILTERS.includes(value)) return;
+  state.wrongFilter = value;
+  render();
+}
+
+function setWrongSort(value) {
+  state.wrongSort = value === 'recent' ? 'recent' : 'priority';
+  render();
+}
+
+function wrongFilteredItems() {
+  const filter = wrongFilterValue();
+  const all = wrongItems();
+  const list = filter === 'all'
+    ? all
+    : filter === 'mastered'
+      ? all.filter((i) => i.entry.status === 'mastered')
+      : filter === 'stubborn'
+        ? all.filter((i) => i.entry.status === 'open' && isStubbornWrong(i.entry))
+        : all.filter((i) => i.entry.status === 'open');
+  if (filter === 'mastered') {
+    return list.sort((a, b) => (b.entry.lastCorrectAt || 0) - (a.entry.lastCorrectAt || 0));
+  }
+  return wrongSortValue() === 'recent'
+    ? list.sort((a, b) => (b.entry.lastWrongAt || 0) - (a.entry.lastWrongAt || 0))
+    : list.sort(wrongPriorityCompare);
+}
+
+// 到期提示只说「什么时候能再练」，间隔算法留在数据层
+function wrongDueLabel(entry) {
+  if (!entry) return '';
+  if (entry.status === 'mastered') {
+    return entry.lastCorrectAt ? `已于 ${fmtDate(entry.lastCorrectAt)} 掌握` : '已掌握';
+  }
+  const due = wrongDueAt(entry);
+  if (due === null) return '';
+  if (due <= Date.now()) return '今天可复习';
+  const days = Math.max(1, Math.ceil((due - Date.now()) / WRONG_DAY_MS));
+  return days === 1 ? '明天可复习' : `${days} 天后可复习`;
+}
+
+function wrongRowHTML(item) {
+  const e = item.entry;
+  const mastered = e.status === 'mastered';
+  const stubborn = isStubbornWrong(e);
+  const a = setAccent(item.set);
+  const badge = mastered
+    ? '<span class="badge badge-success">已掌握</span>'
+    : `<span class="badge ${stubborn ? 'badge-danger' : 'badge-muted'}">错 ${e.times} 次</span>`;
+  const acts = mastered
+    ? `<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();undoMastered('${item.setId}', '${item.qid}')">重新列入</button>`
+    : `<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();dismissWrong('${item.setId}', '${item.qid}')">移出</button>`;
+  const openSetAction = `openSet('${item.setId}')`;
+  return `
+    <div class="lrow lrow-tap" role="button" tabindex="0" title="回到原练习集"
+      onclick="${openSetAction}"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${openSetAction}}">
+      <span class="lrow-dot" aria-hidden="true" style="background:${a.bar}"></span>
+      <span class="lrow-main">
+        <span class="lrow-title"><span class="lrow-name" data-no-i18n>${esc((item.q.content || '').split('\n')[0])}</span></span>
+        <span class="lrow-sub"><span data-no-i18n>${esc(item.set.name)}</span> · ${esc(wrongDueLabel(e))}</span>
+      </span>
+      ${badge}
+      <span class="lrow-acts">${acts}</span>
+      <span class="lrow-go" aria-hidden="true">→</span>
+    </div>`;
+}
+
+function wrongGroupHTML(g, idx, open) {
+  const openCount = g.items.filter((i) => i.entry.status === 'open').length;
+  const actions = openCount
+    ? `<button type="button" class="btn btn-primary btn-sm" onclick="event.preventDefault();event.stopPropagation();startWrongGroup(${idx})">只练这组</button>`
+    : '';
+  return foldSection({
+    title: g.title || '未归类考点',
+    nameIsData: !!g.title,
+    chip: `${g.items.length} 题 · 错 ${g.wrongTimes} 次`,
+    actions,
+    open,
+    body: `<div class="lrow-list">${g.items.map(wrongRowHTML).join('')}</div>`
+  });
+}
+
+function startWrongGroup(idx) {
+  const g = (state.wrongGroups || [])[idx];
+  if (!g) return;
+  const items = g.items.filter((i) => i.entry.status === 'open');
+  startWrongPractice(items, g.title || '错题重练');
+}
+
+function undoMastered(setId, qid) {
+  if (reopenWrong(setId, qid)) {
+    toast('已重新列入待复习', 'success');
+    render();
+  }
+}
+
+function dismissWrong(setId, qid) {
+  if (dropWrong(setId, qid)) {
+    toast('这道题已移出错题本', 'info');
+    render();
+  }
+}
+
+function renderWrongBook() {
+  const stats = wrongStats();
+  if (!stats.total) {
+    return `
+      <div class="empty-card">
+        <div class="empty-card-icon">${ICON.target}</div>
+        <div class="empty-card-title">暂无错题</div>
+      </div>
+      <div class="btn-group" style="justify-content:center;margin-top:18px">
+        <button class="btn btn-primary" onclick="navigateTo('sets')">挑一个练习科目</button>
+      </div>`;
+  }
+
+  const items = wrongFilteredItems();
+  const groups = groupWrongByKp(items);
+  state.wrongGroups = groups;
+  const filter = wrongFilterValue();
+
+  const shown = groups.slice(0, WRONG_GROUP_LIMIT);
+  const rest = groups.slice(WRONG_GROUP_LIMIT);
+
+  const chips = WRONG_FILTERS.map((key) => {
+    const n = key === 'all' ? stats.total : key === 'mastered' ? stats.mastered : key === 'stubborn' ? stats.stubborn : stats.open;
+    return `<button type="button" class="filter-chip${filter === key ? ' is-on' : ''}" onclick="setWrongFilter('${key}')" aria-pressed="${filter === key}">${WRONG_FILTER_LABEL[key]}<b>${n}</b></button>`;
+  }).join('');
 
   return `
     <div class="stat-rail">
-      <div class="stat"><div class="stat-value">${st.count}</div><div class="stat-label">练习次数</div></div>
-      <div class="stat"><div class="stat-value">${st.accuracy == null ? '--' : st.accuracy + '%'}</div><div class="stat-label">平均正确率</div></div>
-      <div class="stat"><div class="stat-value">${st.avg == null ? '--' : st.avg}</div><div class="stat-label">平均得分</div></div>
-      <div class="stat"><div class="stat-value">${wrongTotal}</div><div class="stat-label">错题数</div></div>
+      ${statCard('待复习', `${stats.open}`, { icon: ICON.target, note: stats.due ? `今日到期 ${stats.due} 题` : '还没有到复习时间' })}
+      ${statCard('顽固错题', `${stats.stubborn}`, { icon: ICON.flame, note: stats.stubborn ? '错过 3 次以上，每天都要见一面' : '暂时没有反复错的题' })}
+      ${statCard('已掌握', `${stats.mastered}`, { icon: ICON.archive, note: stats.mastered ? '答对一次即归档，可重新列入' : '还没有归档的错题' })}
+      ${statCard('最弱考点', `${stats.weakest ? stats.weakest.items.length : 0}`, {
+        icon: ICON.bulb,
+        // 有考点名时它是用户数据（保留原文）；没有考点名时「未归类考点」是界面兜底文案，得让词典翻它
+        noteHTML: stats.weakest ? (stats.weakest.title ? `<span data-no-i18n>${esc(stats.weakest.title)}</span>` : '未归类考点') : '先答错题才会形成考点画像'
+      })}
     </div>
 
-    ${perSet.length ? `
-      <div class="section-title">分题库表现</div>
-      <div class="card mb-6">
-        ${perSet.map((x) => {
-          const a = setAccent(x.set);
-          const acc = x.accuracy;
-          const fillCls = acc == null ? '' : acc >= 80 ? 'success' : acc < 60 ? 'warning' : '';
-          return `
-          <div class="perf-row">
-            <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(x.set.icon || '题')}</span>
-            <div style="flex:1;min-width:0">
-              <div class="perf-name">${esc(x.set.name)}</div>
-              <div class="perf-sub">${x.attempts} 次练习 · 最佳 ${x.best}%</div>
-            </div>
-            <div class="perf-bar">
-              <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${acc || 0}%"></div></div>
-              <div class="progress-text"><span>正确率</span><span>${acc == null ? '--' : acc + '%'}</span></div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="openSet('${x.set.id}')">去练习</button>
-          </div>`;
-        }).join('')}
-      </div>` : ''}
+    <div class="wrong-bar">
+      <div class="filter-row">${chips}</div>
+      <div class="wrong-bar-tail">
+        <label class="ui-muted" for="wrongSort">排序</label>
+        <select class="form-select" id="wrongSort" onchange="setWrongSort(this.value)">
+          <option value="priority"${wrongSortValue() === 'priority' ? ' selected' : ''}>先练顽固的</option>
+          <option value="recent"${wrongSortValue() === 'recent' ? ' selected' : ''}>最近答错的</option>
+        </select>
+        <button type="button" class="btn btn-primary btn-sm" onclick="startWrongMockModal()">组一套错题模拟</button>
+      </div>
+    </div>
 
-    <div class="section-title"><span>错题本 ${wrongTotal ? `<span class="badge badge-danger">${wrongTotal}</span>` : ''}</span></div>
-    ${wrongTotal === 0 ? `<div class="card mb-6"><div class="text-sm text-muted text-center" style="padding:20px">太棒了，暂无错题</div></div>` : ''}
-    ${Object.keys(wrongBank).map((setId) => {
-      const set = getSet(setId);
-      const wb = wrongBank[setId] || {};
-      const ids = Object.keys(wb).filter((qid) => getQuestion(set, qid));
-      if (!set || !ids.length) return '';
-      const a = setAccent(set);
-      return `
-        <div class="card mb-4">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-            <div style="display:flex;align-items:center;gap:9px">
-              <span class="mini-icon" style="background:${a.bg};color:${a.fg}">${esc(set.icon || '题')}</span>
-              <b>${esc(set.name)}</b>
-              <span class="badge badge-danger">${ids.length} 题</span>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="startLearning('${set.id}', true)">刷错题</button>
-          </div>
-          <div style="margin-top:12px">
-            ${ids.map((qid) => {
-              const q = getQuestion(set, qid);
-              return `<div style="padding:10px 0;border-top:1.5px solid var(--border-light)">
-                <div style="font-size:14px;margin-bottom:4px">${esc((q.content || '').split('\n')[0])} <span class="text-sm text-muted">（错 ${wb[qid]} 次）</span></div>
-                <div class="text-sm" style="color:var(--text-secondary)">正确答案：<span style="color:var(--success);font-weight:700">${esc(answerText(q))}</span></div>
-                ${q.explanation ? `<div class="text-sm text-muted" style="margin-top:2px">${esc(q.explanation)}</div>` : ''}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`;
-    }).join('')}
-
-    <div class="section-title">历史记录</div>
-    ${history.length === 0 ? `<div class="card"><div class="text-sm text-muted text-center" style="padding:20px">还没有练习记录，从学习模式开始吧</div></div>` : `
-      <div class="card">
-        ${history.slice(0, 50).map((a, i) => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < Math.min(history.length, 50) - 1 ? 'border-bottom:1.5px solid var(--border-light)' : ''}">
-            <span class="badge ${a.mode === 'exam' ? 'badge-primary' : 'badge-success'}">${a.mode === 'exam' ? '考试' : '学习'}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.setName)}</div>
-              <div class="text-sm text-muted">${fmtDate(a.finishedAt)} · ${fmtDuration(a.durationSec)}</div>
-            </div>
-            <div class="history-score" style="color:${a.score >= 85 ? 'var(--success)' : a.score >= 60 ? 'var(--warning)' : 'var(--danger)'}">${a.score}%</div>
-          </div>`).join('')}
-      </div>`}`;
+    ${groups.length ? `
+      <div class="section-title"><span>考点收纳<span class="section-count">${groups.length}</span></span></div>
+      ${shown.map((g, i) => wrongGroupHTML(g, i, i === 0)).join('')}
+      ${rest.length ? `
+        <details class="hist-more">
+          <summary>展开其余 ${rest.length} 个考点</summary>
+          ${rest.map((g, i) => wrongGroupHTML(g, shown.length + i, false)).join('')}
+        </details>` : ''}` : `
+      <div class="card"><div class="material-empty">这个筛选下暂时没有题目</div></div>`}`;
 }
 
 function storageUsage() {
@@ -2914,67 +5682,65 @@ function renderSettings() {
   return `
     <div class="settings-wrap">
     <div class="settings-section">
-      <h3>AI 出题</h3>
-      <p class="text-sm text-muted mb-4">已内置 Qoder AI，无需填写 API Key。上传 PDF、Word、PPT 等资料，系统自动提取文字并按篇幅推荐题量，生成单选、多选、判断、填空和编程题；没有文件时也可以直接粘贴文字。</p>
+      <h3>界面语言</h3>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">出题引擎</div>
-          <div class="text-sm text-muted">Qoder AI · 由站点后端安全调用，密钥不会进入浏览器</div>
+          <div class="settings-row-title">显示语言</div>
         </div>
-        <span class="badge badge-success">已内置</span>
+        <div class="lang-seg" data-no-i18n role="group" aria-label="显示语言">
+          <button type="button" class="${isEn() ? '' : 'is-active'}" onclick="setLang('zh')" aria-pressed="${!isEn()}">简体中文</button>
+          <button type="button" class="${isEn() ? 'is-active' : ''}" onclick="setLang('en')" aria-pressed="${isEn()}">English</button>
+        </div>
       </div>
-      <div style="margin-top:14px">
-        <button class="btn btn-primary" onclick="openAIModal()">用 AI 新建题库</button>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>判题服务</h3>
-      <p class="text-sm text-muted">编程题通过后端调用 Judge0 公共实例判题，默认无需额外配置。如需使用私有 Judge0 或 RapidAPI 密钥，请在站点后端环境变量中配置 JUDGE0_URL / JUDGE0_KEY。</p>
     </div>
 
     <div class="settings-section">
       <h3>数据管理</h3>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">导出全部数据</div>
-          <div class="text-sm text-muted">题库、学科、资料文字、练习记录与错题本（不含原始文件）</div>
+          <div class="settings-row-title">导出全部数据</div>
         </div>
         <button class="btn btn-secondary" onclick="exportData()">导出 JSON</button>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">导入数据备份</div>
-          <div class="text-sm text-muted">从导出的 JSON 恢复，已存在的题库、资料与记录会自动跳过</div>
+          <div class="settings-row-title">导入数据备份</div>
         </div>
         <button class="btn btn-secondary" onclick="importData()">选择文件</button>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">本地存储</div>
-          <div class="text-sm text-muted">题库与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份，原始文件单独存放` : ''}</div>
+          <div class="settings-row-title">本地存储</div>
+          <div class="text-sm text-muted">练习集与记录已用 ${usage.label}（上限约 5 MB）${materials.length ? ` · 资料库 ${materials.length} 份` : ''}</div>
         </div>
         <span class="badge ${usage.pct >= 80 ? 'badge-danger' : 'badge-muted'}">${usage.pct}%</span>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">清空练习记录</div>
-          <div class="text-sm text-muted">清除所有历史成绩与错题本，保留题库</div>
+          <div class="settings-row-title">清空练习记录</div>
         </div>
         <button class="btn btn-secondary" onclick="clearRecords()">清空</button>
       </div>
       <div class="settings-row">
         <div>
-          <div style="font-size:14px">恢复初始状态</div>
-          <div class="text-sm text-muted">删除所有自建题库、学科、资料、记录与设置</div>
+          <div class="settings-row-title">恢复初始状态</div>
         </div>
         <button class="btn btn-danger" onclick="resetAll()">重置</button>
       </div>
     </div>
 
     <div class="settings-section">
-      <h3>关于</h3>
-      <p class="text-sm text-muted">智题 StarQuiz · 为 Qoder 高效创造力大赛打造。<br>支持学习模式与考试模式，普通题目与编程题混合练习，数据保存在本地浏览器。</p>
+      <h3>备考规划</h3>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">Exam Plan AI 备考规划</div>
+        </div>
+        <a class="btn btn-secondary" href="${EXAM_PLAN_URL}" target="_blank" rel="noopener noreferrer">打开备考规划 ↗</a>
+      </div>
+    </div>
+
+    <div class="settings-footer">
+      <p>智题 StarQuiz</p>
     </div>
     </div>`;
 }
@@ -2993,7 +5759,8 @@ function exportData() {
     text: m.text
   }));
   const data = {
-    version: 2,
+    // v3：错题本从「计数表」换成带时间戳和状态的信封；v2/v1 备份仍能导入（repairWrong 两种形状都读）
+    version: 3,
     exportedAt: new Date().toISOString(),
     sets: customSets,
     history,
@@ -3058,7 +5825,7 @@ async function importBackupFileCore(file) {
   const rawWrong = objOf(data.wrongBank || data.wrong);
   const rawSubjects = arrOf(data.subjects);
   const rawMaterials = arrOf(data.materials);
-  if (!rawSets.length && !rawHistory.length && !Object.keys(rawWrong).length && !rawSubjects.length && !rawMaterials.length) {
+  if (!rawSets.length && !rawHistory.length && !rawSubjects.length && !rawMaterials.length && !wrongBankSetCount(rawWrong)) {
     toast('备份里没有可导入的数据', 'info');
     return;
   }
@@ -3096,14 +5863,15 @@ async function importBackupFileCore(file) {
   });
   history = history.sort((x, y) => y.finishedAt - x.finishedAt).slice(0, 200);
 
-  const wrongPatch = repairWrong(rawWrong);
-  Object.keys(wrongPatch).forEach((setId) => {
-    const target = objOf(wrongBank[setId]);
-    Object.keys(wrongPatch[setId]).forEach((qid) => {
-      const count = wrongPatch[setId][qid];
-      if (!target[qid] || target[qid] < count) { target[qid] = count; addedWrong++; }
+  // 备份里的错题按「新集优先」合并；时间戳用刚合并完的历史回推，v1 备份也能升上来
+  const wrongPatch = repairWrong(rawWrong, history);
+  Object.keys(wrongPatch.bySet).forEach((setId) => {
+    const target = wrongBank.bySet[setId] || (wrongBank.bySet[setId] = {});
+    Object.keys(wrongPatch.bySet[setId]).forEach((qid) => {
+      if (!target[qid]) addedWrong++;
+      target[qid] = mergeWrongEntry(target[qid], wrongPatch.bySet[setId][qid]);
     });
-    if (Object.keys(target).length) wrongBank[setId] = target;
+    if (!Object.keys(target).length) delete wrongBank.bySet[setId];
   });
 
   const okSets = saveJSONQuiet(STORAGE.sets, customSets);
@@ -3113,11 +5881,11 @@ async function importBackupFileCore(file) {
     customSets.length = snapshotSets;
     history.length = snapshotHistory;
     wrongBank = JSON.parse(snapshotWrong);
-    toast('导入失败：本地存储空间不足。请先导出并清理不用的题库', 'error', 6000);
+    toast('导入失败：本地存储空间不足。请先导出并清理不用的练习集', 'error', 6000);
     return;
   }
 
-  // 学科与资料（资料只恢复提取的文字，原始文件不包含在 JSON 备份里）
+  // 练习科目与资料（资料只恢复提取的文字，原始文件不包含在 JSON 备份里）
   let addedSubjects = 0;
   if (rawSubjects.length) {
     const before = new Set(userSubjects.map((s) => s.id));
@@ -3128,7 +5896,7 @@ async function importBackupFileCore(file) {
         userSubjects = merged;
         addedSubjects = additions.length;
       } else {
-        bootNotes.push('学科文件夹导入失败：本地存储空间不足');
+        bootNotes.push('练习科目导入失败：本地存储空间不足');
       }
     }
   }
@@ -3162,23 +5930,23 @@ async function importBackupFileCore(file) {
   const skippedQuestions = sanitized.droppedQuestions || 0;
   const invalidSets = sanitized.droppedSets || 0;
   const parts = [];
-  if (addedSets) parts.push(`${addedSets} 个题库（${addedQuestions} 题）`);
+  if (addedSets) parts.push(`${addedSets} 个练习集（${addedQuestions} 题）`);
   if (addedHistory) parts.push(`${addedHistory} 条记录`);
   if (addedWrong) parts.push(`${addedWrong} 道错题`);
-  if (addedSubjects) parts.push(`${addedSubjects} 个学科`);
+  if (addedSubjects) parts.push(`${addedSubjects} 个练习科目`);
   if (addedMaterials) parts.push(`${addedMaterials} 份资料`);
-  if (skippedSets) parts.push(`跳过 ${skippedSets} 个已存在的题库`);
+  if (skippedSets) parts.push(`跳过 ${skippedSets} 个已存在的练习集`);
   if (skippedMaterials) parts.push(`跳过 ${skippedMaterials} 份已存在的资料`);
-  if (invalidSets) parts.push(`忽略 ${invalidSets} 个没有有效题目的题库`);
+  if (invalidSets) parts.push(`忽略 ${invalidSets} 个没有有效题目的练习集`);
   if (skippedQuestions) parts.push(`忽略 ${skippedQuestions} 道异常题目`);
   toast(parts.length ? `导入完成：${parts.join('，')}` : '没有可新增的数据，备份内容已全部存在', parts.length ? 'success' : 'info', 5000);
   render();
 }
 
 function clearRecords() {
-  confirmModal('清空记录', '将清除所有练习历史和错题本，题库不受影响。确定继续吗？', '清空', () => {
+  confirmModal('清空记录', '将清除所有练习历史和错题本，练习集不受影响。确定继续吗？', '清空', () => {
     history = [];
-    wrongBank = {};
+    wrongBank = emptyWrongBank();
     saveJSON(STORAGE.history, history);
     saveJSON(STORAGE.wrong, wrongBank);
     toast('记录已清空', 'success');
@@ -3187,7 +5955,7 @@ function clearRecords() {
 }
 
 function resetAll() {
-  confirmModal('恢复初始状态', '将删除所有自建题库、学科文件夹、上传的资料、练习记录、错题本和本地设置。确定继续吗？', '重置全部', async () => {
+  confirmModal('恢复初始状态', '将删除所有自建练习集、练习科目、上传的资料、练习记录、错题本、考点联动关系和本地设置。确定继续吗？', '重置全部', async () => {
     Object.values(STORAGE).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
     Object.values(SESSION_KEYS).forEach((k) => { try { localStorage.removeItem(k); } catch {} });
     try {
@@ -3205,9 +5973,12 @@ function resetAll() {
     resume = { exam: null, learning: null };
     customSets = [];
     history = [];
-    wrongBank = {};
+    wrongBank = emptyWrongBank();
     userSubjects = [];
     materials = [];
+    planLinkStore = sanitizePlanLinks(null);
+    planLink = null;
+    state.lastPlanAttempt = null;
     state.exam = null;
     state.learning = null;
     state.subjectId = null;
@@ -3217,9 +5988,9 @@ function resetAll() {
 }
 
 function normalizeSet(raw) {
-  if (!raw || typeof raw !== 'object') throw new Error('题库数据不是对象');
+  if (!raw || typeof raw !== 'object') throw new Error('练习集数据不是对象');
   const name = String(raw.name || '').trim();
-  if (!name) throw new Error('缺少题库名称 name');
+  if (!name) throw new Error('缺少练习集名称 name');
   const description = String(raw.description || '').trim();
   const icon = String(raw.icon || '题').slice(0, 8);
   const tags = Array.isArray(raw.tags) ? raw.tags.map((t) => String(t).slice(0, 20)).slice(0, 6) : [];
@@ -3229,8 +6000,15 @@ function normalizeSet(raw) {
     title: String(kp.title || `知识点 ${i + 1}`).slice(0, 60),
     content: String(kp.content || '')
   }));
+  // 知识点会被重编号：先记下「原 id → 新 id」，否则题目引用的原 id 全部匹配不上，
+  // 整套题的归属会被静默打散（内置样例用 kpA 这类 id 时尤其明显）
+  const kpIdMap = new Map();
+  rawKps.forEach((kp, i) => {
+    const from = kp && kp.id !== null && kp.id !== undefined ? String(kp.id) : '';
+    if (from) kpIdMap.set(from, 'kp' + (i + 1));
+  });
   const rawQs = Array.isArray(raw.questions) ? raw.questions : [];
-  if (!rawQs.length) throw new Error('题库中没有题目');
+  if (!rawQs.length) throw new Error('练习集中没有题目');
 
   let quality = raw.quality && typeof raw.quality === 'object' ? {
     parsed: Number(raw.quality.parsed) || 0,
@@ -3259,9 +6037,15 @@ function normalizeSet(raw) {
         type,
         difficulty: Math.min(3, Math.max(1, parseInt(rq.difficulty, 10) || 2)),
         content,
-        explanation: String(rq.explanation || ''),
-        knowledgePointId: knowledgePoints.some((k) => k.id === rq.knowledgePointId) ? rq.knowledgePointId : (knowledgePoints[0] ? knowledgePoints[0].id : null)
+        explanation: String(rq.explanation || '')
       };
+      // 只有明确匹配到知识点才认归属；兜底塞进第一个知识点的题保留 kpUnmatched 状态，
+      // 后续联动成绩统计不能把这些题当成目标考点
+      const mappedKp = kpIdMap.has(String(rq.knowledgePointId))
+        ? kpIdMap.get(String(rq.knowledgePointId))
+        : (knowledgePoints.some((k) => k.id === rq.knowledgePointId) ? rq.knowledgePointId : null);
+      q.knowledgePointId = mappedKp || (knowledgePoints[0] ? knowledgePoints[0].id : null);
+      if (!mappedKp || rq.kpUnmatched === true) q.kpUnmatched = true;
       if (type === 'single') {
         const opts = Array.isArray(rq.options) ? rq.options.map(String) : [];
         if (opts.length < 2) throw new Error(`第 ${i + 1} 题（单选）至少需要 2 个选项`);
@@ -3305,7 +6089,7 @@ function normalizeSet(raw) {
     }
   });
 
-  if (!questions.length) throw new Error('题库中没有可用的题目');
+  if (!questions.length) throw new Error('练习集中没有可用的题目');
 
   if (localIssues.length) {
     if (!quality) quality = { parsed: rawQs.length, kept: 0, duplicates: 0, removed: 0, repaired: 0, issues: [] };
@@ -3313,6 +6097,12 @@ function normalizeSet(raw) {
     quality.issues = [...quality.issues, ...localIssues].slice(0, 30);
   }
   if (quality) quality.kept = questions.length;
+
+  // 两条清洗链都显式放行 source，联动来源才不会在刷新或备份导入后消失
+  const source = sanitizeSetSource(raw.source, knowledgePoints.map((kp) => kp.id));
+  // 出题来源与聚焦考点：详情页的「练习来源」备考上下文靠这两个字段
+  const origin = SET_ORIGIN_KINDS.includes(String(raw.origin || '')) ? String(raw.origin) : '';
+  const focusTopic = strOf(raw.focusTopic, PLAN_PARAM_LIMITS.topic).trim();
 
   return {
     id: 'custom-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
@@ -3322,6 +6112,9 @@ function normalizeSet(raw) {
     tags,
     knowledgePoints,
     questions,
+    ...(source ? { source } : {}),
+    ...(origin ? { origin } : {}),
+    ...(focusTopic ? { focusTopic } : {}),
     ...(quality ? { quality } : {})
   };
 }
@@ -3357,7 +6150,7 @@ function aiSimilar(a, b) {
   return small.length / large.length >= 0.85 && large.includes(small);
 }
 
-// 真题分段并行整理后，把各段题库按顺序拼成一份：知识点按标题去重，题目跨段去重
+// 真题分段并行整理后，把各段练习集按顺序拼成一份：知识点按标题去重，题目跨段去重
 function mergeGeneratedSets(rawSets, partsMeta = []) {
   const list = rawSets.filter(Boolean);
   if (!list.length) throw new Error('AI 没有返回题目');
@@ -3413,7 +6206,10 @@ function mergeGeneratedSets(rawSets, partsMeta = []) {
       }
       seen.push(question.content);
       const copy = Object.assign({}, question);
-      copy.knowledgePointId = remap.get(question.knowledgePointId) || (knowledgePoints[0] && knowledgePoints[0].id) || null;
+      const remapped = remap.get(question.knowledgePointId);
+      copy.knowledgePointId = remapped || (knowledgePoints[0] && knowledgePoints[0].id) || null;
+      // 合并后知识点会重编号：映射丢失或原本就没归属的题，不能默认算进目标考点
+      if (!remapped || question.kpUnmatched === true) copy.kpUnmatched = true;
       questions.push(copy);
     }
   }
@@ -3492,11 +6288,28 @@ let aiParseBusy = false;
 let aiLastRecommended = 0;
 let aiMode = 'generate';
 let aiSubjectId = null;
+// 保存位置：existing = 已有练习科目，new = 当场新建；aiFocus = 是否只围绕一个考点出题
+let aiDest = 'existing';
+let aiFocus = false;
 
-// 出题任务分两步（start / poll），单个请求都很短，避免撞上网关 45 秒超时
-const AI_POLL_INTERVAL_MS = 1500;
-const AI_POLL_DEADLINE_MS = 360000;
-const AI_EXAM_DEADLINE_MS = 600000;
+// 出题只有一条通道：/ai/start 拿批次清单，浏览器按批次并发调 /ai/generate。
+// 网关约 60 秒掐断单个请求，所以一次请求只出一小批，整份资料由批次覆盖。
+const AI_SYNC_CONCURRENCY = 3;
+// 函数侧给自己留 46 秒（网关 60 秒掐断），浏览器就按 46 秒一批估时间预算
+const AI_SYNC_BATCH_BUDGET_MS = 46000;
+const AI_SYNC_DEADLINE_SLACK_MS = 40000;
+// 批数确定前的兜底时限：批次拿不到就靠它中止，拿到了也只是给重试和合并留余量
+const AI_RUN_BASE_DEADLINE_MS = 480000;
+const AI_SYNC_RETRY_DELAYS = [800, 2500];
+// 单轮上限与 functions/handler.ts 同一组数字：这里是拦在弹窗里，那里是拦在函数里。
+// 上限只受请求体积约束，不再按「一次读得完多少资料」来定——批次切分负责覆盖整份资料。
+const AI_NOTE_MAX_CHARS = 96000;
+const AI_EXAM_MAX_CHARS = 96000;
+const AI_BATCH_TOTAL_MAX_CHARS = 128000;
+const AI_SYNC_MAX_JOBS = 24;
+const AI_MAX_FILES = 24;
+// 预览只用来确认「抓到的是不是这段文字」，不是给模型看的量，所以截得更早
+const AI_PREVIEW_MAX_CHARS = 48000;
 const OFFICIAL_SITE_URL = 'https://starquiz-zfc3er164xi.qoder.zone';
 
 function aiErrorText(status, data) {
@@ -3505,7 +6318,7 @@ function aiErrorText(status, data) {
   if (status === 405) return `当前页面不支持后端服务（HTTP 405），AI 出题和判题需要在正式站点使用：${OFFICIAL_SITE_URL}`;
   if (status === 404) return '站点刚更新完，服务还在重启，请等十几秒后刷新页面再试';
   if (status === 408 || status === 504) return '出题服务响应超时，请稍后重试或拆分资料';
-  if (status === 413) return '资料内容过大，请拆分后重试';
+  if (status === 413) return '资料超过单次上限，请拆成两轮上传';
   if (status === 429) return 'AI 调用太频繁了，等几秒再试';
   if (status === 401 || status === 403) return '登录已失效，请刷新页面后重试';
   if (status === 502 || status === 503) {
@@ -3515,9 +6328,9 @@ function aiErrorText(status, data) {
   return `网络或服务异常（HTTP ${status || '未知'}），没拿到出题结果，请重试`;
 }
 
-// 启动出题会话：发布站点时后端会短暂重启（约半分钟），这里用退避重试撑过去
+// 拿批次清单：发布站点时后端会短暂重启（约半分钟），这里用退避重试撑过去
 const AI_START_RETRY_DELAYS = [600, 1200, 2500, 5000, 8000, 12000, 12000];
-async function startAISession(payload, signal, onRetry) {
+async function startAIBatches(payload, signal, onRetry) {
   let lastMessage = '';
   for (let attempt = 0; attempt <= AI_START_RETRY_DELAYS.length; attempt++) {
     if (attempt) await new Promise((resolve) => setTimeout(resolve, AI_START_RETRY_DELAYS[attempt - 1]));
@@ -3545,6 +6358,51 @@ async function startAISession(payload, signal, onRetry) {
   throw new Error(lastMessage || 'AI 服务暂时不可用，请稍后重试');
 }
 
+// 并发上限的小工具：批次多时也不要一起压给上游，3 路并发最稳
+async function mapLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  const runners = new Array(Math.max(1, Math.min(limit, items.length))).fill(0).map(async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await worker(items[index], index);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
+
+// 同步批次：请求体与 /ai/start 完全一致，只多一个 jobIndex，
+// 函数用同样的纯函数还原出这一批的提示词，生成后直接返回题目。
+async function requestAISyncJob(payload, jobIndex, signal) {
+  const body = JSON.stringify({ ...payload, jobIndex });
+  let lastMessage = '';
+  for (let attempt = 0; attempt <= AI_SYNC_RETRY_DELAYS.length; attempt++) {
+    if (attempt) await new Promise((resolve) => setTimeout(resolve, AI_SYNC_RETRY_DELAYS[attempt - 1]));
+    let res = null;
+    let data = null;
+    try {
+      res = await fetch('/functions/v1/app/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal
+      });
+      data = await res.json().catch(() => null);
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      lastMessage = '网络连接中断，请检查网络后再试';
+      continue;
+    }
+    if (res.ok && data && data.ok && data.set) return data;
+    // 一批失败多半是这一批太大或上游抖动：换个批次大小重跑没有意义，试两次就放弃这一批
+    lastMessage = aiErrorText(res ? res.status : 0, data);
+    if (data && data.error && data.error.code) throw new Error(lastMessage);
+  }
+  throw new Error(lastMessage || '这一批没有生成成功');
+}
+
 function updateAIGenerating(run, count, startedAt, doneParts = 0, totalParts = 1, mode = aiMode, parts = []) {
   const sub = run && run.querySelector('.ai-generating-sub');
   if (!sub) return;
@@ -3561,7 +6419,9 @@ function updateAIGenerating(run, count, startedAt, doneParts = 0, totalParts = 1
       ? `分 ${totalParts} 段并行整理 · 已完成 ${doneParts}/${totalParts} 段 · 已用时 ${seconds} 秒`
       : `整理全部真题 · 已用时 ${seconds} 秒`;
   } else {
-    sub.textContent = `共 ${count} 题 · 已用时 ${seconds} 秒`;
+    sub.textContent = totalParts > 1
+      ? `分 ${totalParts} 批并行生成 · 已完成 ${doneParts}/${totalParts} 批 · 已用时 ${seconds} 秒`
+      : `共 ${count} 题 · 已用时 ${seconds} 秒`;
   }
 }
 
@@ -3615,6 +6475,8 @@ function collectAIGroups() {
 
   const docs = files.map((p) => ({ name: p.name, kind: aiFileKind(p), material: p.text }));
   if (manual) docs.push({ name: '粘贴的文字', kind: pasteKind, material: manual });
+  // 与 docs 一一对应的本轮条目 id（粘贴的那条固定叫 paste），跳过装不下的条目时用它回指 aiPieces
+  const ids = files.map((p) => p.id).concat(manual ? ['paste'] : []);
 
   const noteDocs = docs.filter((doc) => doc.kind === 'note');
   const examDocs = docs.filter((doc) => doc.kind === 'exam');
@@ -3625,12 +6487,372 @@ function collectAIGroups() {
   const noteText = join(noteDocs);
   const examText = join(examDocs);
   return {
-    docs, noteDocs, examDocs, hasFiles, pasteKind,
+    docs, ids, noteDocs, examDocs, hasFiles, pasteKind,
     noteText, examText,
     hasNotes: noteDocs.length > 0,
     hasExams: examDocs.length > 0,
     mixed: noteDocs.length > 0 && examDocs.length > 0
   };
+}
+
+const AI_STEPS = ['资料来源', '保存位置', '处理方式'];
+let aiStep = 1;
+
+function aiRailHTML() {
+  return `<div class="wiz-steps" role="list">
+    ${AI_STEPS.map((label, i) => {
+      const n = i + 1;
+      const cls = n === aiStep ? 'is-current' : (n < aiStep ? 'is-done' : 'is-idle');
+      const inner = n < aiStep
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`
+        : String(n);
+      const clickable = n < aiStep && !aiParseBusy;
+      return `${i > 0 ? '<span class="wiz-gap" aria-hidden="true"></span>' : ''}
+        <div role="listitem" class="wiz-step ${cls}"${clickable ? ` onclick="goAIStep(${n})"` : ''}${n === aiStep ? ' aria-current="step"' : ''}>
+          <span class="wiz-step-num">${inner}</span>
+          <span class="wiz-step-label">${label}</span>
+        </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// 每一层是否已经可以往下走：资料层要求解析完成且字数够，保存位置层要求目标练习科目确定
+function aiDestReady() {
+  if (aiDest === 'new') return !!nsField('aiNewSubjectName').trim();
+  return !!subjectById(aiSubjectId);
+}
+
+// 三份上限（笔记 / 真题 / 两者合计）与 handler.ts 完全同口径；返回第一处超出的
+function aiLimitBreach(groups) {
+  const noteLen = groups.noteText.length;
+  const examLen = groups.examText.length;
+  if (noteLen > AI_NOTE_MAX_CHARS) return { label: '笔记资料', chars: noteLen, cap: AI_NOTE_MAX_CHARS };
+  if (examLen > AI_EXAM_MAX_CHARS) return { label: '真题资料', chars: examLen, cap: AI_EXAM_MAX_CHARS };
+  const total = noteLen + examLen;
+  if (groups.mixed && total > AI_BATCH_TOTAL_MAX_CHARS) {
+    return { label: '笔记和真题合计', chars: total, cap: AI_BATCH_TOTAL_MAX_CHARS };
+  }
+  return null;
+}
+
+// 这一轮装得下多少，浏览器只算字数；要切成几批是函数侧的批处理规则决定的，
+// 不在这里重算一遍。函数说「批数超了」时把那句原话记下来，贴在 gate 上，
+// 挂的是当次资料组合的签名——组合一变，这句话就自动失效。
+let aiStartBreach = { sig: '', line: '' };
+
+function aiGroupsSignature(groups) {
+  return groups.ids.map((id, i) => `${id}:${groups.docs[i] ? groups.docs[i].kind : '?'}`).join('|');
+}
+
+// 按顺序逐份装到上限为止：装得下的留下、装不下的跳过，绝不悄悄截断某一份的内容。
+// 资料只是这一轮不出题，仍留在练习科目库里。
+function aiFitPlan(groups) {
+  const used = { note: 0, exam: 0 };
+  const seen = { note: false, exam: false };
+  const kept = [];
+  const dropped = [];
+  groups.docs.forEach((doc, i) => {
+    const id = groups.ids[i];
+    const cap = doc.kind === 'exam' ? AI_EXAM_MAX_CHARS : AI_NOTE_MAX_CHARS;
+    // 多份才有的「【名称】\n」头名和段落间隔也要占体积
+    const cost = doc.material.length + (seen[doc.kind] ? doc.name.length + 4 : 0);
+    const combined = used.note + used.exam + cost;
+    if (used[doc.kind] + cost > cap || combined > AI_BATCH_TOTAL_MAX_CHARS) {
+      dropped.push({ id, doc });
+      return;
+    }
+    used[doc.kind] += cost;
+    seen[doc.kind] = true;
+    kept.push({ id, doc });
+  });
+  return { kept, dropped };
+}
+
+function aiStepReady(n) {
+  if (aiParseBusy) return false;
+  const groups = collectAIGroups();
+  const noteChars = aiVisibleChars(groups.noteText);
+  const examChars = aiVisibleChars(groups.examText);
+  const hasMaterial = (groups.hasNotes && noteChars >= 50) || (groups.hasExams && examChars >= 50);
+  // 超长在第 1 层就该停下来：原因和「跳过哪一份」的出口就在同一行，不用先把用户放行再拒绝
+  if (!hasMaterial || aiLimitBreach(groups)) return false;
+  if (n === 1) return true;
+  return aiDestReady();
+}
+
+function renderAIRail() {
+  const rail = document.getElementById('aiRail');
+  if (rail) rail.innerHTML = aiRailHTML();
+}
+
+// 「先建科目、资料回头再传」之后回到出题弹窗，下一步是灰的——灰按钮只说「不行」，
+// 不说差在哪一步。这里把卡住的原因和离它最近的一个入口写在同一行：只说差什么，不解释流程。
+// 原因口径与 aiStepReady 共用同一份判断，不另起一套；说法和 Exam Plan 的待办文案对齐。
+// gate 三个层都要显示：哪一层按不下去，就在哪一层说清楚差什么。
+function aiSourceGateInfo() {
+  if (aiParseBusy) return { line: '资料还在解析中…', actions: [] };
+  const groups = collectAIGroups();
+  const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const name = esc(subject.name);
+
+  const breach = aiLimitBreach(groups);
+  if (breach) {
+    const plan = aiFitPlan(groups);
+    const droppable = plan.dropped.filter((item) => item.id !== 'paste');
+    const actions = [];
+    // 「只保留 N 份」要有的可留才提；一份都装不下时按钮只会清空这一轮，那句话本身已经说了怎么办。
+    // 粘贴文字不同：它整段都是这一轮临时贴进来的，清掉它就是回到起点。
+    if (plan.kept.length && droppable.length) {
+      actions.push({ label: `只保留 ${plan.kept.length} 份`, fn: 'trimAIPiecesToLimit()' });
+    }
+    if (plan.dropped.some((item) => item.id === 'paste')) {
+      actions.push({ label: '清空粘贴文字', fn: 'clearAIPasteText()' });
+    }
+    return {
+      line: `${breach.label} ${breach.chars.toLocaleString()} 字，超过单次上限 ${breach.cap.toLocaleString()} 字，请拆成两轮上传`,
+      actions
+    };
+  }
+
+  if (aiStartBreach.line && aiStartBreach.sig === aiGroupsSignature(groups)) {
+    const droppable = groups.ids.filter((id) => id !== 'paste');
+    return {
+      line: aiStartBreach.line,
+      // 只剩一份时「跳过最后一份」等于清空这一轮，那就不算出口；那句话本身已经说了怎么拆
+      actions: droppable.length > 1
+        ? [{ label: `跳过最后一份（留 ${droppable.length - 1} 份）`, fn: 'dropLastAIPiece()' }]
+        : []
+    };
+  }
+
+  if (aiStepReady(1)) {
+    // 资料够了，剩下的门槛只在往下走那一层：保存位置还没定
+    if (aiStep >= 2 && !aiDestReady()) {
+      return aiDest === 'new'
+        ? { line: '先填上练习科目名称', actions: [] }
+        : { line: '选一个要保存到的练习科目', actions: [] };
+    }
+    return null;
+  }
+
+  if (groups.hasFiles || groups.hasNotes || groups.hasExams) {
+    return {
+      line: '这一轮的内容不足 50 字',
+      actions: [{ label: '粘贴文字', fn: 'revealAIPaste()' }]
+    };
+  }
+  const held = subjectMaterials(subject.id);
+  if (held.length) {
+    return {
+      line: `「${name}」的资料还没勾上（${held.length} 份）`,
+      actions: [{ label: '全部选上', fn: 'selectAllLibraryMaterials()' }]
+    };
+  }
+  return {
+    line: `「${name}」还没有资料`,
+    actions: [{ label: '上传资料', fn: 'pickAIFiles()' }].concat(
+      // 未分类没有科目页可去，只在真正的练习科目上给这个出口
+      subject.inbox ? [] : [{ label: '去练习科目页传', fn: 'leaveAIForMaterials()' }]
+    )
+  };
+}
+
+// 装不下的那几份由浏览器决定跳过谁：用户只要点一下，不用自己心算字数
+function trimAIPiecesToLimit() {
+  const groups = collectAIGroups();
+  const plan = aiFitPlan(groups);
+  const dropIds = new Set(plan.dropped.filter((item) => item.id !== 'paste').map((item) => item.id));
+  if (!plan.kept.length || !dropIds.size) return;
+  aiPieces = aiPieces.filter((p) => !dropIds.has(p.id));
+  renderAILibrary();
+  renderAIFileList();
+  refreshAIState();
+  syncAILayerState();
+  toast(`已保留 ${plan.kept.length} 份，跳过 ${dropIds.size} 份`, 'info', 4500);
+}
+
+// 函数说「批数超了」时的出口：去掉最后装进去的那一份再试，一轮一轮往里收。
+// 跳过谁由函数那句决定，浏览器不重算批数，只负责少给一份。
+function dropLastAIPiece() {
+  for (let i = aiPieces.length - 1; i >= 0; i--) {
+    if (aiPieces[i].status === 'ok') {
+      const [gone] = aiPieces.splice(i, 1);
+      renderAILibrary();
+      renderAIFileList();
+      refreshAIState();
+      syncAILayerState();
+      toast(`已跳过「${gone.name}」，可以再点一次生成`, 'info', 4500);
+      return;
+    }
+  }
+}
+
+function clearAIPasteText() {
+  const box = document.getElementById('aiMaterial');
+  if (!box) return;
+  box.value = '';
+  refreshAIState();
+  syncAILayerState();
+}
+
+function renderAISourceGate() {
+  // 两个挂载点：资料来源层用它贴在文件列表旁边，另外两层用它顶在向导下面——
+  // 灰按钮在哪一层按不下去，就在哪一层把原因说出来。
+  const slots = [document.getElementById('aiSourceGate'), document.getElementById('aiGateTop')].filter(Boolean);
+  if (!slots.length) return;
+  const gate = aiSourceGateInfo();
+  const html = gate ? `
+    <div class="ai-note ai-source-gate">
+      <span class="ai-note-dot"></span>
+      <span>${gate.line}${gate.actions.length
+        ? ` ${gate.actions.map((a) => `<button type="button" class="link-btn" onclick="${a.fn}">${a.label}</button>`).join(' · ')}`
+        : ''}</span>
+    </div>` : '';
+  slots.forEach((wrap, i) => {
+    wrap.innerHTML = html;
+    if (i === 1) wrap.hidden = aiStep === 1 || !gate;
+  });
+}
+
+function revealAIPaste() {
+  const wrap = document.getElementById('aiPasteWrap');
+  if (wrap && wrap.hidden) toggleAIPaste();
+  else document.getElementById('aiMaterial')?.focus();
+}
+
+function pickAIFiles() {
+  const input = document.getElementById('aiFileInput');
+  if (!input) return;
+  input.click();
+}
+
+// 资料库里已有资料、这一轮一份没勾：一次全选，省得逐份点。
+function selectAllLibraryMaterials() {
+  const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const todo = subjectMaterials(subject.id)
+    .filter((m) => !aiPieces.some((p) => p.materialId === m.id))
+    .map((m) => m.id);
+  if (!todo.length) return;
+  addMaterialsToAI(todo);
+  renderAILibrary();
+  renderAIFileList();
+  refreshAIState();
+}
+
+// 科目已经建好，只是这轮不想出题：把用户放回真正能传资料的地方。
+function leaveAIForMaterials() {
+  const id = aiSubjectId;
+  closeModal();
+  if (subjectById(id)) openSubject(id);
+}
+
+function syncAILayerState() {
+  renderAIRail();
+  renderAISourceGate();
+  const next = document.getElementById('aiNextBtn');
+  if (next) next.disabled = !aiStepReady(aiStep);
+  if (aiStep === 3) renderAIReview();
+}
+
+function renderAIFooter() {
+  const foot = document.getElementById('aiModalFooter');
+  if (!foot) return;
+  if (aiStep === 1) {
+    foot.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(2)"${aiStepReady(1) ? '' : ' disabled'}>下一步：保存位置 ${ICON.arrow}</button>`;
+    return;
+  }
+  if (aiStep === 2) {
+    foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(1)">← 资料来源</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary" id="aiNextBtn" onclick="goAIStep(3)"${aiStepReady(2) ? '' : ' disabled'}>下一步：处理方式 ${ICON.arrow}</button>`;
+    return;
+  }
+  foot.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="goAIStep(2)">← 保存位置</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">生成题目</button>`;
+}
+
+function showAILayer() {
+  [1, 2, 3].forEach((n) => {
+    const el = document.getElementById(`aiLayer${n}`);
+    if (el) el.hidden = n !== aiStep;
+  });
+  renderAIRail();
+  renderAISourceGate();
+  renderAIFooter();
+  if (aiStep === 3) renderAIReview();
+}
+
+// 保存位置这一步在往下走时才真正落地：选「新增练习科目」就先建好，
+// 并把这一轮刚上传、还挂在旧练习科目下的资料挪过来。
+function commitAISubject() {
+  if (aiDest !== 'new') return true;
+  const input = document.getElementById('aiNewSubjectName');
+  const name = (input ? input.value : '').trim();
+  if (!name) {
+    toast('先填上练习科目名称', 'info');
+    input?.focus();
+    return false;
+  }
+  const subject = createSubject(name, {
+    examName: nsField('aiNewExamName').trim(),
+    examDate: nsField('aiNewExamDate').trim()
+  });
+  if (!subject) { input?.focus(); return false; }
+  aiSubjectId = subject.id;
+  aiDest = 'existing';
+  const moved = aiPieces.filter((p) => p.sessionStored && p.materialId);
+  moved.forEach((p) => moveMaterialMeta(p.materialId, subject.id));
+  const select = document.getElementById('aiSubjectSelect');
+  if (select) select.innerHTML = renderAISubjectOptions();
+  if (input) input.value = '';
+  renderAILibrary();
+  renderAIFileList();
+  return true;
+}
+
+function goAIStep(target) {
+  if (aiParseBusy) { toast('资料还在解析中，请稍候', 'info'); return; }
+  if (target > aiStep && !aiStepReady(aiStep)) {
+    toast(aiStep === 1 ? '先上传或粘贴至少 50 字的资料' : '目标练习科目还没定，请选一个练习科目或填新练习科目名称', 'info');
+    return;
+  }
+  if (target > 2 && aiStep === 2 && !commitAISubject()) return;
+  aiStep = Math.max(1, Math.min(3, target));
+  showAILayer();
+  refreshAIState();
+}
+
+function renderAIReview() {
+  const box = document.getElementById('aiReviewSummary');
+  if (!box) return;
+  const groups = collectAIGroups();
+  const subject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const noteChars = aiVisibleChars(groups.noteText);
+  const examChars = aiVisibleChars(groups.examText);
+  const range = document.getElementById('aiCount');
+  const count = groups.hasNotes ? (parseInt(range?.value, 10) || 0) : 0;
+  const examEst = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
+  const bits = [`<span class="wiz-chip">保存到 <b data-no-i18n>${esc(subject.name)}</b></span>`];
+  if (groups.hasNotes) bits.push(`<span class="wiz-chip">笔记 <b>${groups.noteDocs.length}</b> 份 · ${noteChars.toLocaleString('zh-CN')} 字</span>`);
+  if (groups.hasExams) bits.push(`<span class="wiz-chip">真题 <b>${groups.examDocs.length}</b> 份 · ${examChars.toLocaleString('zh-CN')} 字</span>`);
+  if (groups.hasNotes) bits.push(`<span class="wiz-chip is-soft">将生成 <b>${count}</b> 题</span>`);
+  if (groups.hasExams) bits.push(`<span class="wiz-chip is-soft">真题<b>原样保留</b>${examEst ? ` 约 ${examEst} 题` : ''}</span>`);
+  if (aiFocus && aiMode !== 'exam') {
+    const focus = aiFocusText();
+    if (focus) bits.push(`<span class="wiz-chip is-soft">聚焦考点 <b>${esc(focus)}</b></span>`);
+  }
+  const pasteOnly = !groups.hasFiles && (groups.hasNotes || groups.hasExams);
+  if (pasteOnly) bits.push('<span class="wiz-chip is-soft">来源：粘贴文字</span>');
+  box.innerHTML = bits.join('');
+  const title = document.getElementById('aiReviewTitle');
+  if (title) {
+    title.textContent = groups.mixed
+      ? '笔记出题 + 真题整理'
+      : (groups.hasExams ? '原样整理真题' : (aiFocus ? '围绕一个考点出题' : '根据资料出题'));
+  }
 }
 
 function openAIModal(subjectId, materialIds) {
@@ -3642,48 +6864,42 @@ function openAIModal(subjectId, materialIds) {
     aiPieces = [];
     aiLastRecommended = 0;
   }
-  if (Array.isArray(materialIds) && materialIds.length) addMaterialsToAI(materialIds);
+  aiDest = 'existing';
+  // 从备考规划带考点跳过来时，默认就聚焦这个考点
+  aiFocus = !!captureFocusLink();
+  aiStep = 1;
+  if (Array.isArray(materialIds) && materialIds.length) {
+    addMaterialsToAI(materialIds);
+    aiStep = 3;
+  }
   openModal(`
     <div class="modal-header">
       <div class="modal-title">AI 出题 · 真题整理</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
+      <div id="aiRail">${aiRailHTML()}</div>
+      <div id="aiGateTop" hidden></div>
       <div id="aiFormWrap">
-        <div class="ai-note">
-          <span class="ai-note-dot"></span>
-          <span>已内置 Qoder AI，无需 API Key。上传的资料会自动存进所选学科；点「保存题库」后题目也会归入该学科。</span>
-        </div>
+        ${renderPlanLinkNote()}
         <div id="aiErrorBox" class="feedback feedback-incorrect" hidden style="margin-bottom:14px"></div>
 
-        <div class="ai-subject-bar">
-          <label class="ai-subject-label" for="aiSubjectSelect">保存到学科</label>
-          <select class="form-select ai-subject-select" id="aiSubjectSelect" onchange="onAISubjectChange(this.value)">${renderAISubjectOptions()}</select>
-          <button type="button" class="link-btn" onclick="toggleNewSubjectInline()">＋ 新建</button>
-          <span class="ai-new-subject" id="aiNewSubjectWrap" hidden>
-            <input class="form-input" id="aiNewSubjectName" maxlength="20" placeholder="学科名称" onkeydown="if(event.key==='Enter')createSubjectInline()">
-            <button type="button" class="btn btn-secondary btn-sm" onclick="createSubjectInline()">建立</button>
-          </span>
-        </div>
-
-        <div class="ai-library" id="aiLibrary" hidden></div>
-
-        <section class="ai-step">
-          <div class="ai-step-head">
-            <span class="ai-step-num">1</span>
-            <span>上传学习资料</span>
-            <span class="ai-step-hint">PDF · WORD · PPT · TXT</span>
+        <section class="wiz-layer" id="aiLayer1"${aiStep === 1 ? '' : ' hidden'}>
+          <div class="wiz-head">
+            <span class="wiz-title">资料来源</span>
           </div>
-          <label class="ai-dropzone" id="aiDropzone" for="aiFileInput">
+          <div class="ai-library" id="aiLibrary"></div>
+
+          <label class="ai-dropzone" id="aiDropzone" for="aiFileInput" style="margin-top:12px">
             <input type="file" id="aiFileInput" multiple hidden
               accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
               onchange="handleAIFileInput(this)">
             <span class="ai-dropzone-icon">${ICON.upload}</span>
             <span class="ai-dropzone-title">拖入文件，或点击选择</span>
-            <span class="ai-dropzone-hint">支持多选 · 笔记和真题可以一起传 · 单文件 ≤ 30MB · 扫描版 PDF 需先 OCR</span>
           </label>
           <div class="ai-file-list" id="aiFileList"></div>
           <div class="ai-file-summary" id="aiFileSummary"></div>
+          <div id="aiSourceGate"></div>
           <button type="button" class="ai-paste-toggle" id="aiPasteToggle" onclick="toggleAIPaste()">没有文件？直接粘贴文字</button>
           <div id="aiPasteWrap" hidden>
             <div class="ai-paste-kind" id="aiPasteKindWrap" hidden>
@@ -3694,34 +6910,78 @@ function openAIModal(subjectId, materialIds) {
               </select>
             </div>
             <textarea class="form-textarea" id="aiMaterial" style="margin-top:10px;min-height:120px" placeholder="粘贴课堂笔记、教材段落、真题试卷……" oninput="refreshAIState()"></textarea>
-            <p class="text-sm text-muted" style="margin:5px 0 0">粘贴的文字会和上传的资料一起使用。</p>
           </div>
         </section>
 
-        <section class="ai-step">
-          <div class="ai-step-head">
-            <span class="ai-step-num">2</span>
-            <span>处理方式</span>
+        <section class="wiz-layer" id="aiLayer2"${aiStep === 2 ? '' : ' hidden'}>
+          <div class="wiz-head">
+            <span class="wiz-title">保存位置</span>
           </div>
-          <div class="ai-mode" id="aiModeGroup" role="group" aria-label="处理方式">
+          <div class="ai-mode" role="group" aria-label="保存位置">
+            <button type="button" class="ai-mode-btn${aiDest === 'existing' ? ' active' : ''}" data-dest="existing" onclick="setAIDest('existing')">
+              <span class="ai-mode-title">已有练习科目</span>
+            </button>
+            <button type="button" class="ai-mode-btn${aiDest === 'new' ? ' active' : ''}" data-dest="new" onclick="setAIDest('new')">
+              <span class="ai-mode-title">新增练习科目</span>
+            </button>
+          </div>
+
+          <div id="aiDestExisting"${aiDest === 'new' ? ' hidden' : ''}>
+            <div class="wiz-field" style="margin-top:16px">
+              <label class="form-label" for="aiSubjectSelect">保存到</label>
+              <select class="form-select" id="aiSubjectSelect" onchange="onAISubjectChange(this.value)">${renderAISubjectOptions()}</select>
+              <span class="wiz-help" id="aiDestHelp">—</span>
+            </div>
+          </div>
+
+          <div id="aiDestNew"${aiDest === 'new' ? '' : ' hidden'}>
+            <div class="wiz-grid" style="margin-top:16px">
+              <div class="wiz-field wiz-span">
+                <label class="form-label" for="aiNewSubjectName">练习科目名称</label>
+                <input class="form-input" id="aiNewSubjectName" maxlength="40" placeholder="例如：导游业务、考研英语" oninput="syncAILayerState()">
+              </div>
+              <div class="wiz-field">
+                <label class="form-label" for="aiNewExamName">目标考试</label>
+                <input class="form-input" id="aiNewExamName" maxlength="100" placeholder="选填">
+              </div>
+              <div class="wiz-field">
+                <label class="form-label" for="aiNewExamDate">考试日期</label>
+                <input class="form-input" type="date" id="aiNewExamDate">
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="wiz-layer" id="aiLayer3"${aiStep === 3 ? '' : ' hidden'}>
+          <div class="wiz-head">
+            <span class="wiz-title">处理方式</span>
+          </div>
+          <div class="ai-mode" id="aiModeGroup" role="group" aria-label="出题方式">
             <button type="button" class="ai-mode-btn active" data-mode="generate" onclick="setAIMode('generate')">
               <span class="ai-mode-title">根据资料出题</span>
-              <span class="ai-mode-desc">笔记、教材 → 生成新题</span>
             </button>
             <button type="button" class="ai-mode-btn" data-mode="exam" onclick="setAIMode('exam')">
               <span class="ai-mode-title">原样整理真题</span>
-              <span class="ai-mode-desc">试卷、题库 → 全部保留</span>
             </button>
           </div>
           <div class="ai-group-summary" id="aiGroupSummary" hidden></div>
           <button type="button" class="ai-mode-hint" id="aiModeHint" hidden onclick="setAIMode('exam')">检测到试卷格式，点这里改为原样整理，题目全部保留 →</button>
+
+          <div class="ai-focus-card" id="aiFocusCard">
+            <label class="ai-focus-toggle">
+              <input type="checkbox" id="aiFocusOn" onchange="toggleAIFocus(this.checked)">
+              <span class="ai-focus-title">聚焦考点</span>
+            </label>
+            <input class="form-input" id="aiFocusTopic" maxlength="400" placeholder="例如：导游语言技巧、定语从句" oninput="refreshAIState()" hidden>
+          </div>
+
           <div class="ai-count-card" id="aiCountCard">
             <div class="ai-count-head">
               <span class="ai-count-label">题目数量</span>
               <span class="ai-count-value" id="aiCountValue">—</span>
             </div>
             <input type="range" class="ai-range" id="aiCount" min="3" max="40" value="8" step="1" disabled oninput="onAICountInput()">
-            <div class="ai-count-hint" id="aiCountHint">上传资料后，会按资料篇幅自动推荐题量</div>
+            <div class="ai-count-hint" id="aiCountHint"></div>
           </div>
           <div id="aiTypesWrap">
             <div class="form-group" style="margin-bottom:0">
@@ -3739,11 +6999,17 @@ function openAIModal(subjectId, materialIds) {
                 <option value="javascript">JavaScript</option>
               </select>
             </div>
-            <p class="text-sm text-muted" style="margin:8px 0 0">混合题型包含单选、多选、判断、填空；只有编程类资料才需要选择「含编程题」。</p>
           </div>
           <div class="ai-exam-note" id="aiExamNote" hidden>
             <b id="aiExamEstimate">将全部整理</b>
-            <span id="aiExamNoteText">题干、选项和答案按原文保留，不改写、不删减；原文没有答案时会给出参考答案。</span>
+          </div>
+
+          <div class="ai-review">
+            <div class="ai-note">
+              <span class="ai-note-dot"></span>
+              <span id="aiReviewTitle">根据资料出题</span>
+            </div>
+            <div class="wiz-summary" id="aiReviewSummary"></div>
           </div>
           <details class="ai-preview" id="aiPreview" hidden>
             <summary>查看提取的文字<span id="aiPreviewCount"></span></summary>
@@ -3753,20 +7019,18 @@ function openAIModal(subjectId, materialIds) {
       </div>
       <div id="aiRunWrap" hidden></div>
     </div>
-    <div class="modal-footer" id="aiModalFooter">
-      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">生成题目</button>
-    </div>`, 'modal-wide');
+    <div class="modal-footer" id="aiModalFooter"></div>`, 'modal-wide');
   bindAIDropzone();
   setAIMode(aiMode);
   renderAIFileList();
   renderAILibrary();
+  showAILayer();
   refreshAIState();
 }
 
 function renderAISubjectOptions() {
   const list = [...allSubjects(), INBOX_SUBJECT];
-  return list.map((s) => `<option value="${s.id}" ${s.id === aiSubjectId ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  return list.map((s) => `<option value="${s.id}" ${s.id === aiSubjectId ? 'selected' : ''} data-no-i18n>${esc(s.name)}</option>`).join('');
 }
 
 function addMaterialsToAI(ids) {
@@ -3805,7 +7069,6 @@ function renderAILibrary() {
   wrap.innerHTML = `
     <div class="ai-library-head">
       <span>「${esc(subject.name)}」已有资料</span>
-      <span class="text-sm text-muted">勾选后直接参与出题</span>
     </div>
     <div class="ai-library-list">
       ${list.map((m) => {
@@ -3813,7 +7076,7 @@ function renderAILibrary() {
         return `<label class="ai-library-item${checked ? ' checked' : ''}">
           <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleLibraryMaterial('${m.id}', this.checked)">
           <span class="ai-library-main">
-            <span class="ai-library-name">${esc(m.name)}</span>
+            <span class="ai-library-name" data-no-i18n>${esc(m.name)}</span>
             <span class="ai-library-meta">${materialKindLabel(m.kind)} · ${m.chars.toLocaleString('zh-CN')} 字</span>
           </span>
         </label>`;
@@ -3833,35 +7096,50 @@ function onAISubjectChange(value) {
   const subject = subjectById(value);
   if (!subject) return;
   aiSubjectId = subject.id;
-  // 换学科时只移除来自旧学科资料库的条目，本次上传的文件保留
+  // 换练习科目时只移除来自旧练习科目资料库的条目，本次上传的文件保留
   aiPieces = aiPieces.filter((p) => !p.fromMaterial);
   renderAILibrary();
   renderAIFileList();
   refreshAIState();
 }
 
-function toggleNewSubjectInline() {
-  const wrap = document.getElementById('aiNewSubjectWrap');
-  if (!wrap) return;
-  wrap.hidden = !wrap.hidden;
-  if (!wrap.hidden) document.getElementById('aiNewSubjectName')?.focus();
+function setAIDest(kind) {
+  aiDest = kind === 'new' ? 'new' : 'existing';
+  document.querySelectorAll('[data-dest]').forEach((b) => {
+    const on = b.dataset.dest === aiDest;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const existing = document.getElementById('aiDestExisting');
+  const fresh = document.getElementById('aiDestNew');
+  if (existing) existing.hidden = aiDest !== 'existing';
+  if (fresh) {
+    fresh.hidden = aiDest !== 'new';
+    if (aiDest === 'new') document.getElementById('aiNewSubjectName')?.focus();
+  }
+  syncAILayerState();
 }
 
-function createSubjectInline() {
-  const input = document.getElementById('aiNewSubjectName');
-  const subject = createSubject(input ? input.value : '');
-  if (!subject) { if (input) input.focus(); return; }
-  aiSubjectId = subject.id;
-  const select = document.getElementById('aiSubjectSelect');
-  if (select) select.innerHTML = renderAISubjectOptions();
-  const wrap = document.getElementById('aiNewSubjectWrap');
-  if (wrap) wrap.hidden = true;
-  if (input) input.value = '';
-  renderAILibrary();
-  toast(`已切换到「${subject.name}」`, 'success');
+function toggleAIFocus(on) {
+  aiFocus = !!on && aiMode !== 'exam';
+  const box = document.getElementById('aiFocusOn');
+  if (box) box.checked = aiFocus;
+  refreshAIState();
 }
 
-// 上传解析成功后自动归档到当前学科：同名同大小视为已有
+// 去掉控制字符，考点名最长按联动协议的 topic 上限处理
+function cleanFocusText(v) {
+  return String(v || '').replace(/[\x00-\x1f\x7f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, PLAN_PARAM_LIMITS.topic);
+}
+
+// 聚焦考点的文字：备考规划带过来的考点优先，其次才是手填的
+function aiFocusText() {
+  const link = captureFocusLink();
+  if (link) return link.topic;
+  return cleanFocusText(nsField('aiFocusTopic'));
+}
+
+// 上传解析成功后自动归档到当前练习科目：同名同大小视为已有
 async function autoStoreAIPiece(piece) {
   if (!piece || piece.fromMaterial || !piece.text || materialsUnavailable) return;
   const subjectId = aiSubjectId || 'sub-inbox';
@@ -3889,6 +7167,8 @@ async function autoStoreAIPiece(piece) {
     materials.unshift(saved);
     piece.materialId = saved.id;
     piece.savedTo = subjectId;
+    // 这一轮新建的资料：之后如果「保存位置」改成新练习科目，就把它挪过去
+    piece.sessionStored = true;
   } catch (e) {
     // 资料库写入失败不阻断出题，只是这次文件不会留档
     piece.saveFailed = true;
@@ -3940,7 +7220,8 @@ function onAICountInput() {
 
 function setAIMode(mode) {
   aiMode = mode === 'exam' ? 'exam' : 'generate';
-  document.querySelectorAll('.ai-mode-btn').forEach((b) => {
+  if (aiMode === 'exam') aiFocus = false;
+  document.querySelectorAll('.ai-mode-btn[data-mode]').forEach((b) => {
     const on = b.dataset.mode === aiMode;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -3958,8 +7239,7 @@ function refreshAIState() {
   const { hasFiles, hasNotes, hasExams, mixed } = groups;
   const noteChars = aiVisibleChars(groups.noteText);
   const examChars = aiVisibleChars(groups.examText);
-  const noteOversize = groups.noteText.length > 24000;
-  const examOversize = groups.examText.length > 48000;
+  const noteOversize = groups.noteText.length > AI_NOTE_MAX_CHARS;
   const ready = (hasNotes || hasExams)
     && (!hasNotes || noteChars >= 50)
     && (!hasExams || examChars >= 50);
@@ -3968,6 +7248,39 @@ function refreshAIState() {
   if (modeGroup) modeGroup.hidden = hasFiles;
   const pasteKindWrap = document.getElementById('aiPasteKindWrap');
   if (pasteKindWrap) pasteKindWrap.hidden = !hasFiles;
+
+  // 保存位置这一层的上下文：目标练习科目现在有什么
+  const destSubject = subjectById(aiSubjectId) || INBOX_SUBJECT;
+  const destHelp = document.getElementById('aiDestHelp');
+  if (destHelp) {
+    const destSets = subjectSets(destSubject.id).length;
+    const destMats = subjectMaterials(destSubject.id).length;
+    destHelp.textContent = destSets || destMats
+      ? `「${destSubject.name}」已有 ${destSets} 个练习集 · ${destMats} 份资料`
+      : `「${destSubject.name}」还是空的`;
+  }
+
+  // 聚焦考点：真题整理是原样保留，不能同时只练一个考点
+  const focusCard = document.getElementById('aiFocusCard');
+  const focusBox = document.getElementById('aiFocusOn');
+  const focusInput = document.getElementById('aiFocusTopic');
+  const link = captureFocusLink();
+  if (focusCard) focusCard.classList.toggle('is-off', hasExams && !hasNotes);
+  if (focusBox) {
+    const focusOff = aiParseBusy || (hasExams && !hasNotes);
+    if (focusOff) aiFocus = false;
+    focusBox.disabled = focusOff;
+    focusBox.checked = aiFocus;
+  }
+  if (focusInput) {
+    focusInput.hidden = !aiFocus;
+    if (link) {
+      focusInput.value = link.topic;
+      focusInput.disabled = true;
+    } else {
+      focusInput.disabled = false;
+    }
+  }
 
   const countCard = document.getElementById('aiCountCard');
   const typesWrap = document.getElementById('aiTypesWrap');
@@ -3978,13 +7291,16 @@ function refreshAIState() {
 
   if (hasNotes) {
     const { min, max, rec } = aiCountRange(noteChars);
+    // 练习科目的「默认题量」优先于按篇幅推荐，但仍在资料能支撑的区间内
+    const subj = subjectById(aiSubjectId);
+    const pref = subj && subj.defaultCount ? Math.max(min, Math.min(max, subj.defaultCount)) : rec;
     range.min = String(min);
     range.max = String(max);
     range.disabled = !ready || noteOversize;
     if (noteChars >= 50) {
       const current = Number(range.value) || 0;
       if (!range.dataset.touched || current < min || current > max || current === aiLastRecommended) {
-        range.value = String(rec);
+        range.value = String(pref);
       }
       aiLastRecommended = rec;
     } else {
@@ -3992,16 +7308,18 @@ function refreshAIState() {
       aiLastRecommended = 0;
     }
 
-    valueEl.innerHTML = noteChars >= 50 ? `${range.value}<small>题</small>` : '—';
+    valueEl.innerHTML = noteChars >= 50 && !noteOversize ? `${range.value}<small>题</small>` : '—';
     if (aiParseBusy && !noteChars) {
       hintEl.textContent = '正在解析资料…';
     } else if (noteOversize) {
-      hintEl.textContent = `笔记资料 ${groups.noteText.length.toLocaleString()} 字，超过 24,000 字，请拆分后再上传`;
-    } else if (noteChars < 50) {
-      hintEl.textContent = '上传资料后，会按资料篇幅自动推荐题量';
-    } else {
+      // 超过单次上限由 gate 那一行统一说明，这里不再重复一遍，也不给一个假数字
+      hintEl.textContent = '';
+    } else if (noteChars >= 50) {
       const examTail = hasExams ? '；真题部分全部保留，不计入此数量' : '';
-      hintEl.textContent = `${noteChars.toLocaleString()} 字笔记 · 建议 ${rec} 题，可调 ${min}–${max}${examTail}`;
+      const from = pref === rec ? `按篇幅建议 ${rec} 题` : `用练习科目默认 ${pref} 题（按篇幅建议 ${rec}）`;
+      hintEl.textContent = `${noteChars.toLocaleString()} 字资料 · ${from}，可调 ${min}–${max}${examTail}`;
+    } else {
+      hintEl.textContent = '';
     }
   } else {
     range.disabled = true;
@@ -4014,15 +7332,7 @@ function refreshAIState() {
     if (estEl) {
       estEl.textContent = aiParseBusy && !examChars ? '正在解析资料…' : (!examChars ? '等待资料' : (est > 0 ? `识别到约 ${est} 道题` : '将全部整理'));
     }
-    const noteText = document.getElementById('aiExamNoteText');
-    if (noteText) {
-      noteText.textContent = examOversize
-        ? '真题资料超过 48,000 字，请拆分后再整理，避免漏题。'
-        : mixed
-          ? '真题部分按原文逐题保留；笔记部分另出新题。较长试卷会自动分段并行整理。'
-          : '题干、选项和答案按原文保留，不改写、不删减；较长试卷会自动分段并行整理，速度更快。';
-    }
-    if (examNote) examNote.classList.toggle('is-warn', examOversize);
+    if (examNote) examNote.classList.toggle('is-warn', !!aiLimitBreach(groups));
   }
 
   const summary = document.getElementById('aiGroupSummary');
@@ -4039,7 +7349,6 @@ function refreshAIState() {
         <div class="ai-group-actions">
           <button type="button" onclick="setAllAIFileKinds('note')">全部按笔记</button>
           <button type="button" onclick="setAllAIFileKinds('exam')">全部按真题</button>
-          <span>点文件名右侧的标签可单独切换</span>
         </div>`;
     }
   }
@@ -4061,21 +7370,18 @@ function refreshAIState() {
       : (groups.examText || groups.noteText);
     preview.hidden = !ready;
     if (ready) {
-      previewText.textContent = previewBody.slice(0, 48000);
+      previewText.textContent = previewBody.slice(0, AI_PREVIEW_MAX_CHARS);
       if (previewCount) previewCount.textContent = `（${(noteChars + examChars).toLocaleString()} 字）`;
     }
   }
 
-  const oversize = noteOversize || examOversize;
   const btn = document.getElementById('aiGenerateBtn');
   if (btn) {
-    btn.disabled = !ready || aiParseBusy || oversize;
-    btn.textContent = mixed
-      ? (oversize ? '资料超长，请拆分' : '开始整理')
-      : hasExams
-        ? (examOversize ? '请先拆分资料' : '整理全部真题')
-        : '生成题目';
+    // 超长只让按钮 disable，原因写在上面的 gate 那一行；按钮标签不再兼职当错误提示
+    btn.disabled = !ready || aiParseBusy || !!aiLimitBreach(groups);
+    btn.textContent = mixed ? '开始整理' : (hasExams ? '整理全部真题' : '生成题目');
   }
+  syncAILayerState();
 }
 
 function renderAIFileList() {
@@ -4103,7 +7409,7 @@ function renderAIFileList() {
       return `<div class="ai-file">
         <span class="ai-file-type ${kind}">${esc(label)}</span>
         <div class="ai-file-main">
-          <div class="ai-file-name" title="${esc(p.name)}">${esc(p.name)}</div>
+          <div class="ai-file-name" data-no-i18n title="${esc(p.name)}">${esc(p.name)}</div>
           <div class="ai-file-meta">${meta}</div>
         </div>
         ${kindTag}
@@ -4170,7 +7476,6 @@ function onAITypesChange() {
   if (types && group) group.style.display = types.value === 'with-code' ? '' : 'none';
 }
 
-const MATERIAL_LIMIT = 24000;
 const scriptCache = {};
 let pdfjsPromise = null;
 
@@ -4246,7 +7551,8 @@ async function parsePDF(file) {
     } else {
       emptyPages++;
     }
-    if (collected > MATERIAL_LIMIT * 4) break;
+    // 停手线就是这一轮能被接受的最大量：在触达上限前不去截断正文
+    if (collected > AI_BATCH_TOTAL_MAX_CHARS) break;
   }
 
   await doc.destroy().catch(() => {});
@@ -4341,7 +7647,7 @@ async function parseDOCX(file) {
 let docTextPromise = null;
 function loadDocText() {
   if (!docTextPromise) {
-    docTextPromise = import('./doc-text.js?v=53').catch((e) => {
+    docTextPromise = import('./doc-text.js?v=54').catch((e) => {
       docTextPromise = null;
       throw e;
     });
@@ -4506,10 +7812,9 @@ async function handleAIFileInput(input) {
 }
 
 async function handleAIFiles(files) {
-  const MAX_FILES = 8;
   for (const file of files) {
-    if (aiPieces.length >= MAX_FILES) {
-      toast(`最多一次添加 ${MAX_FILES} 个文件`, 'info');
+    if (aiPieces.length >= AI_MAX_FILES) {
+      toast(`一次最多 ${AI_MAX_FILES} 份资料，剩下的拆成下一轮`, 'info');
       break;
     }
     if (file.size > 30 * 1024 * 1024) {
@@ -4575,33 +7880,27 @@ async function parseAIQueue() {
 
 async function generateQuestions() {
   if (aiParseBusy) { toast('资料还在解析中，请稍候', 'info'); return; }
+  if (!commitAISubject()) return;
   const groups = collectAIGroups();
   const mixed = groups.mixed;
   const runMode = mixed ? 'batch' : (groups.hasExams ? 'exam' : 'generate');
   const noteChars = aiVisibleChars(groups.noteText);
   const examChars = aiVisibleChars(groups.examText);
 
-  if (mixed) {
-    if (groups.noteText.length > 24000) {
-      toast('笔记资料超过 24,000 字，请拆分后再上传', 'error', 5000);
-      return;
-    }
-    if (groups.examText.length > 48000) {
-      toast('真题资料超过 48,000 字，请拆分后再上传，避免漏题', 'error', 5000);
-      return;
-    }
-    if (noteChars < 50 || examChars < 50) {
-      toast('笔记和真题都需要至少 50 字才能一起整理', 'info');
-      return;
-    }
-  } else if (runMode === 'exam' && groups.examText.length > 48000) {
-    toast('真题资料超过 48,000 字，请拆分后再整理，避免漏题', 'error', 5000);
+  const breach = aiLimitBreach(groups);
+  if (breach) {
+    toast(`${breach.label} ${breach.chars.toLocaleString()} 字，超过单次上限 ${breach.cap.toLocaleString()} 字，请拆成两轮上传`, 'error', 5000);
+    return;
+  }
+  if (mixed && (noteChars < 50 || examChars < 50)) {
+    toast('笔记和真题都需要至少 50 字才能一起整理', 'info');
     return;
   }
 
+  // 上限已在上面拦过一次，这里的截断只是最后一道保险，不留半句话
   const material = runMode === 'exam'
-    ? groups.examText.slice(0, 48000).trim()
-    : groups.noteText.slice(0, 24000).trim();
+    ? groups.examText.slice(0, AI_EXAM_MAX_CHARS).trim()
+    : groups.noteText.slice(0, AI_NOTE_MAX_CHARS).trim();
   if (!mixed && aiVisibleChars(material) < 50) {
     toast('请先上传资料或粘贴文字（至少 50 字）', 'info');
     return;
@@ -4614,17 +7913,25 @@ async function generateQuestions() {
   const types = groups.hasNotes ? document.getElementById('aiTypes').value : 'mixed';
   const codeLanguage = groups.hasNotes && types === 'with-code' ? document.getElementById('aiCodeLang').value : null;
   const estimate = groups.hasExams ? aiEstimateQuestions(groups.examText) : 0;
+  // 冻结联动快照：真题整理模式绝不为了联动改写或强行归类原题，所以只有出题/笔记段带 focusTopic
+  const wantFocus = aiFocus && runMode !== 'exam';
+  const focusLink = wantFocus ? captureFocusLink() : null;
+  const focusTopic = wantFocus ? cleanFocusText(aiFocusText()) : '';
 
   state.genPreview = null;
+  aiStartBreach = { sig: '', line: '' };
+  aiStep = 3;
+  const rail = document.getElementById('aiRail');
   const form = document.getElementById('aiFormWrap');
   const run = document.getElementById('aiRunWrap');
   const footer = document.getElementById('aiModalFooter');
   const errBox = document.getElementById('aiErrorBox');
   if (errBox) errBox.hidden = true;
+  if (rail) renderAIRail();
   if (form) form.hidden = true;
   if (run) {
     run.hidden = false;
-    const title = mixed ? 'Qoder AI 正在整理笔记和真题…' : (runMode === 'exam' ? 'Qoder AI 正在整理真题…' : 'Qoder AI 正在出题…');
+    const title = mixed ? '正在整理笔记和真题…' : (runMode === 'exam' ? '正在整理真题…' : '正在生成题目…');
     const sub = mixed
       ? `笔记生成 ${count} 题 · 真题${estimate > 0 ? `约 ${estimate} 题` : ''}全部原样保留`
       : runMode === 'exam'
@@ -4639,109 +7946,72 @@ async function generateQuestions() {
   if (footer) footer.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">取消</button><button class="btn btn-primary" disabled>${runMode === 'generate' ? '生成中…' : '整理中…'}</button>`;
 
   const controller = new AbortController();
-  const deadline = runMode === 'generate' ? AI_POLL_DEADLINE_MS : AI_EXAM_DEADLINE_MS;
-  const timer = setTimeout(() => controller.abort(), deadline + 10000);
+  // 拿到批次清单之前先按兜底时限中止；拿到之后按批数重算（见下方 runDeadline）
+  let runDeadline = AI_RUN_BASE_DEADLINE_MS;
+  let timer = setTimeout(() => controller.abort(), runDeadline + 10000);
 
   const payload = mixed
-    ? { mode: 'batch', documents: groups.docs, count, types, codeLanguage }
-    : { material, count, types, codeLanguage, mode: runMode };
+    ? { mode: 'batch', documents: groups.docs, count, types, codeLanguage, ...(focusTopic ? { focusTopic } : {}) }
+    : { material, count, types, codeLanguage, mode: runMode, ...(focusTopic ? { focusTopic } : {}) };
 
   try {
-    const startData = await startAISession(payload, controller.signal, (n) => {
+    const startData = await startAIBatches(payload, controller.signal, (n) => {
       const sub = run && run.querySelector('.ai-generating-sub');
       if (sub) sub.textContent = `服务正在更新，自动重连中（第 ${n} 次）…`;
     });
-    const sessionId = startData.sessionId;
     const defaultGroup = runMode === 'exam' ? 'exam' : 'note';
-    const parts = Array.isArray(startData.sessions) && startData.sessions.length
-      ? startData.sessions
-          .map((item, i) => ({
-            id: String((item && item.id) || ''),
-            index: Number(item && item.index) || i,
-            group: item && item.group === 'exam' ? 'exam' : (item && item.group === 'note' ? 'note' : defaultGroup),
-            label: String((item && item.label) || ''),
-            expected: Number(item && item.expected) || 0
-          }))
-          .filter((item) => item.id)
-          .sort((a, b) => a.index - b.index)
-          .map((item) => ({ id: item.id, group: item.group, label: item.label, expected: item.expected, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }))
-      : [{ id: sessionId, group: defaultGroup, label: '', expected: 0, set: null, running: false, idle: false, badOutput: 0, netErrors: 0 }];
+    // 一批只由序号标识：函数不保存任务状态，浏览器要做的就是把同一份请求体按序号发出去
+    const parts = (Array.isArray(startData.sessions) ? startData.sessions : [])
+      .map((item, i) => ({
+        index: Number.isFinite(Number(item && item.index)) ? Number(item.index) : i,
+        group: item && item.group === 'exam' ? 'exam' : defaultGroup,
+        label: String((item && item.label) || ''),
+        expected: Number(item && item.expected) || 0,
+        set: null
+      }))
+      .sort((a, b) => a.index - b.index);
     const totalParts = parts.length;
+    // 批数决定时间预算：3 路并发、每批最多占 46 秒，再加一轮重试和网络余量。
+    // 资料多→批次多，预算跟着涨，不会把正常的第一轮长任务掐掉。
+    runDeadline = Math.max(
+      AI_RUN_BASE_DEADLINE_MS,
+      Math.ceil(totalParts / AI_SYNC_CONCURRENCY) * AI_SYNC_BATCH_BUDGET_MS + AI_SYNC_DEADLINE_SLACK_MS
+    );
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), runDeadline + 10000);
 
-    // 站点网关对单个请求约 45 秒超时，所以由浏览器轮询出题进度；多段时并行轮询
     const startedAt = Date.now();
-    let set = null;
-    while (!set) {
-      if (Date.now() - startedAt > deadline) {
-        throw new Error(runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量' : '整理超时了，请拆分资料后重试');
-      }
-      await new Promise((resolve) => setTimeout(resolve, AI_POLL_INTERVAL_MS));
+    // 批数一定下来就把「约需多少时间」换成真实进度，别让旧估计陪用户等第一轮
+    updateAIGenerating(run, count, startedAt, 0, totalParts, runMode, parts);
+    // 合并已在浏览器里定稿的段：知识点重编号后必须重新验证目标考点与题目映射
+    const mergeDoneParts = () => {
+      const doneParts = parts.filter((part) => part.set);
+      const merged = mergeGeneratedSets(doneParts.map((part) => part.set), doneParts);
+      merged.subjectId = subjectById(aiSubjectId) ? aiSubjectId : 'sub-inbox';
+      merged.origin = runMode;
+      merged.focusTopic = focusTopic || '';
+      attachCoverage(merged, doneParts);
+      attachGeneratedSource(merged, focusLink);
+      return merged;
+    };
 
-      const results = await Promise.all(parts.filter((part) => !part.set).map(async (part) => {
-        try {
-          const res = await fetch('/functions/v1/app/ai/poll', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: part.id }),
-            signal: controller.signal
-          });
-          const data = await res.json().catch(() => null);
-          return { part, res, data };
-        } catch (e) {
-          if (e && e.name === 'AbortError') throw e;
-          return { part, res: null, data: null };
-        }
-      }));
-
-      let failure = null;
-      for (const { part, res, data } of results) {
-        const partNo = part.label || (totalParts > 1 ? `第 ${parts.indexOf(part) + 1} 段` : '');
-        // 网络抖动、网关 5xx、部署窗口的 HTML 响应：连续多次才判定失败，能撑过发布时的后端重启
-        if (!res || !data || res.status >= 500) {
-          part.netErrors = (part.netErrors || 0) + 1;
-          if (part.netErrors < 20) continue;
-          failure = failure || (res ? aiErrorText(res.status, data) : '网络连接中断，请检查网络后再试');
-          continue;
-        }
-        part.netErrors = 0;
-        if (!res.ok) {
-          const code = data && data.error && data.error.code;
-          const message = data && data.error && data.error.message;
-          if (code === 'ai_bad_output' && part.badOutput < 2) {
-            part.badOutput += 1;
-            continue;
-          }
-          failure = failure || (partNo && message ? `${partNo}失败：${message}` : aiErrorText(res.status, data));
-          continue;
-        }
-        if (data.done && data.set) {
-          if (!part.set) part.set = normalizeSet(data.set);
-          continue;
-        }
-        for (const status of data.statuses || []) {
-          if (!status || typeof status.type !== 'string') continue;
-          if (status.type === 'session.status_running') part.running = true;
-          if (status.type === 'session.status_idle') part.idle = true;
-        }
-        // 新会话可能先发一次 idle，等运行状态出现或过了 8 秒才当成真正的结束
-        if (part.idle && !part.set && (part.running || Date.now() - startedAt > 8000)) {
-          const errors = Array.isArray(data.errors) && data.errors.length;
-          failure = failure || (partNo
-            ? `${partNo}没有返回题目，请重试`
-            : (errors ? 'AI 本次没有生成内容，请重试' : 'AI 没有返回题目，请重试'));
-        }
+    // 3 路并发把每批题目拉回来。某一批失败只少这一批的题，
+    // 其余批次照常入库，比整次生成失败重来划算。
+    const failures = [];
+    await mapLimit(parts, AI_SYNC_CONCURRENCY, async (part) => {
+      try {
+        const data = await requestAISyncJob(payload, part.index, controller.signal);
+        if (data && data.set) part.set = normalizeSet(data.set);
+      } catch (error) {
+        if (error && error.name === 'AbortError') throw error;
+        failures.push((error && error.message) || '这一批没有生成成功');
       }
-      if (failure) throw new Error(failure);
-
-      const doneParts = parts.filter((part) => part.set).length;
-      if (doneParts === totalParts) {
-        set = mergeGeneratedSets(parts.map((part) => part.set), parts);
-        set.subjectId = subjectById(aiSubjectId) ? aiSubjectId : 'sub-inbox';
-        attachCoverage(set, parts);
-        break;
-      }
-      updateAIGenerating(run, count, startedAt, doneParts, totalParts, runMode, parts);
+      updateAIGenerating(run, count, startedAt, parts.filter((item) => item.set).length, totalParts, runMode, parts);
+    });
+    if (!parts.some((part) => part.set)) {
+      throw new Error(failures[0] || 'AI 没有返回题目，请重试');
     }
+    const set = mergeDoneParts();
     state.genPreview = set;
 
     const examQuestions = parts.filter((part) => part.group === 'exam' && part.set)
@@ -4757,22 +8027,28 @@ async function generateQuestions() {
       run.innerHTML = `
         <div class="ai-generate-area" style="margin-bottom:0">
           <h3>${runMode === 'generate' ? '生成成功' : '整理完成'}</h3>
-          <p>${esc(set.name)}</p>
+          <p data-no-i18n>${esc(set.name)}</p>
         </div>
         <div class="text-sm" style="line-height:1.8">
           <div>题目数：<b>${set.questions.length}</b>${sourceNote}</div>
           <div>知识点：<b>${set.knowledgePoints.length}</b></div>
+          ${renderFocusAttribution(set, focusLink)}
           <div style="margin-top:6px">题型：${Object.entries(set.questions.reduce((m, q) => (m[q.type] = (m[q.type] || 0) + 1, m), {})).map(([t, n]) => `<span class="badge ${TYPE_CLASS[t] || 'badge-muted'}">${TYPE_LABEL[t] || t} × ${n}</span>`).join(' ')}</div>
         </div>
         ${renderQuality(set)}`;
     }
     if (footer) footer.innerHTML = `
       <button class="btn btn-secondary" onclick="closeModal()">放弃</button>
-      <button class="btn btn-primary" onclick="importGenerated()">保存题库</button>`;
+      <button class="btn btn-primary" onclick="importGenerated()">保存练习集</button>`;
   } catch (e) {
     const message = e && e.name === 'AbortError'
       ? (runMode === 'generate' ? '生成超时了，请稍后重试，或减少题量、缩短资料' : '整理超时了，请拆分资料后重试')
       : (e && e.message) || '请检查网络后重试';
+    // 函数说「这一轮装不下」：把那句原话挂回 gate，并记住是哪一组资料说的，
+    // 资料一变这句话就失效，不会出现「已经删掉了还在喊超长」。
+    if (/超过单轮|拆成两轮/.test(message)) {
+      aiStartBreach = { sig: aiGroupsSignature(groups), line: message };
+    }
     if (run) run.hidden = true;
     if (form) form.hidden = false;
     if (errBox) {
@@ -4783,8 +8059,10 @@ async function generateQuestions() {
       errBox.innerHTML = `<div class="feedback-title">${runMode === 'generate' ? '生成失败' : '整理失败'}</div><div>${esc(message)}</div>${previewHint}`;
     }
     if (footer) footer.innerHTML = `
-      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-ghost btn-sm" onclick="goAIStep(2)">← 上一步</button>
+      <span style="flex:1"></span>
       <button class="btn btn-primary" id="aiGenerateBtn" onclick="generateQuestions()">${runMode === 'generate' ? '重新生成' : '重新整理'}</button>`;
+    if (rail) renderAIRail();
     refreshAIState();
     toast(message, 'error', 4500);
   } finally {
@@ -4797,11 +8075,12 @@ let genSaving = false;
 function importGenerated() {
   if (!state.genPreview || genSaving) return;
   genSaving = true;
+  // 练习集与联动关系的关联只由 set.source.linkId 派生，不在 link 上另存一份 setIds
   customSets.push(state.genPreview);
   if (!saveJSON(STORAGE.sets, customSets)) {
     customSets.pop();
     genSaving = false;
-    toast('空间不足，题库没有保存。请先导出备份并清理不用的题库', 'error', 5000);
+    toast('空间不足，练习集没有保存。请先导出备份并清理不用的练习集', 'error', 5000);
     return;
   }
   const id = state.genPreview.id;
@@ -4809,13 +8088,48 @@ function importGenerated() {
   genSaving = false;
   state.genPreview = null;
   closeModal();
-  toast(`题库已保存到「${(subjectById(subjectId) || INBOX_SUBJECT).name}」`, 'success');
+  toast(`练习集已保存到「${(subjectById(subjectId) || INBOX_SUBJECT).name}」`, 'success');
   state.view = 'setDetail';
   state.setId = id;
   state.subjectId = subjectId;
   render();
   const body = $('.main-body');
   if (body) body.scrollTop = 0;
+}
+
+/* 后端就绪状态只取一次：判题与出题共用同一份 health，页面不再各自猜服务能不能用。
+   null 表示还没拿到（网络异常或静态预览），此时不拦操作，让真实请求自己报错。 */
+const JUDGE_OFF_TEXT = '代码判题尚未启用，编程题不计分。';
+const serviceStatus = { ai: null, judge: null };
+let serviceStatusPromise = null;
+
+function refreshServiceStatus() {
+  if (!serviceStatusPromise) {
+    serviceStatusPromise = fetch('/functions/v1/app/health')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        serviceStatus.ai = data && data.ai ? !!data.ai.configured : null;
+        serviceStatus.judge = data && data.judge ? !!data.judge.configured : null;
+        syncJudgeGate();
+      })
+      .catch(() => { serviceStatusPromise = null; });
+  }
+  return serviceStatusPromise;
+}
+
+function judgeGateHtml(hidden) {
+  return `<div class="ai-note ai-source-gate" data-judge-gate${hidden ? ' hidden' : ''}>
+      <span class="ai-note-dot"></span>
+      <span>${JUDGE_OFF_TEXT}</span>
+    </div>`;
+}
+
+// 状态回来时就地把运行按钮变灰、把原因贴出来，不整页重渲染打断正在写的代码
+function syncJudgeGate() {
+  const off = serviceStatus.judge === false;
+  const btn = document.getElementById('runCodeBtn');
+  if (btn) btn.disabled = off;
+  document.querySelectorAll('[data-judge-gate]').forEach((el) => { el.hidden = !off; });
 }
 
 async function judgeRun(language, source, stdin) {
@@ -4859,23 +8173,86 @@ function gradeObjective(q, ans) {
   return null;
 }
 
-function updateWrongBank(setId, qid, correct) {
-  if (correct) removeWrong(setId, qid);
-  else addWrong(setId, qid);
+/* —— 错题本写入：两种模式评分时都只走 updateWrongBank，条目状态由这里统一维护 —— */
+
+function saveWrongBank() {
+  return saveJSON(STORAGE.wrong, wrongBank);
 }
 
-function addWrong(setId, qid) {
-  if (!wrongBank[setId]) wrongBank[setId] = {};
-  wrongBank[setId][qid] = (wrongBank[setId][qid] || 0) + 1;
-  saveJSON(STORAGE.wrong, wrongBank);
+// 一次作答只记一次：断点恢复或重复交卷不会把「错 N 次」刷高
+function learningAttemptId(l) {
+  return `L${(Number(l && l.startedAt) || 0).toString(36)}`;
 }
 
-function removeWrong(setId, qid) {
-  if (wrongBank[setId] && wrongBank[setId][qid] != null) {
-    delete wrongBank[setId][qid];
-    if (!Object.keys(wrongBank[setId]).length) delete wrongBank[setId];
-    saveJSON(STORAGE.wrong, wrongBank);
+function recordWrong(setId, qid, meta) {
+  const opts = objOf(meta);
+  const sid = strOf(setId, 64);
+  const key = strOf(qid, 64);
+  if (!sid || !key) return false;
+  const attemptId = strOf(opts.attemptId, 64).trim();
+  const now = wrongStampOf(opts.at) || Date.now();
+  const map = wrongBank.bySet[sid] || (wrongBank.bySet[sid] = {});
+  const entry = map[key];
+  if (entry && entry.times && attemptId && entry.lastAttemptId === attemptId) return false;
+  if (entry && entry.times) {
+    entry.times = Math.min(999, entry.times + 1);
+    entry.status = 'open';
+    entry.firstWrongAt = entry.firstWrongAt || now;
+    entry.lastWrongAt = now;
+    if (attemptId) entry.lastAttemptId = attemptId;
+    if (!entry.kpId) entry.kpId = wrongKpIdOf(sid, key);
+  } else {
+    map[key] = {
+      times: 1,
+      status: 'open',
+      kpId: wrongKpIdOf(sid, key),
+      firstWrongAt: now,
+      lastWrongAt: now,
+      lastCorrectAt: null,
+      lastAttemptId: attemptId
+    };
   }
+  if (!opts.silent) saveWrongBank();
+  return true;
+}
+
+// 答对＝归档而不是删除：次数、首错时间都留在本子里，「重新列入」随时能把它放回待复习
+function archiveWrong(setId, qid, meta) {
+  const opts = objOf(meta);
+  const entry = objOf(objOf(wrongBank.bySet[strOf(setId, 64)])[strOf(qid, 64)]);
+  if (!entry || !entry.times) return false;
+  const attemptId = strOf(opts.attemptId, 64).trim();
+  if (entry.status === 'mastered' && (!attemptId || entry.lastAttemptId === attemptId)) return false;
+  entry.status = 'mastered';
+  entry.lastCorrectAt = wrongStampOf(opts.at) || Date.now();
+  if (attemptId) entry.lastAttemptId = attemptId;
+  if (!opts.silent) saveWrongBank();
+  return true;
+}
+
+function reopenWrong(setId, qid) {
+  const entry = objOf(objOf(wrongBank.bySet[strOf(setId, 64)])[strOf(qid, 64)]);
+  if (!entry || !entry.times || entry.status === 'open') return false;
+  entry.status = 'open';
+  entry.lastCorrectAt = null;
+  entry.lastAttemptId = '';
+  return saveWrongBank();
+}
+
+// 彻底移出错题本：只给「这道题我不想再在本子里看到」和删练习集/删题时用
+function dropWrong(setId, qid) {
+  const sid = strOf(setId, 64);
+  const map = objOf(wrongBank.bySet[sid]);
+  if (!Object.prototype.hasOwnProperty.call(map, strOf(qid, 64))) return false;
+  delete map[strOf(qid, 64)];
+  if (!Object.keys(map).length) delete wrongBank.bySet[sid];
+  return saveWrongBank();
+}
+
+function updateWrongBank(setId, qid, correct, meta) {
+  if (correct === true) return archiveWrong(setId, qid, meta);
+  if (correct === false) return recordWrong(setId, qid, meta);
+  return false; // 未评分（判题服务不可用）不动错题本
 }
 
 // 异步流程里的异常不阻断页面，只记录，避免用户看到白屏
@@ -4892,10 +8269,17 @@ window.addEventListener('pagehide', () => {
 });
 
 (async function boot() {
+  // 标签页名字里的一次性快照要最早取走并清空：它只在「刚从 Exam Plan 点过来」这件事上有意义
+  examHandoff = takeExamHandoff();
+  applySidebarPref();
   await loadMaterials();
   if (materialsUnavailable) bootNotes.push('当前浏览器无法打开本地资料库，上传的资料这次不会保留');
   loadResumeSessions();
   render();
+  // 判题/出题是否就绪只问一次，回来后就地更新代码题的门禁，不阻塞首屏
+  refreshServiceStatus();
+  // 联动入站要算考点钥匙（Web Crypto 异步），放在首屏渲染之后，不阻塞页面
+  await applyPlanDeepLink();
 
   if (bootNotes.length) {
     const notes = [...new Set(bootNotes)];
