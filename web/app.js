@@ -5298,7 +5298,7 @@ function renderExam() {
     <div class="question-container">
       <div class="exam-header">
         <div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:1px">${esc(examName)}</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:1px">${esc(examName)}</div>
           <div class="text-sm text-muted">已答 ${answeredCount} / ${total} 题</div>
         </div>
         <div class="timer" id="examTimer">--:--</div>
