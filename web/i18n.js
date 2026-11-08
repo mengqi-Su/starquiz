@@ -599,6 +599,9 @@ const EN = Object.assign({
   /* 新增练习科目向导 */
   '跳过资料': 'Skip materials',
   '新练习科目': 'new subject',
+  /* 步骤条容器的名字。窄屏下 .wiz-step-label 是 display:none，按钮的可见内容只剩序号，
+     所以每个按钮另外带 aria-label（就是下面那六个步骤名），读屏才不会念出一颗无名按钮。 */
+  '步骤': 'Steps',
 
   /* AI 出题弹窗：资料来源 / 保存位置 / 处理方式 */
   '资料来源': 'Material',
@@ -1220,6 +1223,10 @@ function walkText(root, fn, onlyHan) {
 function applyLang(root) {
   if (!root || !isEn()) return;
   walkText(root, translateNodeValue, true);
+  /* observer 送来的新增子树，根节点自己也要翻：querySelectorAll 只找后代，
+     漏掉根就会留下「按钮都英文了、装按钮的那层 aria-label 还是中文」这种半截翻译。
+     translateAttrs 翻完的值不含汉字，再进来一次也命中不了词典，不会自激。 */
+  if (root.nodeType === 1) translateAttrs(root);
   if (root.querySelectorAll) {
     for (const el of root.querySelectorAll(LANG_ATTRS.map((a) => `[${a}]`).join(','))) translateAttrs(el);
   }

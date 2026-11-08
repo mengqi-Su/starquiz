@@ -3443,7 +3443,12 @@ function nsExamInfo() {
 }
 
 function nsRail() {
-  return `<div class="wiz-steps" role="list">
+  /* 步骤条用原生 button：能 Tab 到、能 Enter/Space 按下，不必再手写 tabindex 与键盘分支（A11Y-04）。
+     走不到的步骤直接 disabled——它本来就没有动作，留在焦点序列里只是让人白按一次。
+     容器从 role="list" 改 role="group"：里面已经不是 listitem 而是按钮，列表语义会误导读屏。
+     aria-label 写步骤名而不是靠可见文字：窄屏 CSS 把 .wiz-step-label 藏了，已完成步骤的勾又是
+     aria-hidden，不显式给名字的话读屏在手机上念到的是一颗无名按钮。 */
+  return `<div class="wiz-steps" role="group" aria-label="步骤">
     ${NS_STEPS.map((label, i) => {
       const n = i + 1;
       const cls = n === nsDraft.step ? 'is-current' : (n < nsDraft.step ? 'is-done' : 'is-idle');
@@ -3452,10 +3457,10 @@ function nsRail() {
         : String(n);
       const clickable = n < nsDraft.step && !nsDraft.parsing;
       return `${i > 0 ? '<span class="wiz-gap" aria-hidden="true"></span>' : ''}
-        <div role="listitem" class="wiz-step ${cls}"${clickable ? ` onclick="nsGoTo(${n})"` : ''}${n === nsDraft.step ? ' aria-current="step"' : ''}>
+        <button type="button" class="wiz-step ${cls}" aria-label="${label}"${clickable ? ` onclick="nsGoTo(${n})"` : ' disabled'}${n === nsDraft.step ? ' aria-current="step"' : ''}>
           <span class="wiz-step-num">${inner}</span>
           <span class="wiz-step-label">${label}</span>
-        </div>`;
+        </button>`;
     }).join('')}
   </div>`;
 }
@@ -6715,7 +6720,8 @@ const AI_STEPS = ['资料来源', '保存位置', '处理方式'];
 let aiStep = 1;
 
 function aiRailHTML() {
-  return `<div class="wiz-steps" role="list">
+  /* 与 nsRail 同一套口径：原生 button + disabled + role="group"（A11Y-04） */
+  return `<div class="wiz-steps" role="group" aria-label="步骤">
     ${AI_STEPS.map((label, i) => {
       const n = i + 1;
       const cls = n === aiStep ? 'is-current' : (n < aiStep ? 'is-done' : 'is-idle');
@@ -6724,10 +6730,10 @@ function aiRailHTML() {
         : String(n);
       const clickable = n < aiStep && !aiParseBusy;
       return `${i > 0 ? '<span class="wiz-gap" aria-hidden="true"></span>' : ''}
-        <div role="listitem" class="wiz-step ${cls}"${clickable ? ` onclick="goAIStep(${n})"` : ''}${n === aiStep ? ' aria-current="step"' : ''}>
+        <button type="button" class="wiz-step ${cls}" aria-label="${label}"${clickable ? ` onclick="goAIStep(${n})"` : ' disabled'}${n === aiStep ? ' aria-current="step"' : ''}>
           <span class="wiz-step-num">${inner}</span>
           <span class="wiz-step-label">${label}</span>
-        </div>`;
+        </button>`;
     }).join('')}
   </div>`;
 }

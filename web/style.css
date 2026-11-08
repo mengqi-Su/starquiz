@@ -653,6 +653,14 @@ button.today-chip:hover { background: var(--surface-tint); border-color: var(--h
   box-shadow: 0 0 0 3px rgba(28, 27, 26, 0.06);
 }
 
+/* 上面那圈 3px 淡影是给鼠标的：它只有 6% 不透明度，键盘用户根本看不出焦点落在哪个框。
+   所以 outline:none 保留（压掉浏览器默认环），但键盘聚焦时自己画一条实心墨环。
+   offset 0 让环贴着边框外侧，不留缝也不占布局；清单 A11Y-04。 */
+.form-input:focus-visible, .form-select:focus-visible, .form-textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+}
+
 .form-textarea { resize: vertical; min-height: 84px; line-height: 1.6; }
 
 input[type="file"].form-input {
@@ -922,6 +930,8 @@ input[type="file"].form-input:active::file-selector-button {
 }
 
 .fill-input:focus { border-color: var(--brand); box-shadow: var(--shadow); }
+/* 同表单控件：鼠标看边框，键盘看实心环（A11Y-04） */
+.fill-input:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; }
 .fill-input.correct { border-color: var(--green); background: var(--mint-soft); }
 .fill-input.incorrect { border-color: var(--red); background: var(--coral-soft); }
 
@@ -1015,6 +1025,14 @@ input[type="file"].form-input:active::file-selector-button {
 }
 
 .code-editor::placeholder { color: color-mix(in srgb, var(--paper) 42%, var(--ink)); }
+
+/* 代码编辑器是全站唯一的深底控件，焦点环必须反过来用纸色，且往内画：
+   外层 .code-editor-wrapper 是 overflow:hidden，offset 正值的环会被裁掉，
+   而墨色环落在墨底上等于没有。offset -2px 让环落在编辑区内部，对比度最高（A11Y-04）。 */
+.code-editor:focus-visible { outline: 2px solid var(--paper); outline-offset: -2px; }
+
+/* 工具条同样是深底，条上那颗纸色按钮若用默认墨环，环会画在深色条上看不见 */
+.code-editor-toolbar .btn:focus-visible { outline-color: var(--paper); }
 
 .test-cases { padding: 14px 16px; background: var(--card); border-top: 1px solid var(--line); }
 
@@ -1734,7 +1752,9 @@ input[type="file"].form-input:active::file-selector-button {
   padding: 4px 6px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.14s ease;
+  /* 只过渡真的会变的两项。transition: all 会把 outline / transform 这些一起带上，
+     键盘聚焦时环淡入、悬停时布局属性跟着插值，既费合成又让焦点指示迟到（A11Y-05）。 */
+  transition: background-color 0.14s ease, color 0.14s ease;
 }
 .ai-file-remove:hover { background: var(--coral-soft); color: var(--red); }
 .ai-file-summary { margin-top: 8px; font-size: 12px; line-height: 1.5; color: var(--ink-mute); }
@@ -1780,7 +1800,8 @@ input[type="file"].form-input:active::file-selector-button {
   padding: 4px 9px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.14s ease;
+  /* 同 .ai-file-remove：只过渡 hover 真改的边框色与文字色（A11Y-05） */
+  transition: border-color 0.14s ease, color 0.14s ease;
   white-space: nowrap;
 }
 .uq-btn:hover { border-color: var(--hover-line); color: var(--ink); }
@@ -4005,6 +4026,9 @@ b, strong { font-weight: 600; }
 
 .wiz-steps .wiz-gap { flex: 0 0 12px; height: 1px; background: var(--line); }
 
+/* 步骤条现在是原生 <button>（A11Y-04）：Tab 能走到、Enter/Space 能按下去，都是浏览器白送的，
+   不用再手写 tabindex 与 keydown。下面这几条是把 button 的 UA 默认值压回原来 <div> 的样子——
+   appearance / line-height / text-align 不写的话，换成 button 会让整条步骤栏矮 1px 并居中变形。 */
 .wiz-step {
   flex: 1 1 0;
   min-width: 0;
@@ -4020,10 +4044,16 @@ b, strong { font-weight: 600; }
   font-family: var(--display);
   font-size: 12px;
   font-weight: 500;
+  line-height: 1.6;
   letter-spacing: -0.01em;
+  text-align: center;
+  appearance: none;
   cursor: not-allowed;
   transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
+
+/* 环画在步骤块外侧：三种底色（纸灰 / 墨黑 / 白卡）都落在浅色弹窗面上，墨环一律看得见 */
+.wiz-step:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 .wiz-step.is-current {
   background: var(--ink);
