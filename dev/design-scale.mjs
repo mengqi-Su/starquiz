@@ -189,7 +189,52 @@ check('图形例外只有描边一族，且焦点环比它们都深', () => {
   assert.ok(contrast('#1c1b1a', '#ffffff') > 15, '焦点环是墨色，比所有描边都深');
 });
 
-/* ---------- 5. 守卫自己：反面写法要抓得住，正当写法不许误伤 ---------- */
+/* ---------- 5. 封面带下沿：不许是一条硬边 ---------- */
+/* 封面带和正文断成两块，是因为带子有个明确的下沿。收边的做法是把最后一段渐隐到透明，
+   露出页面自己的纸色——用 mask 而不是叠一层纸色渐变，纸色才只有一处出处（body 的 --paper），
+   换底色 / 做深色主题时这里不用跟着改第二遍。规则按值查，不查历史：
+   只要 .ui-cover-band 没有以 transparent 收尾的 mask，或者自己描了边 / 带了投影，就算硬边。 */
+const coverBandBlocks = (css) => {
+  const blocks = [];
+  for (const m of css.matchAll(/([^{}]*\.ui-cover-band[^{}]*)\{([^{}]*)\}/g)) {
+    blocks.push({ selector: m[1].trim(), body: m[2] });
+  }
+  return blocks;
+};
+const WASHED = /(?:-webkit-)?mask-image:\s*linear-gradient\([^;]*,\s*transparent(?:\s+100%)?\s*\)/;
+/* 先取值再判断：写成 `border:\s*(?!0\b)` 会被 \s* 的回溯绕过——
+   零空白那一轮 lookahead 看到的是「 0」而不是「0」，于是 border:0 被误判成描边。 */
+const declOf = (body, prop) => {
+  const m = new RegExp(`(?:^|;)\\s*${prop}\\s*:([^;]*)`).exec(body);
+  return m ? m[1].trim() : '';
+};
+const EMPTY_EDGE = /^(?:0(?:px)?|none)(?:\s+(?:0(?:px)?|none))*$/;
+const coverSeamOffenses = (css) => {
+  const blocks = coverBandBlocks(css);
+  if (!blocks.length) return ['.ui-cover-band 不见了：收边规则无处落地'];
+  const bad = [];
+  if (!blocks.some((b) => WASHED.test(b.body))) {
+    bad.push('封面带下沿是硬边：需要一段以 transparent 收尾的 mask-image 渐隐');
+  }
+  for (const b of blocks) {
+    for (const prop of ['border', 'border-bottom']) {
+      const v = declOf(b.body, prop);
+      if (v && !EMPTY_EDGE.test(v)) bad.push(`封面带描了边 → ${b.selector} { ${prop}: ${v} }`);
+    }
+    const v = declOf(b.body, 'box-shadow');
+    if (v && !EMPTY_EDGE.test(v)) bad.push(`封面带带了投影 → ${b.selector} { box-shadow: ${v} }`);
+  }
+  return bad;
+};
+
+check('封面带下沿是收边不是硬边：渐隐到透明，且不描边不投影', () => {
+  const bad = styleFiles
+    .filter((f) => f.endsWith('.css'))
+    .flatMap((f) => coverSeamOffenses(read(f)).map((b) => `${f}: ${b}`));
+  assert.deepEqual(bad, [], `\n${bad.join('\n')}`);
+});
+
+/* ---------- 6. 守卫自己：反面写法要抓得住，正当写法不许误伤 ---------- */
 check('守卫有效：反面样本抓得住，正当样本不误伤', () => {
   /* 字号 */
   assert.ok(sizeOffenses('.a { font-size: 14px }').length === 1, '14px 必须被抓到');
@@ -219,6 +264,15 @@ check('守卫有效：反面样本抓得住，正当样本不误伤', () => {
   assert.equal(colorOffenses('/* 原来 #8a8580 只有 3.41 */\ncolor: #6b6660;').length, 0);
   assert.equal(colorOffenses('background: #3a3937;').length, 0);
   assert.equal(colorOffenses("{ bg: 'var(--paper-2)', bar: '#a39e97' }").length, 0, '封面调色板是图形数据，不是样式位置');
+  /* 封面收边：硬边、描边、投影、假收边都要抓住，正当的 mask 不误伤 */
+  assert.equal(coverSeamOffenses('.ui-cover-band { height: 240px; }').length, 1, '没有收边就是硬边');
+  assert.equal(coverSeamOffenses('.ui-cover-band { mask-image: linear-gradient(to bottom, #000, #f8f7f4); }').length, 1, '渐隐到实色不算收边，下沿还在');
+  assert.equal(coverSeamOffenses('.ui-cover-band { border-bottom: 1px solid #eae7e1; mask-image: linear-gradient(to bottom, #000 58%, transparent); }').length, 1);
+  assert.equal(coverSeamOffenses('.ui-cover-band { box-shadow: 0 1px 2px rgba(0,0,0,.1); mask-image: linear-gradient(to bottom, #000 58%, transparent); }').length, 1);
+  assert.equal(coverSeamOffenses('').length, 1, '整条规则被删掉也要报');
+  assert.equal(coverSeamOffenses('.ui-cover-band { mask-image: linear-gradient(to bottom, #000 58%, transparent 100%); }').length, 0);
+  assert.equal(coverSeamOffenses('.ui-cover-band { -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent); mask-image: linear-gradient(to bottom, #000 58%, transparent); border: 0; box-shadow: none; }').length, 0);
+  assert.equal(coverSeamOffenses('.ui-cover-band { height: 240px; mask-image: linear-gradient(to bottom, #000 58%, transparent); } @media (max-width: 720px) { .ui-cover-band { height: 168px; } }').length, 0, '窄屏只改高度不算硬边');
   /* 对比度算术本身 */
   assert.ok(Math.abs(contrast('#1c1b1a', '#f8f7f4') - 16.05) < 0.05);
   assert.ok(contrast('#a39e97', '#ffffff') < 3, '退役浅灰本来就该不合格，否则这条规则没有意义');

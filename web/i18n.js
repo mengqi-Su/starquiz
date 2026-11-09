@@ -300,6 +300,12 @@ const EN = Object.assign({
 
   /* 新增练习科目向导 */
   '练习科目名称': 'Practice subject name',
+  '新建科目': 'New subject',
+  '练习题库': 'Practice library',
+  '先填考试信息，资料可以稍后补。': 'Start with the exam details; materials can wait.',
+  '上一步': 'Back',
+  '下一步：添加资料': 'Next: add materials',
+  '先建科目，资料稍后再传': 'Create the subject now, add materials later',
   '下一步：上传资料': 'Next: upload materials',
   '下一步：处理方式': 'Next: how to handle',
   '下一步：确认生成': 'Next: confirm',
@@ -732,6 +738,8 @@ const LIMIT_LABEL = {
 };
 
 const EN_PATTERNS = [
+  /* 新建科目弹窗眉栏的计数胶囊：「已存 3 门」 */
+  [/^已存 (\d+) 门$/, (m) => `${pl(m[1], 'subject', 'subjects')} saved`],
   /* 科目页头的「每日目标 20 题」：标签与取值是两个节点，这里只翻取值 */
   [/^(\d+) 题$/, (m) => pl(m[1], 'question', 'questions')],
   /* 错题本 v2：复习节奏、组卷预览、收纳计数（带数字，放在短模式之前） */

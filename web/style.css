@@ -3232,6 +3232,10 @@ body {
   margin: calc(-1 * var(--page-pad-top)) calc(-1 * var(--page-pad-x)) 0;
 }
 
+/* 下沿不是一条边，是一段收边：带子最后 42% 渐隐到透明，露出页面自己的纸色，
+   封面和正文因此是同一块面，而不是「一张图压在上面」。
+   用 mask 而不是叠一层纸色渐变，纸色才只有一处出处（body 的 --paper）——
+   哪天换底色或做深色主题，这里不用跟着改第二遍。百分比跟着高度走，窄屏 168px 自动同口径。 */
 .ui-cover-band {
   display: block;
   width: 100%;
@@ -3239,6 +3243,8 @@ body {
   overflow: hidden;
   background-size: cover;
   background-position: center;
+  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
 }
 
 .ui-cover-band img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -5056,12 +5062,12 @@ html[lang="en"] .ai-count-value small { margin-left: 5px; }
    刷题页：试卷感（覆盖上方历史规则与排版契约）
    ============================================================ */
 .question-text {
-  font-size: 18.5px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.9;
   letter-spacing: -0.005em;
 }
-.question-number { font-family: var(--mono); font-size: 11.5px; font-weight: 500; color: var(--ink-mute); letter-spacing: 0; }
+.question-number { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--ink-mute); letter-spacing: 0; }
 .options-list { gap: 8px; }
 .options-list .option-item {
   border: 1px solid var(--line);
@@ -5074,9 +5080,9 @@ html[lang="en"] .ai-count-value small { margin-left: 5px; }
 .option-content { font-size: 15px; line-height: 1.7; }
 .options-list .option-item .option-marker,
 .option-marker, .option-marker.checkbox {
-  width: 32px; height: 32px; border-radius: 6px;
+  width: 32px; height: 32px; border-radius: 8px;
   border: 1px solid var(--line); background: transparent; color: var(--ink-soft);
-  font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
 }
 .options-list .option-item.selected { background: var(--paper-2); border-color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
 .options-list .option-item.selected .option-marker { background: var(--ink); border-color: var(--ink); color: var(--paper); }
@@ -5088,14 +5094,16 @@ html[lang="en"] .ai-count-value small { margin-left: 5px; }
 .feedback-correct { background: transparent; border-left-color: var(--green); }
 .feedback-incorrect { background: transparent; border-left-color: var(--red); }
 .knowledge-card { background: transparent; border: 0; border-left: 3px solid var(--line); border-radius: 0; padding: 2px 0 2px 14px; box-shadow: none; }
-.knowledge-card-title { padding: 0; margin: 0; background: none; color: var(--ink-soft); font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; list-style: none; }
+.knowledge-card-title { padding: 0; margin: 0; background: none; color: var(--ink-soft); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; list-style: none; }
 .knowledge-card-title::-webkit-details-marker { display: none; }
 .knowledge-card-title::after { content: '+'; margin-left: auto; color: var(--ink-faint); font-family: var(--mono); font-size: 13px; }
 .knowledge-card[open] .knowledge-card-title::after { content: '−'; }
-.knowledge-card-content { margin-top: 8px; font-size: 13.5px; color: var(--ink-soft); }
+.knowledge-card-content { margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
 .practice-topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 6; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); background: var(--paper); }
 @media (max-width: 640px) {
-  .question-text { font-size: 17px; line-height: 1.8; }
+  /* 题干两端都是 20，窄屏只收紧行高：降到 15 就和选项一样大，
+     试卷感靠「题干比选项重」立起来，不靠半像素的字号差。 */
+  .question-text { line-height: 1.8; }
   .options-list .option-item { padding: 12px 14px; }
   .options-list .option-item .option-marker, .option-marker { width: 30px; height: 30px; font-size: 12px; }
 }
@@ -5137,7 +5145,7 @@ html[lang="en"] .ai-count-value small { margin-left: 5px; }
   border: 0;
   border-radius: 8px;
   background: none;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
 }
 .modal-wizard .modal-close:hover { background: var(--paper-2); }
