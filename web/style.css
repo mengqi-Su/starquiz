@@ -1558,7 +1558,55 @@ input[type="file"].form-input:active::file-selector-button {
   animation: rise 0.2s var(--ease-editorial);
 }
 
-.modal.modal-wide { max-width: 680px; }
+.modal.modal-wide { max-width: 672px; }
+
+.modal.modal-wizard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-wizard .modal-header {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 14px 20px;
+  background: var(--surface-tint);
+}
+.modal-head-top { display: flex; align-items: flex-start; gap: 12px; }
+.modal-header-rich .modal-head-copy { min-width: 0; flex: 1; }
+.modal-subhead { padding-top: 12px; }
+.modal-subhead .wiz-steps { margin: 0; }
+.modal-wizard .modal-close { align-self: flex-start; }
+.modal-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-faint);
+}
+.modal-wizard .modal-title { font-size: 15px; }
+.modal-desc {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-mute);
+}
+.modal-wizard .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+}
+.modal-wizard .modal-footer {
+  position: static;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  background: var(--surface-tint);
+  padding: 14px 20px;
+}
 
 .modal-header {
   display: flex;
@@ -4133,7 +4181,14 @@ b, strong { font-weight: 600; }
 .wiz-grid .wiz-span { grid-column: 1 / -1; }
 
 .wiz-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.wiz-field .form-label { margin: 0; }
+.wiz-field .form-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--ink-soft);
+}
+.wiz-field .form-input { min-height: 40px; padding: 10px 12px; }
 .wiz-field .wiz-help { font-size: 12px; line-height: 1.5; color: var(--ink-soft); }
 
 .wiz-adv {
@@ -4995,4 +5050,122 @@ body.sidebar-collapsed .sidebar-expand { display: inline-flex; }
 
 /* 英文模式微调：数字后面的小字单位（如「3 questions」）比单个汉字宽，留一点间隙 */
 html[lang="en"] .ai-count-value small { margin-left: 5px; }
+
+
+/* ============================================================
+   刷题页：试卷感（覆盖上方历史规则与排版契约）
+   ============================================================ */
+.question-text {
+  font-size: 18.5px;
+  font-weight: 600;
+  line-height: 1.9;
+  letter-spacing: -0.005em;
+}
+.question-number { font-family: var(--mono); font-size: 11.5px; font-weight: 500; color: var(--ink-mute); letter-spacing: 0; }
+.options-list { gap: 8px; }
+.options-list .option-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--card);
+  box-shadow: none;
+}
+.option-item { font-size: 15px; }
+.option-content { font-size: 15px; line-height: 1.7; }
+.options-list .option-item .option-marker,
+.option-marker, .option-marker.checkbox {
+  width: 32px; height: 32px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent; color: var(--ink-soft);
+  font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+}
+.options-list .option-item.selected { background: var(--paper-2); border-color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
+.options-list .option-item.selected .option-marker { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.options-list .option-item.correct, .options-list .option-item.show-correct { background: var(--mint-soft); border-color: var(--green); box-shadow: inset 3px 0 0 var(--green); }
+.options-list .option-item.incorrect { background: var(--coral-soft); border-color: var(--red); box-shadow: inset 3px 0 0 var(--red); }
+.learning-progress-bar { background: transparent; border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; box-shadow: none; padding: 0 0 10px; }
+.learning-progress-bar .progress-bar { height: 3px; }
+.feedback { background: transparent; border: 0; border-left: 3px solid var(--ink-faint); border-radius: 0; box-shadow: none; padding: 10px 0 0 14px; }
+.feedback-correct { background: transparent; border-left-color: var(--green); }
+.feedback-incorrect { background: transparent; border-left-color: var(--red); }
+.knowledge-card { background: transparent; border: 0; border-left: 3px solid var(--line); border-radius: 0; padding: 2px 0 2px 14px; box-shadow: none; }
+.knowledge-card-title { padding: 0; margin: 0; background: none; color: var(--ink-soft); font-size: 11.5px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; list-style: none; }
+.knowledge-card-title::-webkit-details-marker { display: none; }
+.knowledge-card-title::after { content: '+'; margin-left: auto; color: var(--ink-faint); font-family: var(--mono); font-size: 13px; }
+.knowledge-card[open] .knowledge-card-title::after { content: '−'; }
+.knowledge-card-content { margin-top: 8px; font-size: 13.5px; color: var(--ink-soft); }
+.practice-topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 6; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); background: var(--paper); }
+@media (max-width: 640px) {
+  .question-text { font-size: 17px; line-height: 1.8; }
+  .options-list .option-item { padding: 12px 14px; }
+  .options-list .option-item .option-marker, .option-marker { width: 30px; height: 30px; font-size: 12px; }
+}
+
+/* ============================================================
+   页面骨架 + 新增科目弹窗：与 Exam Plan AI 收成同一套
+   ============================================================ */
+@media (min-width: 861px) {
+  /* Exam Plan 的桌面没有独立页头横带，页面直接落在纸面上；
+     StarQuiz 收起标题横带，内容列与封面带才会从同一个顶边开始。
+     页头里的「继续上次练习」是功能，不是装饰：保留它的容器，只把空壳压成 0 高。 */
+  .main-header {
+    height: auto;
+    padding: 0;
+    border-bottom: 0;
+    background: transparent;
+  }
+  .main-header .header-left,
+  .main-header .header-actions { display: none; }
+  .main-header .resume-slot:empty { display: none; }
+  .main-body { --page-pad-top: 40px; --page-pad-x: 32px; }
+}
+
+@media (min-width: 641px) {
+  .modal-overlay { padding: 16px; backdrop-filter: blur(8px); }
+}
+
+.modal-wizard .modal-header { border-bottom-color: var(--line-soft); }
+.modal-wizard .modal-footer { border-top-color: var(--line-soft); }
+.modal-wizard .modal-desc {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  line-height: 1.625;
+}
+.modal-wizard .modal-close {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+}
+.modal-wizard .modal-close:hover { background: var(--paper-2); }
+
+/* 步骤条与 Exam Plan 的按钮同一规格：8px 圆角、20px 数字、42px 高 */
+.modal-wizard .wiz-step {
+  padding: 10px 8px;
+  border-radius: 8px;
+  gap: 8px;
+  font-weight: 500;
+}
+.modal-wizard .wiz-step.is-current { font-weight: 500; }
+.modal-wizard .wiz-step-num {
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* 底栏主/次按钮跟 Exam Plan 的 ui-btn 同高；长文案允许换行 */
+.modal-wizard .modal-footer .btn {
+  min-height: 42px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.modal-wizard .modal-footer .btn-primary {
+  min-height: 45px;
+  padding: 12px 24px;
+}
+.modal-wizard .form-input { min-height: 42px; }
 

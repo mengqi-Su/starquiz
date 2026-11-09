@@ -3264,7 +3264,7 @@ function renderSubject() {
 }
 
 // 新增练习科目向导：考试信息 → 上传资料 → 完成（对齐 Exam Plan AI 的三步向导）
-const NS_STEPS = ['考试信息', '上传资料', '完成'];
+const NS_STEPS = ['考试信息', '资料', '完成'];
 
 function nsBlank() {
   return {
@@ -3477,7 +3477,7 @@ function nsLayerBody() {
     const subjectName = esc(nsDraft.name || (subjectById(nsDraft.subjectId) || {}).name || '新练习科目');
     return `
       <div class="wiz-head">
-        <span class="wiz-title">上传资料</span>
+        <span class="wiz-title">资料</span>
       </div>
       <input type="file" id="nsFileInput" multiple hidden
         accept=".pdf,.docx,.doc,.pptx,.txt,.md,.markdown,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/markdown"
@@ -3537,15 +3537,15 @@ function nsSummaryBits() {
 function nsFooter() {
   if (nsDraft.step === 1) {
     return `<button class="btn btn-secondary" onclick="nsCancel()">取消</button>
-      <button class="btn btn-primary" onclick="nsNext()">下一步：上传资料 ${ICON.arrow}</button>`;
+      <button class="btn btn-primary" onclick="nsNext()">下一步：添加资料 ${ICON.arrow}</button>`;
   }
   if (nsDraft.step === 2) {
-    return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 考试信息</button>
+    return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">上一步</button>
       <span style="flex:1"></span>
-      <button class="btn btn-secondary" onclick="nsSkip()">跳过资料</button>
-      <button class="btn btn-primary" id="nsNextBtn" onclick="nsNext()"${nsDraft.parsing ? ' disabled' : ''}>完成 ${ICON.arrow}</button>`;
+      <button class="btn btn-secondary" onclick="nsSkip()">先建科目，资料稍后再传</button>
+      <button class="btn btn-primary" id="nsNextBtn" onclick="nsNext()"${nsDraft.parsing ? ' disabled' : ''}>下一步：完成 ${ICON.arrow}</button>`;
   }
-  return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">← 上一步</button>
+  return `<button class="btn btn-ghost btn-sm" onclick="nsBack()">上一步</button>
     <span style="flex:1"></span>
     <button class="btn btn-secondary" onclick="closeModal()">稍后再说</button>`;
 }
@@ -3564,15 +3564,21 @@ function nsRender() {
 function newSubjectModal() {
   nsReset();
   openModal(`
-    <div class="modal-header">
-      <div class="modal-title">新增练习科目</div>
-      <button class="modal-close" onclick="nsCancel()">×</button>
+    <div class="modal-header modal-header-rich">
+      <div class="modal-head-top">
+        <div class="modal-head-copy">
+          <div class="modal-eyebrow"><span>练习题库</span><span class="ui-chip tabular-nums">已存 ${userSubjects.length} 门</span></div>
+          <div class="modal-title">新建科目</div>
+          <p class="modal-desc">先填考试信息，资料可以稍后补。</p>
+        </div>
+        <button class="modal-close" onclick="nsCancel()" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-subhead"><div id="nsRail">${nsRail()}</div></div>
     </div>
     <div class="modal-body">
-      <div id="nsRail">${nsRail()}</div>
       <div id="nsBody" class="wiz-layer">${nsLayerBody()}</div>
     </div>
-    <div class="modal-footer" id="nsFooter">${nsFooter()}</div>`, 'modal-wide');
+    <div class="modal-footer" id="nsFooter">${nsFooter()}</div>`, 'modal-wide modal-wizard');
 }
 
 function nsCancel() {
@@ -4521,7 +4527,7 @@ function renderLearning() {
 
   return `
     <div class="question-container">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="practice-topbar">
         <button class="back-link" style="margin:0" onclick="${fromWrong ? 'backToWrong()' : `backToSet('${l.setId}')`}">← ${esc(fromWrong ? (l.title || '错题本') : ((set || {}).name || '练习科目'))}</button>
         <button class="btn btn-secondary btn-sm" onclick="finishLearning(false)">完成学习</button>
       </div>
@@ -4532,10 +4538,10 @@ function renderLearning() {
       </div>
 
       ${kp ? `
-        <div class="knowledge-card">
-          <div class="knowledge-card-title">${ICON.bulb} 知识点 · <span data-no-i18n>${esc(kp.title)}</span></div>
+        <details class="knowledge-card">
+          <summary class="knowledge-card-title">${ICON.bulb} 考点提示 · <span data-no-i18n>${esc(kp.title)}</span></summary>
           <div class="knowledge-card-content" data-no-i18n>${esc(kp.content)}</div>
-        </div>` : ''}
+        </details>` : ''}
 
       <div class="question-header">
         <span class="question-number">第 ${l.index + 1} 题 · 共 ${total} 题${mixedSets && owner ? ` · <span data-no-i18n>${esc(owner.name)}</span>` : ''}</span>
