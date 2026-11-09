@@ -1588,12 +1588,6 @@ input[type="file"].form-input:active::file-selector-button {
   color: var(--ink-faint);
 }
 .modal-wizard .modal-title { font-size: 15px; }
-.modal-desc {
-  margin-top: 3px;
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--ink-mute);
-}
 .modal-wizard .modal-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -5133,11 +5127,6 @@ html[lang="en"] .ai-count-value small { margin-left: 5px; }
 
 .modal-wizard .modal-header { border-bottom-color: var(--line-soft); }
 .modal-wizard .modal-footer { border-top-color: var(--line-soft); }
-.modal-wizard .modal-desc {
-  margin-top: 3px;
-  color: var(--ink-soft);
-  line-height: 1.625;
-}
 .modal-wizard .modal-close {
   width: 28px;
   height: 28px;

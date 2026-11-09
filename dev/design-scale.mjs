@@ -1,11 +1,14 @@
-// 设计标尺的三条底线，一次性检查：node dev/design-scale.mjs
+// 设计标尺的底线，一次性检查：node dev/design-scale.mjs
 //   1) 字号只有一把标尺：读字档 11 / 12 / 13 / 15 / 20 / 24，显示档 28 / 30 / 36 / 48 / 64 只给
 //      文档页头、页图标和统计数字。写 14、17、19、22 这类中间值等于让每个新页面重新决定字号。
 //   2) 圆角只有三档：控件 8 / 卡片 12 / 弹窗 16，chip 与圆点用 999。
 //      --radius-lg / --radius-xl / --radius 这类同值别名也要一起收掉，多一个名字就多一次选择。
 //   3) 颜色与装饰：过不了对比度的旧灰不许回来；大写字距装饰归零，层级靠字号、字重、颜色表达。
+//   4) 封面带下沿是一段收边（渐隐到透明），不是一条硬边：不描边、不投影。
+//   5) 弹窗页头只有眉栏和标题，不挂解释灰字；眉栏与底栏的状态读数不算说明文。
 // 与 Exam Plan 的 dev/design-scale.test.ts 是同一条标尺（清单 UI-04）。两端各写一遍迟早漂移，
 // 所以档位、退役色、对比度算术都照抄同一份；这里只把「Tailwind 任意值」换成本站的「字面 CSS 声明」。
+// 第 5 条在 Exam Plan 那边住在 dev/copy-guard.test.ts（文案规则归文案守卫），口径一样。
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -234,7 +237,26 @@ check('封面带下沿是收边不是硬边：渐隐到透明，且不描边不�
   assert.deepEqual(bad, [], `\n${bad.join('\n')}`);
 });
 
-/* ---------- 6. 守卫自己：反面写法要抓得住，正当写法不许误伤 ---------- */
+/* ---------- 6. 弹窗页头：只有眉栏和标题，不挂解释灰字 ---------- */
+/* 眉栏（「练习题库」「已存 N 门」）是状态读数，留着；「标题下面一句说明」是说明文，清掉。
+   槽连同样式一起删——槽留着，下一个弹窗就会顺手填一句，这已经是第二次长回来了。
+   页头区段只取到紧随其后的 modal-body / modal-footer 为止：正文里的 <p>
+   （确认弹窗的原因、练习集简介、结果页的未评分提示）都是内容或状态，不受牵连。 */
+const headerExplanationOffenses = (src) => {
+  const bad = [];
+  if (/modal-desc/.test(src)) bad.push('解释槽 modal-desc 又回来了');
+  for (const m of src.matchAll(/class="modal-header[^"]*"[\s\S]*?class="modal-(?:body|footer)/g)) {
+    if (/<p[\s>]/.test(m[0])) bad.push('弹窗页头里塞了一段 <p> 说明');
+  }
+  return bad;
+};
+
+check('弹窗页头只有眉栏和标题，没有解释灰字', () => {
+  const bad = styleFiles.flatMap((f) => headerExplanationOffenses(read(f)).map((b) => `${f}: ${b}`));
+  assert.deepEqual(bad, [], `\n${bad.join('\n')}`);
+});
+
+/* ---------- 7. 守卫自己：反面写法要抓得住，正当写法不许误伤 ---------- */
 check('守卫有效：反面样本抓得住，正当样本不误伤', () => {
   /* 字号 */
   assert.ok(sizeOffenses('.a { font-size: 14px }').length === 1, '14px 必须被抓到');
@@ -273,6 +295,12 @@ check('守卫有效：反面样本抓得住，正当样本不误伤', () => {
   assert.equal(coverSeamOffenses('.ui-cover-band { mask-image: linear-gradient(to bottom, #000 58%, transparent 100%); }').length, 0);
   assert.equal(coverSeamOffenses('.ui-cover-band { -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent); mask-image: linear-gradient(to bottom, #000 58%, transparent); border: 0; box-shadow: none; }').length, 0);
   assert.equal(coverSeamOffenses('.ui-cover-band { height: 240px; mask-image: linear-gradient(to bottom, #000 58%, transparent); } @media (max-width: 720px) { .ui-cover-band { height: 168px; } }').length, 0, '窄屏只改高度不算硬边');
+  /* 弹窗页头解释句：槽和 <p> 各算一条；正文里的 <p> 不算 */
+  assert.equal(headerExplanationOffenses('<div class="modal-header"><p class="modal-desc">先填考试信息。</p></div><div class="modal-body">').length, 2);
+  assert.equal(headerExplanationOffenses('.modal-desc { color: var(--ink-mute); }').length, 1, '样式里留着槽也要报');
+  assert.equal(headerExplanationOffenses('<div class="modal-header"><p>说明</p></div><div class="modal-footer">').length, 1, '换个类名照样是页头说明');
+  assert.equal(headerExplanationOffenses('<div class="modal-header modal-header-rich"><div class="modal-eyebrow"><span>练习题库</span></div><div class="modal-title">新建科目</div></div><div class="modal-body"><p>正文里的一段</p></div>').length, 0);
+  assert.equal(headerExplanationOffenses('<div class="modal-body"><p class="text-sm">确认原因</p></div>').length, 0, '没有页头就无从误伤');
   /* 对比度算术本身 */
   assert.ok(Math.abs(contrast('#1c1b1a', '#f8f7f4') - 16.05) < 0.05);
   assert.ok(contrast('#a39e97', '#ffffff') < 3, '退役浅灰本来就该不合格，否则这条规则没有意义');

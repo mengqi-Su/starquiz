@@ -302,7 +302,6 @@ const EN = Object.assign({
   '练习科目名称': 'Practice subject name',
   '新建科目': 'New subject',
   '练习题库': 'Practice library',
-  '先填考试信息，资料可以稍后补。': 'Start with the exam details; materials can wait.',
   '上一步': 'Back',
   '下一步：添加资料': 'Next: add materials',
   '先建科目，资料稍后再传': 'Create the subject now, add materials later',

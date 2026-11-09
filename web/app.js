@@ -3569,7 +3569,6 @@ function newSubjectModal() {
         <div class="modal-head-copy">
           <div class="modal-eyebrow"><span>练习题库</span><span class="ui-chip tabular-nums">已存 ${userSubjects.length} 门</span></div>
           <div class="modal-title">新建科目</div>
-          <p class="modal-desc">先填考试信息，资料可以稍后补。</p>
         </div>
         <button class="modal-close" onclick="nsCancel()" aria-label="关闭">×</button>
       </div>
